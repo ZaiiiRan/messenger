@@ -45,9 +45,19 @@ CREATE TABLE chats (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE chat_roles (
+    id SMALLSERIAL PRIMARY KEY,
+    role TEXT NOT NULL UNIQUE
+);
+
+INSERT INTO chat_roles (role) VALUES ('member'), ('admin');
+
 CREATE TABLE chat_members (
     chat_id BIGINT NOT NULL REFERENCES chats(id),
     user_id BIGINT NOT NULL REFERENCES users(id),
+    role_id SMALLINT NOT NULL (
+        SELECT id FROM chat_roles WHERE role = 'member' LIMIT 1
+    ),
 
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
@@ -58,6 +68,7 @@ CREATE TABLE messages (
     user_id BIGINT NOT NULL REFERENCES users(id),
     content TEXT,
     sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_edited TIMESTAMP,
 
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
@@ -67,6 +78,13 @@ CREATE TABLE media_files (
     message_id BIGINT NOT NULL REFERENCES messages(id),
     file_url TEXT,
     file_size INTEGER
+);
+
+CREATE TABLE activation_codes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    code VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP NOT NULL
 );
 
 
