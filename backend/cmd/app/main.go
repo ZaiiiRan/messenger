@@ -5,6 +5,7 @@ import (
 	"log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lpernett/godotenv"
+	"backend/internal/dbs/pgDB"
 )
 
 func main() {
@@ -12,6 +13,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	pgDB.Connect(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"),
+		os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_PORT"))
 
 	port := os.Getenv("PORT")
 	if port == "" {

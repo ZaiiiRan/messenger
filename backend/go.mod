@@ -3,11 +3,15 @@ module backend
 go 1.22.2
 
 require (
-	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e
+)
+
+require (
+	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
-	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e
+	github.com/lib/pq v1.10.9 
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
