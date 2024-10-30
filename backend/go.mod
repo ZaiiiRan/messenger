@@ -7,11 +7,13 @@ require (
 	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e
 )
 
+require github.com/golang-jwt/jwt/v5 v5.2.1
+
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
-	github.com/lib/pq v1.10.9 
+	github.com/lib/pq v1.10.9
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
