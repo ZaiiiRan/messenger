@@ -31,7 +31,7 @@ CREATE TABLE friend_statuses (
 
 INSERT INTO friend_statuses (name) VALUES ('request'), ('accepted'), ('blocked');
 
-CREATE friends (
+CREATE TABLE friends (
     friend_1_id BIGINT NOT NULL REFERENCES users(id),
     friend_2_id BIGINT NOT NULL REFERENCES users(id),
     status_id SMALLINT NOT NULL REFERENCES friend_statuses(id)
@@ -55,9 +55,7 @@ INSERT INTO chat_roles (role) VALUES ('member'), ('admin');
 CREATE TABLE chat_members (
     chat_id BIGINT NOT NULL REFERENCES chats(id),
     user_id BIGINT NOT NULL REFERENCES users(id),
-    role_id SMALLINT NOT NULL (
-        SELECT id FROM chat_roles WHERE role = 'member' LIMIT 1
-    ),
+    role_id SMALLINT NOT NULL,
 
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );

@@ -18,3 +18,4 @@ type User struct {
 	IsActivated bool       `json:"is_activated"`
 	CreatedAt   time.Time  `json:"created_at"`
 }
+
