@@ -54,7 +54,7 @@ func SaveToken(userID uint64, refreshToken string) (*Token, error) {
 }
 
 // Generate token pair
-func GenerateTokens(payload dto.UserDTO) (string, string, error) {
+func GenerateTokens(payload *dto.UserDTO) (string, string, error) {
 	// 30 minutes
 	accessToken, err := createToken(payload, 30, accessKey)
 	if err != nil {
@@ -83,7 +83,7 @@ func ValidateRefreshToken(tokenString string) (*dto.UserDTO, error) {
 }
 
 // creating token
-func createToken(payload dto.UserDTO, expMinutes uint, key string) (string, error) {
+func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(expMinutes) * time.Minute).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":      payload.ID,
@@ -129,5 +129,5 @@ func validateToken(tokenString, key string) (*dto.UserDTO, error) {
 		}
 		return &userDTO, nil
 	}
-	return nil, errors.New("anuthorized")
+	return nil, errors.New("unathorized")
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/lpernett/godotenv"
 	"backend/internal/dbs/pgDB"
+	"backend/internal/routes/authRoutes"
 )
 
 func main() {
@@ -24,9 +25,7 @@ func main() {
 
 	app := fiber.New()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{ "message": "Hello World!" })
-	})
+	authRoutes.SetupRoutes(app)
 
 	log.Fatal(app.Listen(":" + port))
 }

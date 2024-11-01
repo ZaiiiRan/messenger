@@ -37,9 +37,15 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 		return nil, err
 	}
 	if err := validateName(firstname); err != nil {
+		if err.Error() != "inernal server error" {
+			return nil, errors.New("first" + err.Error())
+		}
 		return nil, err
 	}
 	if err := validateName(lastname); err != nil {
+		if err.Error() != "inernal server error" {
+			return nil, errors.New("last" + err.Error())
+		}
 		return nil, err
 	}
 	if phone != nil {
@@ -157,7 +163,7 @@ func GetUserByPhone(phone string) (*User, error) {
 // parsing user from sql row
 func createUserFromSQLRow(row *sql.Row) (*User, error) {
 	var user User
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Phone, 
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Phone,
 		&user.Firstname, &user.Lastname, &user.Birthdate,
 		&user.IsDeleted, &user.IsBanned, &user.IsActivated, &user.CreatedAt)
 	return &user, err
@@ -176,14 +182,17 @@ func comparePasswords(hashedPassword, password string) bool {
 
 // validate username
 func validateUsername(username string) error {
-	candidate, err := GetUserByUsername(username)
-	if candidate != nil {
-		return errors.New("user with the same username already exists")
-	} else if err != nil {
-		return errors.New("internal server error")
+	if username == "" {
+		return errors.New("username is empty")
 	}
 
-	if len(username) < 5 {
+	candidate, err := GetUserByUsername(username)
+	if err != nil && err.Error() != "user not found" {
+		return errors.New("internal server error")
+	}
+	if candidate != nil {
+		return errors.New("user with the same username already exists")
+	} else if len(username) < 5 {
 		return errors.New("username must be at least 5 characters")
 	}
 	return nil
@@ -191,11 +200,16 @@ func validateUsername(username string) error {
 
 // validate email
 func validateEmail(email string) error {
+	if email == "" {
+		return errors.New("email is empty")
+	}
+
 	candidate, err := GetUserByEmail(email)
+	if err != nil && err.Error() != "user not found" {
+		return errors.New("internal server error")
+	}
 	if candidate != nil {
 		return errors.New("user with the same email already exists")
-	} else if err != nil {
-		return errors.New("internal server error")
 	}
 
 	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
@@ -212,10 +226,11 @@ func validatePhone(phone string) error {
 	}
 
 	candidate, err := GetUserByPhone(phone)
+	if err != nil && err.Error() != "user not found" {
+		return errors.New("internal server error")
+	}
 	if candidate != nil {
 		return errors.New("user with the same phone number already exists")
-	} else if err != nil {
-		return errors.New("internal server error")
 	}
 
 	phoneRegex := regexp.MustCompile(`^\+7\(9\d{2}\)-\d{3}-\d{2}-\d{2}$`)
@@ -227,6 +242,10 @@ func validatePhone(phone string) error {
 
 // validate names (firstname and lastname)
 func validateName(name string) error {
+	if name == "" {
+		return errors.New("name is empty")
+	}
+
 	nameRegex := regexp.MustCompile(`^[A-ZА-Я][a-zа-я]+(-[A-ZА-Я][a-zа-я]+)?$`)
 	if !nameRegex.MatchString(name) {
 		return errors.New("name must start with a capital letter")
@@ -236,6 +255,10 @@ func validateName(name string) error {
 
 // validate password
 func validatePassword(password string) error {
+	if password == "" {
+		return errors.New("password is empty")
+	}
+
 	var (
 		hasUpperCase   = regexp.MustCompile(`[A-ZА-ЯЁ]`).MatchString(password)
 		hasLowerCase   = regexp.MustCompile(`[a-zа-яё]`).MatchString(password)
