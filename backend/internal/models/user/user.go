@@ -108,6 +108,11 @@ func (u *User) Delete() error {
 	return u.Save()
 }
 
+// Check user password
+func (u *User) CheckPassword(password string) bool {
+	return comparePasswords(u.Password, password)
+}
+
 // Get user by id
 func GetUserByID(ID uint64) (*User, error) {
 	db := pgDB.GetDB()

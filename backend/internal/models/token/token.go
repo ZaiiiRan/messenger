@@ -53,6 +53,14 @@ func SaveToken(userID uint64, refreshToken string) (*Token, error) {
 	return &token, err
 }
 
+func UpdateToken(oldRefreshToken, newRefreshToken string) (*Token, error) {
+	db := pgDB.GetDB()
+	var token Token
+	err := db.QueryRow(`UPDATE tokens SET refresh_token = $1 WHERE refresh_token = $2 RETURNING *`, newRefreshToken, oldRefreshToken).Scan(
+		&token.ID, &token.UserID, &token.RefreshToken)
+	return &token, err
+}
+
 // Generate token pair
 func GenerateTokens(payload *dto.UserDTO) (string, string, error) {
 	// 30 minutes
@@ -117,17 +125,37 @@ func validateToken(tokenString, key string) (*dto.UserDTO, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userDTO := dto.UserDTO{
 			ID:          uint64(claims["user_id"].(float64)),
-			Username:    claims["usename"].(string),
+			Username:    claims["username"].(string),
 			Email:       claims["email"].(string),
-			Phone:       claims["phone"].(*string),
+			Phone:       stringPtr(claims["phone"].(string)),
 			Firstname:   claims["firstname"].(string),
 			Lastname:    claims["lastname"].(string),
-			Birthdate:   claims["birthdate"].(*time.Time),
+			Birthdate:   parseTime(claims["birthdate"]),
 			IsBanned:    claims["is_banned"].(bool),
 			IsActivated: claims["is_activated"].(bool),
 			IsDeleted:   claims["is_deleted"].(bool),
 		}
 		return &userDTO, nil
 	}
-	return nil, errors.New("unathorized")
+	return nil, errors.New("unauthorized")
+}
+
+// Функция для создания указателя на строку
+func stringPtr(s string) *string {
+	return &s
+}
+
+// Функция для обработки времени
+func parseTime(claim interface{}) *time.Time {
+	if claim == nil {
+		return nil
+	}
+	if t, ok := claim.(string); ok {
+		parsedTime, err := time.Parse(time.RFC3339, t) // Используем стандартный формат времени
+		if err != nil {
+			return nil
+		}
+		return &parsedTime
+	}
+	return nil
 }
