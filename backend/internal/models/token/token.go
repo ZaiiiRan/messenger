@@ -82,13 +82,16 @@ func GenerateTokens(payload *dto.UserDTO) (string, string, error) {
 
 // Validating access token
 func ValidateAccessToken(tokenString string) (*dto.UserDTO, error) {
-	userDTO, err := validateToken(tokenString, accessKey)
+	userDTO, _, err := validateToken(tokenString, accessKey)
 	return userDTO, err
 }
 
 // Validating refresh token
 func ValidateRefreshToken(tokenString string) (*dto.UserDTO, error) {
-	userDTO, err := validateToken(tokenString, refreshKey)
+	userDTO, expired, err := validateToken(tokenString, refreshKey)
+	if expired {
+		RemoveToken(tokenString)
+	}
 	return userDTO, err
 }
 
@@ -120,12 +123,16 @@ func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, err
 }
 
 // validating token
-func validateToken(tokenString, key string) (*dto.UserDTO, error) {
+func validateToken(tokenString, key string) (*dto.UserDTO, bool, error) {
 	token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
 	if err != nil {
-		return nil, errors.New("unauthorized")
+		expired := false
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			expired = true
+		}
+		return nil, expired, errors.New("unauthorized")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
@@ -141,9 +148,9 @@ func validateToken(tokenString, key string) (*dto.UserDTO, error) {
 			IsActivated: claims["is_activated"].(bool),
 			IsDeleted:   claims["is_deleted"].(bool),
 		}
-		return &userDTO, nil
+		return &userDTO, false, nil
 	}
-	return nil, errors.New("unauthorized")
+	return nil, false, errors.New("unauthorized")
 }
 
 // parsing date from encrypted user dto object
