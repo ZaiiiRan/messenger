@@ -1,6 +1,7 @@
 package authController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,28 +16,18 @@ type ResendActivationCodeRequest struct {
 func ResendActivationCode(c *fiber.Ctx) error {
 	var req ResendActivationCodeRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request format",
-		})
+		return appErr.BadRequest("invalid request format")
 	}
 
 	activationCode, err := user.GetActivationCode(req.UserID)
 	if err != nil {
-		status := fiber.StatusBadRequest
-		if err.Error() == "inernal server error" {
-			status = fiber.StatusInternalServerError
-		}
-		return c.Status(status).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return err
 	}
 
 	activationCode.Regenerate()
 	err = activationCode.Save()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return err
 	}
 	activationCode.SendToEmail()
 

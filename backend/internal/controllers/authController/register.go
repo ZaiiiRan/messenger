@@ -1,6 +1,7 @@
 package authController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"backend/internal/utils"
 	"strings"
@@ -24,42 +25,28 @@ type RegisterRequest struct {
 func RegisterUser(c *fiber.Ctx) error {
 	var req RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request format",
-		})
+		return appErr.BadRequest("invalid request format")
 	}
 	req.trimSpaces()
 
 	birthdate, err := parseBirthdate(req.Birthdate)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return appErr.BadRequest(err.Error())
 	}
 
 	userObject, err := user.CreateUser(req.Username, req.Email, req.Password, req.Firstname, req.Lastname, req.Phone, birthdate)
 	if err != nil {
-		status := fiber.StatusBadRequest
-		if err.Error() == "inernal server error" {
-			status = fiber.StatusInternalServerError
-		}
-		return c.Status(status).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return err
 	}
 
 	if err := userObject.Save(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return err
 	}
 
 	activationCode := user.CreateActivationCode(userObject.ID)
 	err = activationCode.Save()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "user has been created, but an error occurred while generating activation code",
-		})
+		return appErr.InternalServerError("error occured while sending activation code")
 	}
 	activationCode.SendToEmail()
 

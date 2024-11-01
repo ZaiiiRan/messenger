@@ -14,15 +14,11 @@ func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
 	userDTO := userDTO.CreateUserDTOFromUserObj(userObject)
 	accessToken, refreshToken, err := token.GenerateTokens(userDTO)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return err
 	}
 	_, err = token.InsertToken(userDTO.ID, refreshToken)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return err
 	}
 
 	return sendTokenAndJSON(userDTO, accessToken, refreshToken, c)

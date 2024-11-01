@@ -1,6 +1,7 @@
 package authController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"strings"
 
@@ -17,21 +18,23 @@ type ActivateRequest struct {
 func ActivateAccount(c *fiber.Ctx) error {
 	var req ActivateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request format",
-		})
+		return appErr.BadRequest("invalid request format")
+		// return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		// 	"error": "invalid request format",
+		// })
 	}
 	req.trimSpaces()
 
 	err := user.ActivateAccount(req.UserID, req.Code)
 	if err != nil {
-		status := fiber.StatusBadRequest
-		if err.Error() == "inernal server error" {
-			status = fiber.StatusInternalServerError
-		}
-		return c.Status(status).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return err
+		// status := fiber.StatusBadRequest
+		// if err.Error() == "inernal server error" {
+		// 	status = fiber.StatusInternalServerError
+		// }
+		// return c.Status(status).JSON(fiber.Map{
+		// 	"error": err.Error(),
+		// })
 	}
 
 	return c.JSON(fiber.Map{

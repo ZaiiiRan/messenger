@@ -7,6 +7,7 @@ import (
 	"github.com/lpernett/godotenv"
 	"backend/internal/dbs/pgDB"
 	"backend/internal/routes/authRoutes"
+	"backend/internal/middleware/errorHandler"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(errorHandler.ErrorHandler())
 
 	authRoutes.SetupRoutes(app)
 

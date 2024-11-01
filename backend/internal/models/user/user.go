@@ -2,8 +2,8 @@ package user
 
 import (
 	pgDB "backend/internal/dbs/pgDB"
+	appErr "backend/internal/errors/appError"
 	"database/sql"
-	"errors"
 	"regexp"
 	"time"
 
@@ -38,13 +38,13 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 	}
 	if err := validateName(firstname); err != nil {
 		if err.Error() != "inernal server error" {
-			return nil, errors.New("first" + err.Error())
+			return nil, appErr.BadRequest("first" + err.Error())
 		}
 		return nil, err
 	}
 	if err := validateName(lastname); err != nil {
 		if err.Error() != "inernal server error" {
-			return nil, errors.New("last" + err.Error())
+			return nil, appErr.BadRequest("last" + err.Error())
 		}
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
-		return nil, errors.New("internal server error")
+		return nil, err
 	}
 
 	user := &User{
@@ -84,7 +84,7 @@ func (u *User) Save() error {
 		err := db.QueryRow(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
 			u.IsDeleted, u.IsBanned, u.IsActivated, u.CreatedAt).Scan(&u.ID, &u.CreatedAt)
 		if err != nil {
-			return errors.New("internal server error")
+			return appErr.InternalServerError("internal server error")
 		}
 	} else {
 		// existing user
@@ -93,7 +93,7 @@ func (u *User) Save() error {
 		_, err := db.Exec(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
 			u.IsDeleted, u.IsBanned, u.IsActivated, u.ID)
 		if err != nil {
-			return errors.New("internal server error")
+			return appErr.InternalServerError("internal server error")
 		}
 	}
 	return nil
@@ -102,7 +102,7 @@ func (u *User) Save() error {
 // Deletion user from DataBase (soft delete)
 func (u *User) Delete() error {
 	if u.ID == 0 {
-		return errors.New("user not found")
+		return appErr.BadRequest("user not found")
 	}
 	u.IsDeleted = true
 	return u.Save()
@@ -119,9 +119,9 @@ func GetUserByID(ID uint64) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE id = $1`, ID)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("user not found")
+		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
-		return nil, errors.New("internal server error")
+		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
 }
@@ -132,9 +132,9 @@ func GetUserByUsername(username string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE username = $1`, username)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("user not found")
+		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
-		return nil, errors.New("internal server error")
+		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
 }
@@ -145,9 +145,9 @@ func GetUserByEmail(email string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE email = $1`, email)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("user not found")
+		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
-		return nil, errors.New("internal server error")
+		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
 }
@@ -160,7 +160,7 @@ func GetUserByPhone(phone string) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
-		return nil, errors.New("internal server error")
+		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
 }
@@ -177,7 +177,10 @@ func createUserFromSQLRow(row *sql.Row) (*User, error) {
 // hashing password
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 6)
-	return string(hash), err
+	if err != nil {
+		return "", appErr.InternalServerError("internal server error")
+	}
+	return string(hash), nil
 }
 
 // compare passwords
@@ -188,17 +191,17 @@ func comparePasswords(hashedPassword, password string) bool {
 // validate username
 func validateUsername(username string) error {
 	if username == "" {
-		return errors.New("username is empty")
+		return appErr.BadRequest("username is empty")
 	}
 
 	candidate, err := GetUserByUsername(username)
 	if err != nil && err.Error() != "user not found" {
-		return errors.New("internal server error")
+		return appErr.InternalServerError("internal server error")
 	}
 	if candidate != nil {
-		return errors.New("user with the same username already exists")
+		return appErr.BadRequest("user with the same username already exists")
 	} else if len(username) < 5 {
-		return errors.New("username must be at least 5 characters")
+		return appErr.BadRequest("username must be at least 5 characters")
 	}
 	return nil
 }
@@ -206,20 +209,20 @@ func validateUsername(username string) error {
 // validate email
 func validateEmail(email string) error {
 	if email == "" {
-		return errors.New("email is empty")
+		return appErr.BadRequest("email is empty")
 	}
 
 	candidate, err := GetUserByEmail(email)
 	if err != nil && err.Error() != "user not found" {
-		return errors.New("internal server error")
+		return appErr.InternalServerError("internal server error")
 	}
 	if candidate != nil {
-		return errors.New("user with the same email already exists")
+		return appErr.BadRequest("user with the same email already exists")
 	}
 
 	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 	if !emailRegex.MatchString(email) {
-		return errors.New("invalid email format")
+		return appErr.BadRequest("invalid email format")
 	}
 	return nil
 }
@@ -232,15 +235,15 @@ func validatePhone(phone string) error {
 
 	candidate, err := GetUserByPhone(phone)
 	if err != nil && err.Error() != "user not found" {
-		return errors.New("internal server error")
+		return appErr.InternalServerError("internal server error")
 	}
 	if candidate != nil {
-		return errors.New("user with the same phone number already exists")
+		return appErr.BadRequest("user with the same phone number already exists")
 	}
 
 	phoneRegex := regexp.MustCompile(`^\+7\(9\d{2}\)-\d{3}-\d{2}-\d{2}$`)
 	if !phoneRegex.MatchString(phone) {
-		return errors.New("phone must be in format +7(9xx)-xxx-xx-xx or empty")
+		return appErr.BadRequest("phone must be in format +7(9xx)-xxx-xx-xx or empty")
 	}
 	return nil
 }
@@ -248,12 +251,12 @@ func validatePhone(phone string) error {
 // validate names (firstname and lastname)
 func validateName(name string) error {
 	if name == "" {
-		return errors.New("name is empty")
+		return appErr.BadRequest("name is empty")
 	}
 
 	nameRegex := regexp.MustCompile(`^[A-ZА-Я][a-zа-я]+(-[A-ZА-Я][a-zа-я]+)?$`)
 	if !nameRegex.MatchString(name) {
-		return errors.New("name must start with a capital letter")
+		return appErr.BadRequest("name must start with a capital letter")
 	}
 	return nil
 }
@@ -261,7 +264,7 @@ func validateName(name string) error {
 // validate password
 func validatePassword(password string) error {
 	if password == "" {
-		return errors.New("password is empty")
+		return appErr.BadRequest("password is empty")
 	}
 
 	var (
@@ -272,19 +275,19 @@ func validatePassword(password string) error {
 	)
 
 	if len(password) < 8 {
-		return errors.New("password must be at least 8 characters")
+		return appErr.BadRequest("password must be at least 8 characters")
 	}
 	if !hasUpperCase {
-		return errors.New("password must contain at least one uppercase letter")
+		return appErr.BadRequest("password must contain at least one uppercase letter")
 	}
 	if !hasLowerCase {
-		return errors.New("password must contain at least one lowercase letter")
+		return appErr.BadRequest("password must contain at least one lowercase letter")
 	}
 	if !hasNumber {
-		return errors.New("password must contain at least one digit")
+		return appErr.BadRequest("password must contain at least one digit")
 	}
 	if !hasSpecialChar {
-		return errors.New("password must contain at least one special character")
+		return appErr.BadRequest("password must contain at least one special character")
 	}
 	return nil
 }

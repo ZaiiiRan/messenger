@@ -3,6 +3,7 @@ package token
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	dto "backend/internal/dtos/userDTO"
+	appErr "backend/internal/errors/appError"
 	"backend/internal/utils"
 	"database/sql"
 	"errors"
@@ -30,10 +31,10 @@ func FindToken(refreshToken string) (*Token, error) {
 	err := db.QueryRow(`SELECT * FROM tokens WHERE refresh_token = $1`, refreshToken).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, appErr.BadRequest("token not found")
 	}
 	if err != nil {
-		return nil, err
+		return nil, appErr.InternalServerError("internal server error")
 	}
 	return &token, nil
 }
@@ -44,7 +45,10 @@ func InsertToken(userID uint64, refreshToken string) (*Token, error) {
 	var token Token
 	err := db.QueryRow(`INSERT INTO tokens (user_id, refresh_token) VALUES ($1, $2) RETURNING *`, userID, refreshToken).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
-	return &token, err
+	if err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	return &token, nil
 }
 
 // Update token in DataBase
@@ -53,14 +57,20 @@ func UpdateToken(oldRefreshToken, newRefreshToken string, userID uint64) (*Token
 	var token Token
 	err := db.QueryRow(`UPDATE tokens SET refresh_token = $1 WHERE refresh_token = $2 AND user_id = $3 RETURNING *`, newRefreshToken, oldRefreshToken, userID).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
-	return &token, err
+	if err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	return &token, nil
 }
 
 // Remove token from DataBase
 func RemoveToken(refreshToken string) error {
 	db := pgDB.GetDB()
 	_, err := db.Exec(`DELETE FROM tokens WHERE refresh_token = $1`, refreshToken)
-	return err
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+	return nil
 }
 
 // Generate token pair
@@ -117,7 +127,7 @@ func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, err
 	})
 	tokenString, err := token.SignedString([]byte(key))
 	if err != nil {
-		return "", nil
+		return "", appErr.InternalServerError("internal server error")
 	}
 	return tokenString, nil
 }
@@ -132,7 +142,7 @@ func validateToken(tokenString, key string) (*dto.UserDTO, bool, error) {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			expired = true
 		}
-		return nil, expired, errors.New("unauthorized")
+		return nil, expired, appErr.Unauthorized("unauthorized")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
@@ -150,7 +160,7 @@ func validateToken(tokenString, key string) (*dto.UserDTO, bool, error) {
 		}
 		return &userDTO, false, nil
 	}
-	return nil, false, errors.New("unauthorized")
+	return nil, false, appErr.Unauthorized("unauthorized")
 }
 
 // parsing date from encrypted user dto object

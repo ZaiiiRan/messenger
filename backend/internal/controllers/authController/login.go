@@ -1,6 +1,7 @@
 package authController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"strings"
 
@@ -17,31 +18,22 @@ type LoginRequest struct {
 func Login(c *fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request format",
-		})
+		return appErr.BadRequest("invalid login or password")
 	}
 	req.trimSpaces()
 
 	userObject, err := user.GetUserByUsername(req.Login)
 	if err != nil && err.Error() == "user not found" {
 		userObject, err = user.GetUserByEmail(req.Login)
-		if err != nil && err.Error() == "user not found" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "invalid login or password",
-			})
+		if err != nil {
+			return appErr.BadRequest("invalid login or password")
 		}
-	}
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+	} else if err != nil {
+		return err
 	}
 
 	if !userObject.CheckPassword(req.Password) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid login or password",
-		})
+		return appErr.BadRequest("invalid login or password")
 	}
 
 	return createUserDTOAndTokensResponse(userObject, c)

@@ -2,9 +2,9 @@ package user
 
 import (
 	pgDB "backend/internal/dbs/pgDB"
+	appErr "backend/internal/errors/appError"
 	"backend/internal/services/mailService"
 	"database/sql"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -36,7 +36,7 @@ func GetActivationCode(userID uint64) (*ActivationCode, error) {
 		return nil, err
 	}
 	if isActivated {
-		return nil, errors.New("user already activated")
+		return nil, appErr.BadRequest("user already activated")
 	}
 
 	var activationCode ActivationCode
@@ -46,7 +46,7 @@ func GetActivationCode(userID uint64) (*ActivationCode, error) {
 	if err == sql.ErrNoRows {
 		activationCode = *CreateActivationCode(userID)
 	} else if err != nil {
-		return nil, errors.New("failed to retrieve activation code")
+		return nil, appErr.InternalServerError("failed to retrieve activation code")
 	}
 	return &activationCode, nil
 }
@@ -59,14 +59,14 @@ func (c *ActivationCode) Save() error {
 		query := `INSERT INTO activation_codes (user_id, code, expires_at) VALUES ($1, $2, $3) RETURNING id`
 		err := db.QueryRow(query, c.UserID, c.Code, c.ExpiresAt.UTC()).Scan(&c.ID)
 		if err != nil {
-			return errors.New("internal server error")
+			return appErr.InternalServerError("internal server error")
 		}
 	} else {
 		// existing code
 		query := `UPDATE activation_codes SET code = $1, expires_at = $2`
 		_, err := db.Exec(query, c.Code, c.ExpiresAt.UTC())
 		if err != nil {
-			return errors.New("internal server error")
+			return appErr.InternalServerError("internal server error")
 		}
 	}
 	return nil
@@ -76,11 +76,11 @@ func (c *ActivationCode) Save() error {
 func (c *ActivationCode) Delete() error {
 	db := pgDB.GetDB()
 	if c.ID == 0 {
-		return errors.New("activation code not found")
+		return appErr.BadRequest("activation code not found")
 	}
 	_, err := db.Exec(`DELETE FROM activation_codes WHERE id = $1`, c.ID)
 	if err != nil {
-		return errors.New("internal server error")
+		return appErr.InternalServerError("internal server error")
 	}
 	return nil
 }
@@ -97,9 +97,9 @@ func (c *ActivationCode) SendToEmail() error {
 	var email string
 	err := db.QueryRow(`SELECT email FROM users WHERE id = $1 AND is_activated = FALSE`, c.UserID).Scan(&email)
 	if err == sql.ErrNoRows {
-		return errors.New("user not found")
+		return appErr.BadRequest("user not found")
 	} else if err != nil {
-		return errors.New("internal server error")
+		return appErr.InternalServerError("internal server error")
 	}
 
 	htmlContent := fmt.Sprintf(
@@ -118,7 +118,7 @@ func (c *ActivationCode) SendToEmail() error {
 
 	err = mailService.SendMail(email, "Account Activation", htmlContent)
 	if err != nil {
-		return errors.New("there was an error sending the account activation code")
+		return appErr.InternalServerError("there was an error sending the account activation code")
 	}
 	return nil
 }
@@ -126,24 +126,24 @@ func (c *ActivationCode) SendToEmail() error {
 // Account activation
 func ActivateAccount(userID uint64, code string) error {
 	activationCode, err := GetActivationCode(userID)
-	if err != nil && err.Error() != "activation code not found" {
+	if err != nil {
 		return err
 	}
 	if activationCode == nil {
-		return errors.New("activation code not found")
+		return appErr.BadRequest("activation code not found")
 	}
 
 	if time.Now().After(activationCode.ExpiresAt) {
-		return errors.New("activation code has expired")
+		return appErr.BadRequest("activation code has expired")
 	}
 	if code != activationCode.Code {
-		return errors.New("invalid activation code")
+		return appErr.BadRequest("invalid activation code")
 	}
 
 	db := pgDB.GetDB()
 	_, err = db.Exec(`UPDATE users SET is_activated = TRUE WHERE id = $1`, userID)
 	if err != nil {
-		return errors.New("failed to activate user account")
+		return appErr.InternalServerError("failed to activate user account")
 	}
 	activationCode.Delete()
 	return nil
@@ -155,9 +155,9 @@ func IsUserActivated(userID uint64) (bool, error) {
 	var isActivated bool
 	err := db.QueryRow("SELECT is_activated FROM users WHERE id = $1", userID).Scan(&isActivated)
 	if err == sql.ErrNoRows {
-		return false, errors.New("user not found")
+		return false, appErr.BadRequest("user not found")
 	} else if err != nil {
-		return false, errors.New("internal server error")
+		return false, appErr.InternalServerError("internal server error")
 	}
 	return isActivated, nil
 }
