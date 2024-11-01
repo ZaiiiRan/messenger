@@ -79,7 +79,7 @@ func RegisterUser(c *fiber.Ctx) error {
 			"error": "user has been created, but an error occurred while generating tokens",
 		})
 	}
-	_, err = token.SaveToken(userDTO.ID, refreshToken)
+	_, err = token.InsertToken(userDTO.ID, refreshToken)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "user has been created, but an error occurred while generating tokens",
@@ -234,7 +234,7 @@ func Login(c *fiber.Ctx) error {
 			"error": "user has been created, but an error occurred while generating tokens",
 		})
 	}
-	_, err = token.SaveToken(userDTO.ID, refreshToken)
+	_, err = token.InsertToken(userDTO.ID, refreshToken)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "user has been created, but an error occurred while generating tokens",
@@ -302,7 +302,7 @@ func Refresh(c *fiber.Ctx) error {
 			"error": "internal server error",
 		})
 	}
-	_, err = token.UpdateToken(refreshToken, newRefreshToken)
+	_, err = token.UpdateToken(refreshToken, newRefreshToken, userDTO.ID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "internal server error",

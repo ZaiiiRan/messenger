@@ -3,6 +3,7 @@ package token
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	dto "backend/internal/dtos/userDTO"
+	"backend/internal/utils"
 	"database/sql"
 	"errors"
 	"os"
@@ -37,15 +38,8 @@ func FindToken(refreshToken string) (*Token, error) {
 	return &token, nil
 }
 
-// Remove token from DataBase
-func RemoveToken(refreshToken string) error {
-	db := pgDB.GetDB()
-	_, err := db.Exec(`DELETE FROM tokens WHERE refresh_token = $1`, refreshToken)
-	return err
-}
-
-// Save token in DataBase
-func SaveToken(userID uint64, refreshToken string) (*Token, error) {
+// Insert token in DataBase
+func InsertToken(userID uint64, refreshToken string) (*Token, error) {
 	db := pgDB.GetDB()
 	var token Token
 	err := db.QueryRow(`INSERT INTO tokens (user_id, refresh_token) VALUES ($1, $2) RETURNING *`, userID, refreshToken).Scan(
@@ -53,12 +47,20 @@ func SaveToken(userID uint64, refreshToken string) (*Token, error) {
 	return &token, err
 }
 
-func UpdateToken(oldRefreshToken, newRefreshToken string) (*Token, error) {
+// Update token in DataBase
+func UpdateToken(oldRefreshToken, newRefreshToken string, userID uint64) (*Token, error) {
 	db := pgDB.GetDB()
 	var token Token
-	err := db.QueryRow(`UPDATE tokens SET refresh_token = $1 WHERE refresh_token = $2 RETURNING *`, newRefreshToken, oldRefreshToken).Scan(
+	err := db.QueryRow(`UPDATE tokens SET refresh_token = $1 WHERE refresh_token = $2 AND user_id = $3 RETURNING *`, newRefreshToken, oldRefreshToken, userID).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
 	return &token, err
+}
+
+// Remove token from DataBase
+func RemoveToken(refreshToken string) error {
+	db := pgDB.GetDB()
+	_, err := db.Exec(`DELETE FROM tokens WHERE refresh_token = $1`, refreshToken)
+	return err
 }
 
 // Generate token pair
@@ -92,6 +94,10 @@ func ValidateRefreshToken(tokenString string) (*dto.UserDTO, error) {
 
 // creating token
 func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, error) {
+	birthdate := ""
+	if payload.Birthdate != nil {
+		birthdate = payload.Birthdate.Format("02.01.2006")
+	}
 	expirationTime := time.Now().Add(time.Duration(expMinutes) * time.Minute).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":      payload.ID,
@@ -100,7 +106,7 @@ func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, err
 		"phone":        payload.Phone,
 		"firstname":    payload.Firstname,
 		"lastname":     payload.Lastname,
-		"birthdate":    payload.Birthdate,
+		"birthdate":    birthdate,
 		"is_banned":    payload.IsBanned,
 		"is_activated": payload.IsActivated,
 		"is_deleted":   payload.IsDeleted,
@@ -127,10 +133,10 @@ func validateToken(tokenString, key string) (*dto.UserDTO, error) {
 			ID:          uint64(claims["user_id"].(float64)),
 			Username:    claims["username"].(string),
 			Email:       claims["email"].(string),
-			Phone:       stringPtr(claims["phone"].(string)),
+			Phone:       utils.StringPtr(claims["phone"].(string)),
 			Firstname:   claims["firstname"].(string),
 			Lastname:    claims["lastname"].(string),
-			Birthdate:   parseTime(claims["birthdate"]),
+			Birthdate:   parseDateFromToken(claims["birthdate"]),
 			IsBanned:    claims["is_banned"].(bool),
 			IsActivated: claims["is_activated"].(bool),
 			IsDeleted:   claims["is_deleted"].(bool),
@@ -140,22 +146,14 @@ func validateToken(tokenString, key string) (*dto.UserDTO, error) {
 	return nil, errors.New("unauthorized")
 }
 
-// Функция для создания указателя на строку
-func stringPtr(s string) *string {
-	return &s
-}
-
-// Функция для обработки времени
-func parseTime(claim interface{}) *time.Time {
-	if claim == nil {
+// parsing date from encrypted user dto object
+func parseDateFromToken(date interface{}) *time.Time {
+	if date == "" {
 		return nil
 	}
-	if t, ok := claim.(string); ok {
-		parsedTime, err := time.Parse(time.RFC3339, t) // Используем стандартный формат времени
-		if err != nil {
-			return nil
-		}
-		return &parsedTime
+	parsedDate, err := utils.ParseDate(date.(string))
+	if err != nil {
+		return nil
 	}
-	return nil
+	return parsedDate
 }

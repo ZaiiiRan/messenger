@@ -13,3 +13,8 @@ func ParseDate(date string) (*time.Time, error) {
 	}
 	return &parsedDate, nil
 }
+
+// Pointer on string
+func StringPtr(s string) *string {
+	return &s
+}
