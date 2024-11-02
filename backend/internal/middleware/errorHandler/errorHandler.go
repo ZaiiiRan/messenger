@@ -20,6 +20,12 @@ func ErrorHandler() fiber.Handler {
 				})
 			}
 
+			if fiberErr, ok := err.(*fiber.Error); ok {
+				return c.Status(fiberErr.Code).JSON(fiber.Map{
+					"error": fiberErr.Message,
+				})
+			}
+			
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "internal server error",
 			})
