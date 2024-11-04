@@ -1,13 +1,15 @@
 package main
 
 import (
-	"os"
+	"backend/internal/dbs/pgDB"
+	"backend/internal/middleware/errorHandler"
+	"backend/internal/routes/authRoutes"
+	"backend/internal/routes/socialRoutes"
 	"log"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/lpernett/godotenv"
-	"backend/internal/dbs/pgDB"
-	"backend/internal/routes/authRoutes"
-	"backend/internal/middleware/errorHandler"
 )
 
 func main() {
@@ -28,6 +30,7 @@ func main() {
 	app.Use(errorHandler.ErrorHandler())
 
 	authRoutes.SetupRoutes(app)
+	socialRoutes.SetupRoutes(app)
 
 	log.Fatal(app.Listen(":" + port))
 }

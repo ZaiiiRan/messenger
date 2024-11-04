@@ -118,14 +118,14 @@ func createUsersFromSQLRows(rows *sql.Rows) ([]SocialUser, error) {
 
 	for rows.Next() {
 		var user user.UserDTO
-		var friendStatus string
+		var friendStatus *string
 		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Firstname, &user.Lastname, &user.Phone,
 			&user.Birthdate, &user.IsDeleted, &user.IsBanned, &user.IsActivated, &friendStatus)
 		if err != nil {
 			return nil, err
 		}
 
-		socialUser := CreateSocialUser(&user, &friendStatus)
+		socialUser := CreateSocialUser(&user, friendStatus)
 
 		users = append(users, *socialUser)
 	}
