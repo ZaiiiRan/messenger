@@ -158,7 +158,7 @@ func GetUserByPhone(phone string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE phone = $1`, phone)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
 		return nil, appErr.InternalServerError("internal server error")
 	}

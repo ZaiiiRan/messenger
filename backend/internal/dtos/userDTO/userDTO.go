@@ -18,7 +18,8 @@ type UserDTO struct {
 	IsActivated bool       `json:"is_activated"`
 }
 
-func CreateUserDTOFromUserObj(user *user.User) (*UserDTO) {
+// Converting user object to user dto
+func CreateUserDTOFromUserObj(user *user.User) *UserDTO {
 	dto := &UserDTO{
 		ID:          user.ID,
 		Username:    user.Username,
@@ -32,4 +33,13 @@ func CreateUserDTOFromUserObj(user *user.User) (*UserDTO) {
 		IsActivated: user.IsActivated,
 	}
 	return dto
+}
+
+// Converting user objects to user dtos
+func CreateUserDTOsFromUserObjects(users []user.User) []UserDTO {
+	dtos := make([]UserDTO, len(users))
+	for i, user := range users {
+		dtos[i] = *CreateUserDTOFromUserObj(&user)
+	}
+	return dtos
 }

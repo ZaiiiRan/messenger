@@ -42,6 +42,11 @@ func Unauthorized(errMessage string) *AppError {
 	return NewAppError(fiber.StatusUnauthorized, errMessage)
 }
 
+// Not found error
+func NotFound(errMessage string) *AppError {
+	return NewAppError(fiber.StatusNotFound, errMessage)
+}
+
 // Internal server error
 func InternalServerError(errMessage string) *AppError {
 	return NewAppError(fiber.StatusInternalServerError, errMessage)
