@@ -21,6 +21,7 @@ func (f *FetchUsersRequest) trimSpaces() {
 	f.Search = strings.TrimSpace(f.Search)
 }
 
+// parsing request body for fetching user requests
 func readRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
 	var req FetchUsersRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -30,6 +31,7 @@ func readRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
 	return &req, nil
 }
 
+// fetch user list
 func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID uint64, search string, limit, offset int) ([]socialUser.SocialUser, error)) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
 	if !ok || user == nil {
@@ -46,6 +48,7 @@ func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID u
 	})
 }
 
+// Get Users
 func GetUsers(c *fiber.Ctx) error {
 	req, err := readRequest(c)
 	if err != nil {
@@ -60,6 +63,7 @@ func GetUsers(c *fiber.Ctx) error {
 	return fetchUserList(c, req, socialUser.GetUsersByUsernameOrEmail)
 }
 
+// Get friends
 func GetFriends(c *fiber.Ctx) error {
 	req, err := readRequest(c)
 	if err != nil {
@@ -68,6 +72,7 @@ func GetFriends(c *fiber.Ctx) error {
 	return fetchUserList(c, req, socialUser.GetUserFriendsByUsernameOrEmail)
 }
 
+// Get incoming friend requests
 func GetIncomingFriendRequests(c *fiber.Ctx) error {
 	req, err := readRequest(c)
 	if err != nil {
@@ -76,6 +81,7 @@ func GetIncomingFriendRequests(c *fiber.Ctx) error {
 	return fetchUserList(c, req, socialUser.GetUserIncomingFriendRequestsByUsernameOrEmail)
 }
 
+// Get outgoing friend requests
 func GetOutgoingFriendRequests(c *fiber.Ctx) error {
 	req, err := readRequest(c)
 	if err != nil {
@@ -84,6 +90,7 @@ func GetOutgoingFriendRequests(c *fiber.Ctx) error {
 	return fetchUserList(c, req, socialUser.GetUserOutgoingFriendRequestsByUsernameOrEmail)
 }
 
+// Get blocked users
 func GetBlockedUsers(c *fiber.Ctx) error {
 	req, err := readRequest(c)
 	if err != nil {
