@@ -21,6 +21,8 @@ func GetUsersByUsernameOrEmail(search string, limit, offset int) ([]User, error)
 	rows, err := db.Query(query, "%"+search+"%", limit, offset)
 	if err == sql.ErrNoRows {
 		return nil, appError.NotFound("users not found")
+	} else if err != nil {
+		return nil, appError.InternalServerError("internal server error")
 	}
 	defer rows.Close()
 
