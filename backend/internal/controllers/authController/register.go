@@ -48,7 +48,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	if err != nil {
 		return appErr.InternalServerError("error occured while sending activation code")
 	}
-	activationCode.SendToEmail()
+	go activationCode.SendToEmail()
 
 	return createUserDTOAndTokensResponse(userObject, c)
 }

@@ -1,8 +1,8 @@
 package errorHandler
 
 import (
-	"errors"
 	"backend/internal/errors/appError"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,7 +25,6 @@ func ErrorHandler() fiber.Handler {
 					"error": fiberErr.Message,
 				})
 			}
-			
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "internal server error",
 			})

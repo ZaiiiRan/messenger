@@ -29,7 +29,7 @@ func ResendActivationCode(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	activationCode.SendToEmail()
+	go activationCode.SendToEmail()
 
 	return c.JSON(fiber.Map{
 		"message": "new code has been sent",

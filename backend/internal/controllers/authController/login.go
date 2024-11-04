@@ -22,6 +22,13 @@ func Login(c *fiber.Ctx) error {
 	}
 	req.trimSpaces()
 
+	if req.Login == "" {
+		return appErr.BadRequest("login is empty")
+	}
+	if req.Password == "" {
+		return appErr.BadRequest("password is empty")
+	}
+
 	userObject, err := user.GetUserByUsername(req.Login)
 	if err != nil && err.Error() == "user not found" {
 		userObject, err = user.GetUserByEmail(req.Login)

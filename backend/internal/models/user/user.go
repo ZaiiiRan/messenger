@@ -51,6 +51,9 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 		if err := validatePhone(*phone); err != nil {
 			return nil, err
 		}
+		if *phone == "" {
+			phone = nil
+		}
 	}
 
 	hashedPassword, err := hashPassword(password)
