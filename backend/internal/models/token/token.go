@@ -2,7 +2,7 @@ package token
 
 import (
 	pgDB "backend/internal/dbs/pgDB"
-	dto "backend/internal/dtos/userDTO"
+	"backend/internal/models/user"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/utils"
 	"database/sql"
@@ -74,7 +74,7 @@ func RemoveToken(refreshToken string) error {
 }
 
 // Generate token pair
-func GenerateTokens(payload *dto.UserDTO) (string, string, error) {
+func GenerateTokens(payload *user.UserDTO) (string, string, error) {
 	// 30 minutes
 	accessToken, err := createToken(payload, 30, accessKey)
 	if err != nil {
@@ -91,13 +91,13 @@ func GenerateTokens(payload *dto.UserDTO) (string, string, error) {
 }
 
 // Validating access token
-func ValidateAccessToken(tokenString string) (*dto.UserDTO, error) {
+func ValidateAccessToken(tokenString string) (*user.UserDTO, error) {
 	userDTO, _, err := validateToken(tokenString, accessKey)
 	return userDTO, err
 }
 
 // Validating refresh token
-func ValidateRefreshToken(tokenString string) (*dto.UserDTO, error) {
+func ValidateRefreshToken(tokenString string) (*user.UserDTO, error) {
 	userDTO, expired, err := validateToken(tokenString, refreshKey)
 	if expired {
 		RemoveToken(tokenString)
@@ -106,7 +106,7 @@ func ValidateRefreshToken(tokenString string) (*dto.UserDTO, error) {
 }
 
 // creating token
-func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, error) {
+func createToken(payload *user.UserDTO, expMinutes uint, key string) (string, error) {
 	birthdate := ""
 	if payload.Birthdate != nil {
 		birthdate = payload.Birthdate.Format("02.01.2006")
@@ -133,7 +133,7 @@ func createToken(payload *dto.UserDTO, expMinutes uint, key string) (string, err
 }
 
 // validating token
-func validateToken(tokenString, key string) (*dto.UserDTO, bool, error) {
+func validateToken(tokenString, key string) (*user.UserDTO, bool, error) {
 	token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
@@ -146,7 +146,7 @@ func validateToken(tokenString, key string) (*dto.UserDTO, bool, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userDTO := dto.UserDTO{
+		userDTO := user.UserDTO{
 			ID:          uint64(claims["user_id"].(float64)),
 			Username:    claims["username"].(string),
 			Email:       claims["email"].(string),

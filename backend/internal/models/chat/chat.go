@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"backend/internal/dtos/userDTO"
+	"backend/internal/models/user"
 )
 
 type Chat struct {
@@ -13,6 +13,6 @@ type Chat struct {
 }
 
 type ChatMember struct {
-	User userDTO.UserDTO `json:"user"`
-	Role string          `json:"role"`
+	User user.UserDTO `json:"user"`
+	Role string       `json:"role"`
 }

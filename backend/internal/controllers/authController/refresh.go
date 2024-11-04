@@ -1,7 +1,7 @@
 package authController
 
 import (
-	"backend/internal/dtos/userDTO"
+	"backend/internal/models/user"
 	"backend/internal/models/token"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,7 +14,7 @@ func Refresh(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 
-	var userDTO *userDTO.UserDTO
+	var userDTO *user.UserDTO
 	userDTO, err := token.ValidateRefreshToken(refreshToken)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

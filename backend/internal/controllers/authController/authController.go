@@ -1,7 +1,6 @@
 package authController
 
 import (
-	"backend/internal/dtos/userDTO"
 	"backend/internal/models/token"
 	"backend/internal/models/user"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 // creating user dto and tokens for response
 func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
-	userDTO := userDTO.CreateUserDTOFromUserObj(userObject)
+	userDTO := user.CreateUserDTOFromUserObj(userObject)
 	accessToken, refreshToken, err := token.GenerateTokens(userDTO)
 	if err != nil {
 		return err
@@ -25,7 +24,7 @@ func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
 }
 
 // sending tokens and user dto to client
-func sendTokenAndJSON(userDTO *userDTO.UserDTO, accessToken, refreshToken string, c *fiber.Ctx) error {
+func sendTokenAndJSON(userDTO *user.UserDTO, accessToken, refreshToken string, c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     "refreshToken",
 		Value:    refreshToken,
