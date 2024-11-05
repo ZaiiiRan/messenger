@@ -27,6 +27,22 @@ func getBlockedUsers(c *fiber.Ctx) error {
 	return controller.GetBlockedUsers(c)
 }
 
+func addFriend(c *fiber.Ctx) error {
+	return controller.AddFriend(c)
+}
+
+func removeFriend(c *fiber.Ctx) error {
+	return controller.RemoveFriend(c)
+}
+
+func blockUser(c *fiber.Ctx) error {
+	return controller.BlockUser(c)
+}
+
+func unblockUser(c *fiber.Ctx) error {
+	return controller.UnblockUser(c)
+}
+
 func SetupRoutes(app fiber.Router) {
 	social := app.Group("/social")
 	social.Post("/get-users", authMiddleware.AuthMiddleware, getUsers)
@@ -34,4 +50,8 @@ func SetupRoutes(app fiber.Router) {
 	social.Post("/get-incoming-friend-requests", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
 	social.Post("/get-outgoing-friend-requests", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)
 	social.Post("/get-blocked-users", authMiddleware.AuthMiddleware, getBlockedUsers)
+	social.Post("/add-friend", authMiddleware.AuthMiddleware, addFriend)
+	social.Post("/remove-friend", authMiddleware.AuthMiddleware, removeFriend)
+	social.Post("/block-user", authMiddleware.AuthMiddleware, blockUser)
+	social.Post("/unblock-user", authMiddleware.AuthMiddleware, unblockUser)
 }

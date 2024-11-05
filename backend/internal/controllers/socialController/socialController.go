@@ -1,9 +1,9 @@
 package socialController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/socialUser"
 	"backend/internal/models/user"
-	appErr "backend/internal/errors/appError"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,8 +12,8 @@ import (
 // Fetch users request format
 type FetchUsersRequest struct {
 	Search string `json:"search"`
-	Limit int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
 }
 
 // trim spaces in fetch users request
@@ -22,7 +22,7 @@ func (f *FetchUsersRequest) trimSpaces() {
 }
 
 // parsing request body for fetching user requests
-func readRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
+func readFetchUsersRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
 	var req FetchUsersRequest
 	if err := c.BodyParser(&req); err != nil {
 		return &req, appErr.BadRequest("invalid request format")
@@ -50,7 +50,7 @@ func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID u
 
 // Get Users
 func GetUsers(c *fiber.Ctx) error {
-	req, err := readRequest(c)
+	req, err := readFetchUsersRequest(c)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func GetUsers(c *fiber.Ctx) error {
 
 // Get friends
 func GetFriends(c *fiber.Ctx) error {
-	req, err := readRequest(c)
+	req, err := readFetchUsersRequest(c)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 // Get incoming friend requests
 func GetIncomingFriendRequests(c *fiber.Ctx) error {
-	req, err := readRequest(c)
+	req, err := readFetchUsersRequest(c)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func GetIncomingFriendRequests(c *fiber.Ctx) error {
 
 // Get outgoing friend requests
 func GetOutgoingFriendRequests(c *fiber.Ctx) error {
-	req, err := readRequest(c)
+	req, err := readFetchUsersRequest(c)
 	if err != nil {
 		return err
 	}
@@ -92,9 +92,90 @@ func GetOutgoingFriendRequests(c *fiber.Ctx) error {
 
 // Get blocked users
 func GetBlockedUsers(c *fiber.Ctx) error {
-	req, err := readRequest(c)
+	req, err := readFetchUsersRequest(c)
 	if err != nil {
 		return err
 	}
 	return fetchUserList(c, req, socialUser.GetUserBlockListByUsernameOrEmail)
+}
+
+// User manipulate request format
+type UserManipulateRequest struct {
+	UserID uint64 `json:"user_id"`
+}
+
+// Add friend
+func AddFriend(c *fiber.Ctx) error {
+	var req UserManipulateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+	err := socialUser.AddFriend(user.ID, req.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"message": "ok",
+	})
+}
+
+// Remove friend
+func RemoveFriend(c *fiber.Ctx) error {
+	var req UserManipulateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+	err := socialUser.RemoveFriend(user.ID, req.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"message": "friend deleted",
+	})
+}
+
+// Block user
+func BlockUser(c *fiber.Ctx) error {
+	var req UserManipulateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+	err := socialUser.BlockUser(user.ID, req.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"status": "user blocked",
+	})
+}
+
+// Unblock user
+func UnblockUser(c *fiber.Ctx) error {
+	var req UserManipulateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+	err := socialUser.UnblockUser(user.ID, req.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"status": "user unblocked",
+	})
 }
