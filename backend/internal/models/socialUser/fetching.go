@@ -5,7 +5,6 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"database/sql"
-	"fmt"
 )
 
 // General user search by username or email
@@ -16,7 +15,12 @@ func GetUsersByUsernameOrEmail(userID uint64, search string, limit, offset int) 
 		CASE
 			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted') THEN 'accepted'
 			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked') THEN 'blocked'
-			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'request') THEN 'request'
+			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'request')
+				THEN CASE 
+						WHEN f.friend_1_id = $1 THEN 'outgoing request'
+						WHEN f.friend_2_id = $1 THEN 'incoming request'
+						ELSE 'request'
+				END
 			ELSE NULL
 		END AS friend_status
 		FROM users u
@@ -59,7 +63,7 @@ func GetUserIncomingFriendRequestsByUsernameOrEmail(userID uint64, search string
 	query := `
 		SELECT u.id, u.username, u.email, u.firstname, u.lastname, u.phone,
 			u.birthdate, u.is_deleted, u.is_banned, u.is_activated,
-			'request' AS friend_status
+			'incoming request' AS friend_status
 		FROM users u
 		JOIN friends f ON f.friend_1_id = u.id
 		WHERE 
@@ -81,7 +85,7 @@ func GetUserOutgoingFriendRequestsByUsernameOrEmail(userID uint64, search string
 	query := `
 		SELECT u.id, u.username, u.email, u.firstname, u.lastname, u.phone,
 			u.birthdate, u.is_deleted, u.is_banned, u.is_activated,
-			'request' AS friend_status
+			'outgoing request' AS friend_status
 		FROM users u
 		JOIN friends f ON f.friend_2_id = u.id
 		WHERE 
@@ -105,10 +109,10 @@ func GetUserBlockListByUsernameOrEmail(userID uint64, search string, limit, offs
 			u.birthdate, u.is_deleted, u.is_banned, u.is_activated,
 			'blocked' AS friend_status
 		FROM users u
-		JOIN friends f ON (f.friend_1_id = u.id OR f.friend_2_id = u.id)
+		JOIN friends f ON f.friend_2_id = u.id
 		WHERE 
 			u.id != $1
-			AND (f.friend_1_id = $1 OR f.friend_2_id = $1)
+			AND f.friend_1_id = $1
 			AND f.status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked')
 			AND u.is_deleted = FALSE
 			AND u.is_banned = FALSE
@@ -159,8 +163,11 @@ func queryUsers(query string, params ...interface{}) ([]SocialUser, error) {
 
 	users, err := createUsersFromSQLRows(rows)
 	if err != nil {
-		fmt.Println(err)
 		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	if len(users) == 0 {
+		return nil, appErr.NotFound("users not found")
 	}
 
 	return users, nil
