@@ -5,6 +5,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"database/sql"
+	"fmt"
 )
 
 type SocialUser struct {
@@ -50,7 +51,7 @@ func AddFriend(userID, friendID uint64) error {
 			(f.friend_1_id = $1 AND f.friend_2_id = $2) 
             OR (f.friend_1_id = $2 AND f.friend_2_id = $1)
 	`
-	err = db.QueryRow(query, userID, friend).Scan(&status)
+	err = db.QueryRow(query, userID, friendID).Scan(&status)
 	if err == sql.ErrNoRows {
 		_, err = db.Exec(`INSERT INTO friends (friend_1_id, friend_2_id, status_id)
 		VALUES ($1, $2, (SELECT id FROM friend_statuses WHERE name = 'request'))`, userID, friendID)
@@ -107,9 +108,10 @@ func UnblockUser(userID, targetID uint64) error {
 		return err
 	}
 	db := pgDB.GetDB()
-	_, err = db.Exec(`DELETE FROM friends WHERE friend_friend_1_id = $1 AND friend_2_id = $2 
-    AND status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked'`, userID, targetID)
+	_, err = db.Exec(`DELETE FROM friends WHERE friend_1_id = $1 AND friend_2_id = $2 
+    AND status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked')`, userID, targetID)
 	if err != nil {
+		fmt.Println(err)
 		return appErr.InternalServerError("inernal server error")
 	}
 	return nil

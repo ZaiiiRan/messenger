@@ -20,7 +20,7 @@ func getIncomingFriendRequests(c *fiber.Ctx) error {
 }
 
 func getOutgoingFriendRequests(c *fiber.Ctx) error {
-	return controller.GetIncomingFriendRequests(c)
+	return controller.GetOutgoingFriendRequests(c)
 }
 
 func getBlockedUsers(c *fiber.Ctx) error {

@@ -12,6 +12,13 @@ type UserManipulationRequest struct {
 	UserID uint64 `json:"user_id"`
 }
 
+func checkSelfID(selfID, targetID uint64) error {
+	if selfID == targetID {
+		return appErr.BadRequest("invalid user id")
+	}
+	return nil
+}
+
 // Add friend
 func AddFriend(c *fiber.Ctx) error {
 	var req UserManipulationRequest
@@ -20,6 +27,9 @@ func AddFriend(c *fiber.Ctx) error {
 	}
 	user, err := getUserDTOFromLocals(c)
 	if err != nil {
+		return err
+	}
+	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
 	err = socialUser.AddFriend(user.ID, req.UserID)
@@ -41,6 +51,9 @@ func RemoveFriend(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if err := checkSelfID(user.ID, req.UserID); err != nil {
+		return err
+	}
 	err = socialUser.RemoveFriend(user.ID, req.UserID)
 	if err != nil {
 		return err
@@ -60,6 +73,9 @@ func BlockUser(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if err := checkSelfID(user.ID, req.UserID); err != nil {
+		return err
+	}
 	err = socialUser.BlockUser(user.ID, req.UserID)
 	if err != nil {
 		return err
@@ -77,6 +93,9 @@ func UnblockUser(c *fiber.Ctx) error {
 	}
 	user, err := getUserDTOFromLocals(c)
 	if err != nil {
+		return err
+	}
+	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
 	err = socialUser.UnblockUser(user.ID, req.UserID)
