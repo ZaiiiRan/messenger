@@ -128,7 +128,7 @@ func UnblockUser(userID, targetID uint64) error {
 			return appErr.InternalServerError("inernal server error")
 		}
 	}
-	
+
 	return nil
 }
 
@@ -165,4 +165,19 @@ func GetRelations(userID, targetID uint64) (*string, error) {
 	}
 
 	return &friendshipStatus, nil
+}
+
+// Get Social User
+func GetTargetByID(userID, targetID uint64) (*SocialUser, error) {
+	target, err := user.GetUserByID(targetID)
+	if err != nil {
+		return nil, err
+	}
+	targetDTO := user.CreateUserDTOFromUserObj(target)
+	status, err := GetRelations(userID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	socialTarget := CreateSocialUser(targetDTO, status)
+	return socialTarget, nil
 }

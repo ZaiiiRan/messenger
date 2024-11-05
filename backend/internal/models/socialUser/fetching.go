@@ -7,38 +7,6 @@ import (
 	"database/sql"
 )
 
-// General user search by username or email
-func GetUsersByUsernameOrEmail(userID uint64, search string, limit, offset int) ([]SocialUser, error) {
-	query := `
-		SELECT u.id, u.username, u.email, u.firstname, u.lastname, u.phone,
-		u.birthdate, u.is_deleted, u.is_banned, u.is_activated,
-		CASE
-			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted') THEN 'accepted'
-			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked') THEN 'blocked'
-			WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'request')
-				THEN CASE 
-						WHEN f.friend_1_id = $1 THEN 'outgoing request'
-						WHEN f.friend_2_id = $1 THEN 'incoming request'
-						ELSE 'request'
-				END
-			ELSE NULL
-		END AS friend_status
-		FROM users u
-		LEFT JOIN friends f ON (f.friend_1_id = $1 AND f.friend_2_id = u.id)
-			OR (f.friend_1_id = u.id AND f.friend_2_id = $1)
-		WHERE 
-			u.id != $1
-			AND ($2 = '' OR u.username ILIKE $2 OR u.email ILIKE $2)
-			AND u.is_deleted = FALSE
-			AND u.is_banned = FALSE
-			AND u.is_activated = TRUE
-		ORDER BY
-			(u.username = $3 OR u.email = $3) DESC, u.username
-		LIMIT $4 OFFSET $5
-	`
-	return queryUsers(query, userID, "%"+search+"%", search, limit, offset)
-}
-
 // Get user friends
 func GetUserFriendsByUsernameOrEmail(userID uint64, search string, limit, offset int) ([]SocialUser, error) {
 	query := `
@@ -134,7 +102,7 @@ func createUsersFromSQLRows(rows *sql.Rows) ([]SocialUser, error) {
 		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Firstname, &user.Lastname, &user.Phone,
 			&user.Birthdate, &user.IsDeleted, &user.IsBanned, &user.IsActivated, &friendStatus)
 		if err != nil {
-			return nil, err
+			return nil, appErr.InternalServerError("internal server error")
 		}
 
 		socialUser := CreateSocialUser(&user, friendStatus)
@@ -143,7 +111,7 @@ func createUsersFromSQLRows(rows *sql.Rows) ([]SocialUser, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, appErr.InternalServerError("internal server error")
 	}
 
 	return users, nil

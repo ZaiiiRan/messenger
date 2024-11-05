@@ -11,6 +11,10 @@ func getUsers(c *fiber.Ctx) error {
 	return controller.GetUsers(c)
 }
 
+func getUser(c *fiber.Ctx) error {
+	return controller.GetUser(c)
+}
+
 func getFriends(c *fiber.Ctx) error {
 	return controller.GetFriends(c)
 }
@@ -45,7 +49,8 @@ func unblockUser(c *fiber.Ctx) error {
 
 func SetupRoutes(app fiber.Router) {
 	social := app.Group("/social")
-	social.Post("/get-users", authMiddleware.AuthMiddleware, getUsers)
+	social.Post("/search-users", authMiddleware.AuthMiddleware, getUsers)
+	social.Post("/get-user", authMiddleware.AuthMiddleware, getUser)
 	social.Post("/get-friends", authMiddleware.AuthMiddleware, getFriends)
 	social.Post("/get-incoming-friend-requests", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
 	social.Post("/get-outgoing-friend-requests", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)

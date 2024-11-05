@@ -106,3 +106,23 @@ func UnblockUser(c *fiber.Ctx) error {
 		"message": "user unblocked",
 	})
 }
+
+// Get User dto with friend status
+func GetUser(c *fiber.Ctx) error {
+	var req UserManipulationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	user, err := getUserDTOFromLocals(c)
+	if err != nil {
+		return err
+	}
+	if err := checkSelfID(user.ID, req.UserID); err != nil {
+		return err
+	}
+	dto, err := socialUser.GetTargetByID(user.ID, req.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(dto)
+}

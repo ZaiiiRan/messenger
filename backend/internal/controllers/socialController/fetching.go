@@ -2,6 +2,7 @@ package socialController
 
 import (
 	appErr "backend/internal/errors/appError"
+	"backend/internal/models/shortUser"
 	"backend/internal/models/socialUser"
 	"strings"
 
@@ -47,7 +48,7 @@ func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID u
 	})
 }
 
-// Get Users
+// Get Users (id, username, firstname and lastname)
 func GetUsers(c *fiber.Ctx) error {
 	req, err := readFetchUsersRequest(c)
 	if err != nil {
@@ -59,7 +60,19 @@ func GetUsers(c *fiber.Ctx) error {
 		return appErr.BadRequest("search parameter is very short")
 	}
 
-	return fetchUserList(c, req, socialUser.GetUsersByUsernameOrEmail)
+	user, err := getUserDTOFromLocals(c)
+	if err != nil {
+		return err
+	}
+
+	users, err := shortUser.Search(user.ID, req.Search, req.Limit, req.Offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"users": users,
+	})
 }
 
 // Get friends
