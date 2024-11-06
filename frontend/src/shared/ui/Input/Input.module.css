@@ -1,4 +1,12 @@
+.inputWrapper {
+    background-color: #152033;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .Input {
+    width: 93%;
     min-width: 30px;
     min-height: 30px;
     outline: none;
@@ -9,7 +17,15 @@
     color: #ADB5BD;
 }
 
+.eyeIcon {
+    user-select: none;
+    cursor: pointer;
+}
+
 @media (prefers-color-scheme: light) {
+    .inputWrapper {
+        background-color: #F7F7FC;
+    }
     .Input {
         background-color: #F7F7FC;
     }

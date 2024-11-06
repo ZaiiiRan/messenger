@@ -1,0 +1,37 @@
+.Link {
+    color: var(--dark-mode-brand-color);
+    transition: color .2s ease;
+}
+
+.Link:hover {
+    color: var(--light-brand-color);
+}
+
+.Link:active {
+    color: var(--light-brand-color);
+}
+
+
+@media (hover: none) and (prefers-color-scheme: dark) {
+    .Link:hover {
+        color: var(--dark-mode-brand-color);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .Link:hover {
+        color: var(--default-brand-color);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .Link {
+        color: var(--default-brand-color);
+    } 
+    .Link:hover {
+        color: var(--dark-brand-color);
+    }
+    .Link:active {
+        color: var(--dark-brand-color);
+    }
+}
