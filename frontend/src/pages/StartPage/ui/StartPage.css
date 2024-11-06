@@ -1,0 +1,14 @@
+@keyframes shake {
+    0% { transform: translateX(0); }
+    2% { transform: translateX(-10px); }
+    4% { transform: translateX(10px); }
+    6% { transform: translateX(-10px); }
+    8% { transform: translateX(10px); }
+    10% { transform: translateX(0); }
+
+    100% { transform: translateX(0); }
+}
+
+.shake {
+    animation: shake 5s ease-in-out infinite;
+}

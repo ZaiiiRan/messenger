@@ -1,0 +1,17 @@
+.Loader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.LoaderElement {
+    aspect-ratio: 1 / 1;
+    width: auto;
+    background-color: var(--light-brand-color);
+}
+
+@media (prefers-color-scheme: light) {
+    .LoaderElement  {
+        background-color: var(--dark-brand-color);
+    }
+}

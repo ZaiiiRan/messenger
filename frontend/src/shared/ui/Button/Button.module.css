@@ -1,0 +1,59 @@
+.Button {
+    min-height: 30px;
+    min-width: 30px;
+    outline: none;
+    background-color: var(--dark-mode-brand-color);
+    color: #F7F7FC;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.Button:hover {
+    background-color: var(--light-brand-color);
+}
+
+.Button:active {
+    transform: scale(0.98);
+}
+
+.Button:disabled {
+    background-color: var(--dark-brand-color);
+}
+.Button:disabled:active {
+    transform: none;
+}
+
+@media (hover: none) and (prefers-color-scheme: dark) {
+    .Button:hover {
+        background-color: var(--dark-mode-brand-color);
+    }
+    .Button:active {
+        background-color: var(--light-brand-color);
+        transform: scale(0.98);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .Button:hover {
+        background-color: var(--default-brand-color);
+    }
+    .Button:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .Button {
+        background-color: var(--default-brand-color);
+    } 
+    .Button:hover {
+        background-color: var(--dark-brand-color);
+    }
+    .Button:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
+    }
+    .Button:disabled {
+        background-color: var(--light-brand-color);
+    }
+}

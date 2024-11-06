@@ -1,0 +1,16 @@
+.Input {
+    min-width: 30px;
+    min-height: 30px;
+    outline: none;
+    background-color: #152033;
+}
+
+.Input::placeholder {
+    color: #ADB5BD;
+}
+
+@media (prefers-color-scheme: light) {
+    .Input {
+        background-color: #F7F7FC;
+    }
+}
