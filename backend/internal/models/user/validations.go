@@ -71,6 +71,9 @@ func validateName(name string) error {
 	if name == "" {
 		return appErr.BadRequest("name is empty")
 	}
+	if len(name) < 2 {
+		return appErr.BadRequest("name must be at least 2 characters")
+	}
 
 	nameRegex := regexp.MustCompile(`^[A-ZА-Я][a-zа-я]+(-[A-ZА-Я][a-zа-я]+)?$`)
 	if !nameRegex.MatchString(name) {
