@@ -4,11 +4,11 @@ import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 
-const StepNames = ({ onNext }) => {
+const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, setLastname, lastnameErr }) => {
     return (
         <motion.form 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1}}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
@@ -32,11 +32,17 @@ const StepNames = ({ onNext }) => {
                 placeholder='Имя' 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                value={firstname}
+                onChange={setFirstname}
+                error={firstnameErr}
             />
             <Input 
                 placeholder='Фамилия' 
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
+                value={lastname}
+                onChange={setLastname}
+                error={lastnameErr}
             />
             <div 
                 className='flex md:gap-4 items-center 

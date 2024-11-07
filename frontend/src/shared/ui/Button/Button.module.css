@@ -1,7 +1,6 @@
 .Button {
     min-height: 30px;
     min-width: 30px;
-    outline: none;
     background-color: var(--dark-mode-brand-color);
     color: #F7F7FC;
     transition: background-color .2s ease, transform .2s ease;
