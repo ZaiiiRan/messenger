@@ -4,7 +4,14 @@ import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 
-const StepAdditionalInfoRegister = ({ onRegister, onPrev }) => {
+const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr, birthdate, setBirthdate, birthdateErr }) => {
+    const handleFormKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            document.getElementById('submitBtn').click()
+        }
+    }
+
     return (
         <motion.form 
             initial={{ opacity: 0 }}
@@ -12,6 +19,7 @@ const StepAdditionalInfoRegister = ({ onRegister, onPrev }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
+            onKeyDown={handleFormKeyDown}
         >
             <div className='flex flex-col gap-3 2k:gap-6 4k:gap-10'>
                 <h1 
@@ -29,14 +37,22 @@ const StepAdditionalInfoRegister = ({ onRegister, onPrev }) => {
             </div>
 
             <Input 
-                placeholder='Номер телефона' 
+                placeholder='Номер телефона (необязательно)' 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                value={phone}
+                onChange={setPhone}
+                error={phoneErr}
+                phone={true}
             />
             <Input 
-                placeholder='Дата рождения' 
+                placeholder='Дата рождения (необязательно)' 
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
+                value={birthdate}
+                onChange={setBirthdate}
+                error={birthdateErr}
+                date={true}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -57,7 +73,8 @@ const StepAdditionalInfoRegister = ({ onRegister, onPrev }) => {
                 <Button 
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
                         md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                    onClick={onRegister}
+                    onClick={onNext}
+                    id='submitBtn'
                 >
                     Зарегистрироваться
                 </Button>

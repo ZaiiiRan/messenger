@@ -4,7 +4,14 @@ import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 
-const StepPassword = ({ onNext, onPrev }) => {
+const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repeatPassword,  setRepeatPassword, repeatPasswordErr }) => {
+    const handleFormKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            document.getElementById('submitBtn').click()
+        }
+    }
+
     return (
         <motion.form 
             initial={{ opacity: 0 }}
@@ -12,6 +19,7 @@ const StepPassword = ({ onNext, onPrev }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
+            onKeyDown={handleFormKeyDown}
         >
             <div className='flex flex-col gap-3 2k:gap-6 4k:gap-10'>
                 <h1 
@@ -33,12 +41,18 @@ const StepPassword = ({ onNext, onPrev }) => {
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                 password={true}
+                value={password}
+                onChange={setPassword}
+                error={passwordErr}
             />
             <Input 
                 placeholder='Повторите пароль' 
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
                     password={true}
+                value={repeatPassword}
+                onChange={setRepeatPassword}
+                error={repeatPasswordErr}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -60,6 +74,7 @@ const StepPassword = ({ onNext, onPrev }) => {
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
                         md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                     onClick={onNext}
+                    id='submitBtn'
                 >
                     Далее
                 </Button>

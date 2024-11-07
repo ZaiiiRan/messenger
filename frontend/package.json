@@ -13,8 +13,10 @@
     "framer-motion": "^11.11.11",
     "mobx": "^6.13.5",
     "mobx-react": "^9.1.1",
+    "primereact": "^10.8.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-input-mask": "^2.0.4",
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {

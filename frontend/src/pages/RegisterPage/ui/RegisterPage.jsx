@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { StepAdditionalInfoRegister, StepEmailUsername, StepNames, StepPassword } from '../../../features/registration/index'
-import { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword } from '../../../entities/user'
+import { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword, validateBirthdate } from '../../../entities/user'
 import { useModal } from '../../../features/modal'
 
 const RegisterPage = () => {
@@ -10,46 +10,41 @@ const RegisterPage = () => {
     const [err, setErr] = useState({ username: false, email: false, firstname: false, lastname: false, password: false, repeatPassword: false, birthdate: false, phone: false})
     const { openModal, setModalTitle, setModalText } = useModal()
 
-    const namesConfirm = (e) => {
-        e.preventDefault()
-        let newErr = {}
-        let isErr = false
-        let valid = validateFirstName(data.firstname)
-        if (!valid.valid) {
-            newErr["firstname"] = true
-            isErr = true
-            setModalTitle('Ошибка')
-            setModalText(valid.message)
-            openModal()
-        } else {
-            newErr["firstname"] = false
-        }
-        valid = validateLastName(data.lastname)
-        if (!valid.valid) {
-            newErr["lastname"] = true
-            if (!isErr) {
-                isErr = true
+    const validateStep = (stepData, validationFunctions) => {
+        let isValid = true
+        let newErrors = {}
+        
+        validationFunctions.forEach(({ field, validate }) => {
+            const result = validate(stepData[field])
+            if (!result.valid) {
+                newErrors[field] = true
+                isValid = false
                 setModalTitle('Ошибка')
-                setModalText(valid.message)
+                setModalText(result.message)
                 openModal()
+            } else {
+                newErrors[field] = false
             }
-        } else {
-            newErr["lastname"] = false
-        }
-        setErr({...err, ...newErr})
-
-        if (!isErr) {
-            handleNext(e)
-        }
+        })
+        
+        setErr((prevErr) => ({ ...prevErr, ...newErrors }))
+        return isValid
     }
 
-    const handleNext = (e) => {
+    const handleNext = (e, validators) => {
         e.preventDefault()
-        setStep(step + 1)
+        if (validators && !validateStep(data, validators)) return
+        if (step < 4) setStep(step + 1)
+        else handleRegister()
     }
+
     const handlePrev = (e) => {
         e.preventDefault()
         setStep(step - 1)
+    }
+
+    const handleRegister = () => {
+        console.log(data)
     }
 
     return (
@@ -64,7 +59,10 @@ const RegisterPage = () => {
                 {
                     step === 1 && (
                         <StepNames 
-                            onNext={namesConfirm}
+                            onNext={(e) => handleNext(e, [
+                                { field: 'lastname', validate: validateLastName },
+                                { field: 'firstname', validate: validateFirstName },
+                            ])}
                             firstname={data.firstname}
                             setFirstname={(e) => setData({ ...data, firstname: e.target.value })}
                             firstnameErr={err.firstname}
@@ -78,8 +76,17 @@ const RegisterPage = () => {
                 {
                     step === 2 && (
                         <StepEmailUsername
-                            onNext={handleNext}
+                            onNext={(e) => handleNext(e, [
+                                { field: 'username', validate: validateUsername },
+                                { field: 'email', validate: validateEmail }
+                            ])}
                             onPrev={handlePrev}
+                            email={data.email}
+                            setEmail={(e) => setData({ ...data, email: e.target.value })}
+                            emailErr={err.email}
+                            username={data.username}
+                            setUsername={(e) => setData({ ...data, username: e.target.value })}
+                            usernameErr={err.username}
                         />
                     )
                 }
@@ -87,8 +94,20 @@ const RegisterPage = () => {
                 {
                     step === 3 && (
                         <StepPassword
-                            onNext={handleNext}
+                            onNext={(e) => handleNext(e, [
+                                { field: 'repeatPassword', validate: (value) => ({
+                                    valid: value === data.password,
+                                    message: 'Пароли не совпадают'
+                                }) },
+                                { field: 'password', validate: validatePassword }
+                            ])}
                             onPrev={handlePrev}
+                            password={data.password}
+                            setPassword={(e) => setData({ ...data, password: e.target.value })}
+                            passwordErr={err.password}
+                            repeatPassword={data.repeatPassword}
+                            setRepeatPassword={(e) => setData({ ...data, repeatPassword: e.target.value })}
+                            repeatPasswordErr={err.repeatPassword}
                         />
                     )
                 }
@@ -97,6 +116,16 @@ const RegisterPage = () => {
                     step === 4 && (
                         <StepAdditionalInfoRegister
                             onPrev={handlePrev}
+                            onNext={ (e) => handleNext(e, [
+                                { field: 'birthdate', validate: validateBirthdate },
+                                { field: 'phone', validate: validatePhone },
+                            ])}
+                            phone={data.phone}
+                            setPhone={(e) => setData({ ...data, phone: e.target.value })}
+                            phoneErr={err.phone}
+                            birthdate={data.birthdate}
+                            setBirthdate={(e) => setData({ ...data, birthdate: e.target.value })}
+                            birthdateErr={err.birthdate}
                         />
                     )
                 }

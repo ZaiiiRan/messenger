@@ -3,5 +3,6 @@ import validateEmail from "./validations/validateEmail"
 import validatePhone from "./validations/validatePhone"
 import validatePassword from "./validations/validatePassword"
 import { validateFirstName, validateLastName } from "./validations/validateName"
+import validateBirthdate from './validations/validateBirthdate'
 
-export { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword }
+export { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword, validateBirthdate }

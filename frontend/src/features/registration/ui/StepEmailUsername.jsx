@@ -5,7 +5,14 @@ import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 
 
-const StepEmailUsername = ({ onNext, onPrev }) => {
+const StepEmailUsername = ({ onNext, onPrev, email, setEmail, emailErr, username, setUsername, usernameErr }) => {
+    const handleFormKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            document.getElementById('submitBtn').click()
+        }
+    }
+
     return (
         <motion.form 
             initial={{ opacity: 0 }}
@@ -13,6 +20,7 @@ const StepEmailUsername = ({ onNext, onPrev }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
+            onKeyDown={handleFormKeyDown}
         >
             <div className='flex flex-col gap-3 2k:gap-6 4k:gap-10'>
                 <h1 
@@ -33,11 +41,17 @@ const StepEmailUsername = ({ onNext, onPrev }) => {
                 placeholder='Email' 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                value={email}
+                onChange={setEmail}
+                error={emailErr}
             />
             <Input 
                 placeholder='Имя пользователя' 
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
+                value={username}
+                onChange={setUsername}
+                error={usernameErr}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -59,6 +73,7 @@ const StepEmailUsername = ({ onNext, onPrev }) => {
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
                         md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                     onClick={onNext}
+                    id='submitBtn'
                 >
                     Далее
                 </Button>
