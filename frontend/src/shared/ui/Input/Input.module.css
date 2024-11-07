@@ -1,8 +1,15 @@
 .inputWrapper {
-    background-color: #152033;
+    background-color: var(--dark-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.inputWrapper.error {
+    color: var(--danger-color);
+    border: 2px solid var(--danger-color);
 }
 
 .Input {
@@ -14,7 +21,7 @@
 }
 
 .Input::placeholder {
-    color: #ADB5BD;
+    color: var(--disbaled-dark-color);
 }
 
 .eyeIcon {
