@@ -1,6 +1,7 @@
 package authController
 
 import (
+	appErr "backend/internal/errors/appError"
 	"backend/internal/models/token"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,7 +11,7 @@ import (
 func Logout(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refreshToken")
 	if refreshToken == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return appErr.Unauthorized("unauthorized")
 	}
 
 	token.RemoveToken(refreshToken)

@@ -7,19 +7,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Resend activation code request format
-type ResendActivationCodeRequest struct {
-	UserID uint64 `json:"user_id"`
-}
-
 // Resend Activation Code
 func ResendActivationCode(c *fiber.Ctx) error {
-	var req ResendActivationCodeRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	userDTO, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || userDTO == nil {
+		return appErr.Unauthorized("unauthorized")
 	}
 
-	activationCode, err := user.GetActivationCode(req.UserID)
+	activationCode, err := user.GetActivationCode(userDTO.ID)
 	if err != nil {
 		return err
 	}

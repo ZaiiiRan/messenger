@@ -3,6 +3,7 @@ package authRoutes
 import (
 	"github.com/gofiber/fiber/v2"
 	controller "backend/internal/controllers/authController"
+	"backend/internal/middleware/authMiddleware"
 )
 
 func register(c *fiber.Ctx) error {
@@ -32,8 +33,8 @@ func refresh(c *fiber.Ctx) error {
 func SetupRoutes(app fiber.Router) {
 	auth := app.Group("/auth")
 	auth.Post("/register", register)
-	auth.Post("/activate", activate)
-	auth.Post("/resend", resend)
+	auth.Post("/activate", authMiddleware.AuthMiddleware, activate)
+	auth.Get("/resend", authMiddleware.AuthMiddleware, resend)
 	auth.Post("/login", login)
 	auth.Get("/logout", logout)
 	auth.Get("/refresh", refresh)
