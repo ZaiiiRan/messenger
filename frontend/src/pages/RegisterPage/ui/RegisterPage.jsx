@@ -3,19 +3,21 @@ import { useState } from 'react'
 import { StepAdditionalInfoRegister, StepEmailUsername, StepNames, StepPassword } from '../../../features/registration/index'
 import { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword, validateBirthdate } from '../../../entities/user'
 import { useModal } from '../../../features/modal'
+import { useAuth } from '../../../entities/user' 
 
 const RegisterPage = () => {
     const [step, setStep] = useState(1)
     const [data, setData] = useState({ username: '', email: '', firstname: '', lastname: '', password: '', repeatPassword: '', birthdate: '', phone: ''})
     const [err, setErr] = useState({ username: false, email: false, firstname: false, lastname: false, password: false, repeatPassword: false, birthdate: false, phone: false})
     const { openModal, setModalTitle, setModalText } = useModal()
+    const userStore = useAuth()
 
     const validateStep = (stepData, validationFunctions) => {
         let isValid = true
         let newErrors = {}
         
         validationFunctions.forEach(({ field, validate }) => {
-            const result = validate(stepData[field])
+            const result = validate(stepData[field].trim())
             if (!result.valid) {
                 newErrors[field] = true
                 isValid = false
@@ -31,11 +33,11 @@ const RegisterPage = () => {
         return isValid
     }
 
-    const handleNext = (e, validators) => {
+    const handleNext = async (e, validators) => {
         e.preventDefault()
         if (validators && !validateStep(data, validators)) return
         if (step < 4) setStep(step + 1)
-        else handleRegister()
+        else await handleRegister()
     }
 
     const handlePrev = (e) => {
@@ -43,8 +45,18 @@ const RegisterPage = () => {
         setStep(step - 1)
     }
 
-    const handleRegister = () => {
-        console.log(data)
+    const handleRegister = async () => {
+        try {
+            userStore.setLoading(true)
+            await userStore.register(data.username, data.email, data.password, data.firstname, data.lastname, data.phone, data.birthdate)
+        } catch (e) {
+            console.log(e)
+            setModalTitle('Ошибка')
+            setModalText(e.response?.data?.error)
+            openModal()
+        } finally {
+            userStore.setLoading(false)
+        }
     }
 
     return (

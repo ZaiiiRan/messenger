@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react'
-import modalStore from '../../../app/stores/modalStore/modalStore'
+import modalStore from '../store/modalStore'
 import { Button } from '../../../shared/ui/Button'
 import { motion, AnimatePresence } from 'framer-motion'
 import styles from './Modal.module.css'

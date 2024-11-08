@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import modalStore from '../../../app/stores/modalStore/modalStore'
+import modalStore from '../store/modalStore'
 
 const useModal = () => {
     const openModal = useCallback(() => modalStore.openModal(), [])

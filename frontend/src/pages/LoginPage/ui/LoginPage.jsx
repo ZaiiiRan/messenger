@@ -2,12 +2,15 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useModal } from '../../../features/modal'
 import { Login } from '../../../features/login'
+import { useAuth } from '../../../entities/user' 
 
 const LoginPage = () => {
     const [data, setData] = useState({ login: '', password: '' })
     const [err, setErr] = useState({ login: false, password: false })
 
     const { openModal, setModalTitle, setModalText } = useModal()
+
+    const userStore = useAuth()
 
     const proccessValidateErrors = (errors) => {
         if (errors.login && errors.password) {
@@ -26,16 +29,16 @@ const LoginPage = () => {
         return true
     }
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
 
         let newErrors = { ...err }
-        if (data.login === '') {
+        if (data.login.trim() === '') {
             newErrors.login = true
         } else {
             newErrors.login = false
         }
-        if (data.password === '') {
+        if (data.password.trim() === '') {
             newErrors.password = true
         } else {
             newErrors.password = false
@@ -45,7 +48,17 @@ const LoginPage = () => {
             return
         }
 
-        console.log(data)
+        try {
+            userStore.setLoading(true)
+            await userStore.login(data.login, data.password)
+        } catch (e) {
+            console.log(e)
+            setModalTitle('Ошибка')
+            setModalText(e.response?.data?.error)
+            openModal()
+        } finally {
+            userStore.setLoading(false)
+        }
     }
 
     return (
