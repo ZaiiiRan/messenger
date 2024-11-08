@@ -52,7 +52,7 @@ const RegisterPage = () => {
         } catch (e) {
             console.log(e)
             setModalTitle('Ошибка')
-            setModalText(e.response?.data?.error)
+            setModalText(e.response?.data?.error || 'Внутренняя ошибка сервера')
             openModal()
         } finally {
             userStore.setLoading(false)

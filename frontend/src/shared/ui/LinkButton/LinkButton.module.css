@@ -1,0 +1,39 @@
+.LinkButton {
+    color: var(--dark-mode-brand-color);
+    transition: color .2s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.LinkButton:hover {
+    color: var(--light-brand-color);
+}
+
+.LinkButton:active {
+    color: var(--light-brand-color);
+}
+
+
+@media (hover: none) and (prefers-color-scheme: dark) {
+    .LinkButton:hover {
+        color: var(--dark-mode-brand-color);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .LinkButton:hover {
+        color: var(--default-brand-color);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .LinkButton {
+        color: var(--default-brand-color);
+    } 
+    .LinkButton:hover {
+        color: var(--dark-brand-color);
+    }
+    .LinkButton:active {
+        color: var(--dark-brand-color);
+    }
+}

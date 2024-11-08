@@ -1,5 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 import Auth from '../api/auth'
+import Activation from '../api/activation'
 
 class UserStore {
     user = {}
@@ -32,6 +33,7 @@ class UserStore {
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
         this.setUser(response.data.user)
+        return response.data
     }
 
     async register(username, email, password, firstname, lastname, phone, birthdate) {
@@ -39,6 +41,7 @@ class UserStore {
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
         this.setUser(response.data.user)
+        return response.data
     }
 
     async logout() {
@@ -46,6 +49,7 @@ class UserStore {
         localStorage.removeItem('token', response.data.accessToken)
         this.setAuth(false)
         this.setUser({})
+        return response.data
     }
 
     async checkAuth() {
@@ -53,6 +57,22 @@ class UserStore {
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
         this.setUser(response.data.user)
+        return response.data
+    }
+
+    async activate(code) {
+        if (this.user.isActivated) throw Error('Аккаунт уже активирован')
+        const response = await Activation.activate(code)
+        localStorage.setItem('token', response.data.accessToken)
+        this.setAuth(true)
+        this.setUser(response.data.user)
+        return response.data
+    }
+
+    async resend() {
+        if (this.user.isActivated) throw Error('Аккаунт уже активирован')
+        const response = await Activation.resend()
+        return response.data
     }
 }
 
