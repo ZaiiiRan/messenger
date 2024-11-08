@@ -4,8 +4,10 @@ import { Loader } from '../../../shared/ui/Loader'
 import { LinkButton } from '../../../shared/ui/LinkButton'
 import { observer } from 'mobx-react'
 import { useAuth } from '../../../entities/user'
+import { useTranslation } from 'react-i18next'
 
 const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace, err, submit, resend }) => {
+    const { t } = useTranslation('activationFeature')
     const userStore = useAuth()
 
     return (
@@ -15,13 +17,13 @@ const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace,
                     className='text-center font-extrabold 
                         md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'
                 >
-                    Введите код
+                    { t('Enter code') }
                 </h1>
                 <h2 
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    Мы отправили письмо с кодом активации аккаунта на указанный вами Email
+                    { t('We have sent an email with an account activation code to the email you provided') }
                 </h2>
             </div>
 
@@ -47,8 +49,8 @@ const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace,
                 className='flex md:gap-4 items-center 
                     mobile:gap-2 md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
             >
-                <div>Не пришел код?</div>
-                <LinkButton onClick={resend}>Отправить снова</LinkButton>
+                <div>{ t('Didn\'t receive the code?') }</div>
+                <LinkButton onClick={resend}>{ t('Send again') }</LinkButton>
             </div>
             
             <Button 
@@ -61,7 +63,7 @@ const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace,
                     userStore.isLoading ? (
                         <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
                     ) : (
-                        'Подтвердить'
+                        t('Confirm')
                     )
                 }
             </Button>

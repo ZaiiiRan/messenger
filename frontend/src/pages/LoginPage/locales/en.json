@@ -1,0 +1,12 @@
+{
+    "Error": "Error",
+    "Enter your login and password": "Enter your login and password",
+    "Enter your login": "Enter your login",
+    "Enter your password": "Enter your password",
+    "Internal server error": "Internal server error",
+
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Invalid login or password": "Invalid login or password",
+    "Login is empty": "Enter your login",
+    "Password is empty": "Enter your password"
+}

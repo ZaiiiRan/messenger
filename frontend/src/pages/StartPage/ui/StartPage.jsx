@@ -2,8 +2,10 @@ import { Button } from '../../../shared/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import './StartPage.css'
+import { useTranslation } from 'react-i18next'
 
 const StartPage = () => {
+    const { t } = useTranslation('startPage')
     const navigate = useNavigate()
 
     const handleClick = () => {
@@ -26,7 +28,7 @@ const StartPage = () => {
                     <img className='2xl:w-1/3 mobile:w-1/2 4k:w-1/2 shake' src="./message.svg" alt="message" draggable={false}/>
                 </div>
                 <div className='font-bold text-3xl mobile:text-2xl 2k:text-4xl 4k:text-6xl text-center'>
-                    Начните переписываться со своей семьей и друзьями прямо сейчас
+                    { t('Start messaging your family and friends now') }
                 </div>
             </div>
             
@@ -35,7 +37,7 @@ const StartPage = () => {
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                 onClick={handleClick}
             >
-                Начать общение
+                { t('Start chatting') }
             </Button>
         </motion.div>
     )

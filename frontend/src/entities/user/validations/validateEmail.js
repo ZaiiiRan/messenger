@@ -1,10 +1,10 @@
 const validateEmail = (email) => {
     if (email === '') {
-        return { valid: false, message: 'Email пуст' }
+        return { valid: false, message: 'Email is empty' }
     }
     const re = /[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!re.test(email)) {
-        return { valid: false, message: 'Некорректный формат Email' }
+        return { valid: false, message: 'Incorrect Email format' }
     }
     return { valid: true }
 }

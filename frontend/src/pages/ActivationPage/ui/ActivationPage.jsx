@@ -3,9 +3,12 @@ import { useAuth } from '../../../entities/user'
 import { useState, useRef } from 'react'
 import { useModal } from '../../../features/modal'
 import { ActivationAccount } from '../../../features/activation/'
+import { useTranslation } from 'react-i18next'
+import { apiErrors, apiMessages } from '../../../shared/api'
 
 
 const ActivationPage = () => {
+    const { t } = useTranslation('activationPage')
     const userStore = useAuth()
     
     const [data, setData] = useState({ first: '', second: '', third: '', fourth: '', fifth: '', sixth: '' })
@@ -68,8 +71,8 @@ const ActivationPage = () => {
         }
         setErr(newErr)
         if (hasErr) {
-            setModalTitle('Ошибка')
-            setModalText('Код заполнен не полностью')
+            setModalTitle(t('Error'))
+            setModalText(t('The code is not completely filled out'))
             openModal()
         }
         return !hasErr
@@ -84,8 +87,8 @@ const ActivationPage = () => {
             userStore.setLoading(true)
             await userStore.activate(code)
         } catch (e) {
-            setModalTitle('Ошибка')
-            setModalText(e.response?.data?.error || 'Внутренняя ошибка сервера')
+            setModalTitle(t('Error'))
+            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)
@@ -97,12 +100,12 @@ const ActivationPage = () => {
         try {
             const response = await userStore.resend()
             console.log
-            setModalTitle('Код активации')
-            setModalText(response?.message)
+            setModalTitle(t('Activation code'))
+            setModalText(t(apiMessages[response?.message]))
             openModal()
         } catch (e) {
-            setModalTitle('Ошибка')
-            setModalText(e.response?.data?.error || 'Внутренняя ошибка сервера')
+            setModalTitle(t('Error'))
+            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
             openModal()
         }
     }

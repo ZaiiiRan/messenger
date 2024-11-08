@@ -3,8 +3,11 @@ import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, setLastname, lastnameErr }) => {
+    const { t } = useTranslation('registerFeature')
+    
     return (
         <motion.form 
             initial={{ opacity: 0 }}
@@ -18,18 +21,18 @@ const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, se
                     className='text-center font-extrabold 
                         md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'
                 >
-                    Регистрация
+                    { t('Registration') }
                 </h1>
                 <h2 
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    Как вас зовут?
+                    { t('What\'s your name?') }
                 </h2>
             </div>
 
             <Input 
-                placeholder='Имя' 
+                placeholder={t('Firstname')} 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                 value={firstname}
@@ -37,7 +40,7 @@ const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, se
                 error={firstnameErr}
             />
             <Input 
-                placeholder='Фамилия' 
+                placeholder={t('Lastname')} 
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
                 value={lastname}
@@ -48,8 +51,8 @@ const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, se
                 className='flex md:gap-4 items-center 
                     mobile:gap-2 md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
             >
-                <div>Уже есть аккаунт?</div>
-                <Link to='/login'>Войти</Link>
+                <div>{ t('Already have an account?') }</div>
+                <Link to='/login'>{ t('Login') }</Link>
             </div>
 
             <Button 
@@ -57,7 +60,7 @@ const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, se
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                 onClick={onNext}
             >
-                Далее
+                { t('Next') }
             </Button>
         </motion.form>
     )

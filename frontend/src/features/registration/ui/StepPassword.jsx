@@ -3,8 +3,11 @@ import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repeatPassword,  setRepeatPassword, repeatPasswordErr }) => {
+    const { t } = useTranslation('registerFeature')
+    
     const handleFormKeyDown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault()
@@ -26,18 +29,18 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                     className='text-center font-extrabold 
                         md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'
                 >
-                    Регистрация
+                    { t('Registration') }
                 </h1>
                 <h2 
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    Придумайте пароль
+                    { t('Create a password') }
                 </h2>
             </div>
 
             <Input 
-                placeholder='Пароль' 
+                placeholder={t('Password')}
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                 password={true}
@@ -46,7 +49,7 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                 error={passwordErr}
             />
             <Input 
-                placeholder='Повторите пароль' 
+                placeholder={t('Repeat password')}
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
                     password={true}
@@ -58,8 +61,8 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                 className='flex md:gap-4 items-center 
                     mobile:gap-2 md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
             >
-                <div>Уже есть аккаунт?</div>
-                <Link to='/login'>Войти</Link>
+                <div>{ t('Already have an account?') }</div>
+                <Link to='/login'>{ t('Login') }</Link>
             </div>
 
             <div className='flex items-center justify-between mobile:gap-3 md:gap-9 gap-9 flex-wrap'>
@@ -68,7 +71,7 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                         md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                     onClick={onPrev}
                 >
-                    Назад
+                    { t('Back') }
                 </Button>
                 <Button 
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
@@ -76,7 +79,7 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                     onClick={onNext}
                     id='submitBtn'
                 >
-                    Далее
+                    { t('Next') }
                 </Button>
             </div>
         </motion.form>

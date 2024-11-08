@@ -1,0 +1,12 @@
+{
+    "Error": "Ошибка",
+    "Enter your login and password": "Введите логин и пароль",
+    "Enter your login": "Введите логин",
+    "Enter your password": "Введите пароль",
+    "Internal server error": "Внутренняя ошибка сервера",
+
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Invalid login or password": "Неверный логин или пароль",
+    "Login is empty": "Введите логин",
+    "Password is empty": "Введите пароль"
+}

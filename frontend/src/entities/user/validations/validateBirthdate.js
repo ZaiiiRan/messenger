@@ -5,7 +5,7 @@ const validateBirthdate = (date) => {
 
     const re = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$/
     if (!re.test(date)) {
-        return { valid: false, message: 'Некорректный формат даты. Ожидается формат dd.mm.yyyy' }
+        return { valid: false, message: 'Invalid date format. Expected format is dd.mm.yyyy' }
     }
 
     const [day, month, year] = date.split('.').map(Number)
@@ -13,11 +13,11 @@ const validateBirthdate = (date) => {
     const today = new Date()
 
     if (parsedDate > today) {
-        return { valid: false, message: 'Дата не должна быть в будущем' }
+        return { valid: false, message: 'The date must not be in the future' }
     }
 
     if (parsedDate.getDate() !== day || parsedDate.getMonth() + 1 !== month || parsedDate.getFullYear() !== year) {
-        return { valid: false, message: 'Некорректная дата' }
+        return { valid: false, message: 'Invalid date' }
     }
 
     return { valid: true }

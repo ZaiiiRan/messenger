@@ -6,6 +6,7 @@ import { useAuth } from '../entities/user'
 import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react'
 import { Loader } from '../shared/ui/Loader'
+import '../shared/config/i18n'
 
 
 function App() {

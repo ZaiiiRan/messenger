@@ -1,0 +1,17 @@
+{
+    "Activation code": "Код активации",
+    "Error": "Ошибка",
+    "The code is not completely filled out": "Код заполнен не полностью",
+    "Internal server error": "Внутренняя ошибка сервера",
+
+    "Unauthorized": "Unauthorized",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Error occured while sending activation code": "Произошла ошибка при отправке кода активации аккаунта",
+    "User already activated": "Ваш аккаунт уже активирован",
+    "Activation code not found": "Код активации не найден",
+    "Activation code has expired (request a new one)": "Срок действия кода активации истек (запросите новый код)",
+    "Invalid activation code": "Неверный код активации",
+    "Failed to activate user account": "Произошла ошибка при активации вашего аккаунта",
+
+    "New code has been sent": "Отправлен новый код"
+}

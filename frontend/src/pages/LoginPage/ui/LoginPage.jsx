@@ -3,8 +3,12 @@ import { useState } from 'react'
 import { useModal } from '../../../features/modal'
 import { Login } from '../../../features/login'
 import { useAuth } from '../../../entities/user' 
+import { useTranslation } from 'react-i18next'
+import { apiErrors } from '../../../shared/api'
 
 const LoginPage = () => {
+    const { t } = useTranslation('loginPage')
+
     const [data, setData] = useState({ login: '', password: '' })
     const [err, setErr] = useState({ login: false, password: false })
 
@@ -14,14 +18,14 @@ const LoginPage = () => {
 
     const proccessValidateErrors = (errors) => {
         if (errors.login && errors.password) {
-            setModalTitle('Ошибка')
-            setModalText('Введите логин и пароль')
+            setModalTitle(t('Error'))
+            setModalText(t('Enter your login and password'))
         } else if (errors.login) {
-            setModalTitle('Ошибка')
-            setModalText('Введите логин')
+            setModalTitle(t('Error'))
+            setModalText(t('Enter your login'))
         } else if (errors.password) {
-            setModalTitle('Ошибка')
-            setModalText('Введите пароль')
+            setModalTitle(t('Error'))
+            setModalText(t('Enter your password'))
         } else {
             return false
         }
@@ -53,8 +57,8 @@ const LoginPage = () => {
             await userStore.login(data.login, data.password)
         } catch (e) {
             console.log(e)
-            setModalTitle('Ошибка')
-            setModalText(e.response?.data?.error || 'Внутренняя ошибка сервера')
+            setModalTitle(t('Error'))
+            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)

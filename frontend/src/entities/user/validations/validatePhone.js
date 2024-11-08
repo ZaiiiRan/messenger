@@ -4,7 +4,7 @@ const validatePhone = (phone) => {
     }
     const re = /^\+7\(9\d{2}\)-\d{3}-\d{2}-\d{2}$/
     if (!re.test(phone)) {
-        return { valid: false, message: 'Некорректный формат номера телефона' }
+        return { valid: false, message: 'Invalid phone number format' }
     }
     return { valid: true }
 }

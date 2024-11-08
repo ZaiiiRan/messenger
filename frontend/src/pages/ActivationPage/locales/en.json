@@ -1,0 +1,17 @@
+{
+    "Activation code": "Activation code",
+    "Error": "Error",
+    "The code is not completely filled out": "The code is not completely filled out",
+    "Internal server error": "Internal server error",
+
+    "Unauthorized": "Unauthorized",
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Error occured while sending activation code": "Error occured while sending activation code",
+    "User already activated": "Your account already activated",
+    "Activation code not found": "Activation code not found",
+    "Activation code has expired (request a new one)": "Activation code has expired (request a new one)",
+    "Invalid activation code": "Invalid activation code",
+    "Failed to activate user account": "Failed to activate your account",
+
+    "New code has been sent": "New code has been sent"
+}

@@ -1,0 +1,19 @@
+{
+    "Registration": "Регистрация",
+    "Already have an account?": "Уже есть аккаунт?",
+    "Login": "Войти",
+    "Back": "Назад",
+    "Next": "Далее",
+    "Register": "Зарегистрироваться",
+    "You can provide additional information": "Можете указать дополнительные данные",
+    "Phone number (optional)": "Номер телефона (необязательно)",
+    "Date of birth (optional)": "Дата рождения (необязательно)",
+    "Enter your Email and create a username": "Введите Email и придумайте имя пользователя",
+    "Username": "Имя пользователя",
+    "What's your name?": "Как вас зовут?",
+    "Firstname": "Имя",
+    "Lastname": "Фамилия",
+    "Create a password": "Придумайте пароль",
+    "Password": "Пароль",
+    "Repeat password": "Повторите пароль"
+}

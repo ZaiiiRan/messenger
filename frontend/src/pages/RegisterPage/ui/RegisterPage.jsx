@@ -4,8 +4,11 @@ import { StepAdditionalInfoRegister, StepEmailUsername, StepNames, StepPassword 
 import { validateEmail, validateFirstName, validateLastName, validateUsername, validatePhone, validatePassword, validateBirthdate } from '../../../entities/user'
 import { useModal } from '../../../features/modal'
 import { useAuth } from '../../../entities/user' 
+import { useTranslation } from 'react-i18next'
+import { apiErrors } from '../../../shared/api'
 
 const RegisterPage = () => {
+    const { t } = useTranslation('registerPage')
     const [step, setStep] = useState(1)
     const [data, setData] = useState({ username: '', email: '', firstname: '', lastname: '', password: '', repeatPassword: '', birthdate: '', phone: ''})
     const [err, setErr] = useState({ username: false, email: false, firstname: false, lastname: false, password: false, repeatPassword: false, birthdate: false, phone: false})
@@ -21,8 +24,8 @@ const RegisterPage = () => {
             if (!result.valid) {
                 newErrors[field] = true
                 isValid = false
-                setModalTitle('Ошибка')
-                setModalText(result.message)
+                setModalTitle(t('Error'))
+                setModalText(t(result.message))
                 openModal()
             } else {
                 newErrors[field] = false
@@ -51,8 +54,8 @@ const RegisterPage = () => {
             await userStore.register(data.username, data.email, data.password, data.firstname, data.lastname, data.phone, data.birthdate)
         } catch (e) {
             console.log(e)
-            setModalTitle('Ошибка')
-            setModalText(e.response?.data?.error || 'Внутренняя ошибка сервера')
+            setModalTitle(t('Error'))
+            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)
@@ -109,7 +112,7 @@ const RegisterPage = () => {
                             onNext={(e) => handleNext(e, [
                                 { field: 'repeatPassword', validate: (value) => ({
                                     valid: value === data.password,
-                                    message: 'Пароли не совпадают'
+                                    message: t('Passwords dont match')
                                 }) },
                                 { field: 'password', validate: validatePassword }
                             ])}

@@ -1,4 +1,4 @@
-import api from '../../../shared/api/api'
+import { api } from '../../../shared/api'
 
 export default class Auth {
     static async login(login, password) {
