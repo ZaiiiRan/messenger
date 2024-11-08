@@ -30,6 +30,8 @@ func sendTokenAndJSON(userDTO *user.UserDTO, accessToken, refreshToken string, c
 		Value:    refreshToken,
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HTTPOnly: true,
+		Path:     "/",
+		SameSite: "None",
 	})
 	return c.JSON(fiber.Map{
 		"user":        userDTO,

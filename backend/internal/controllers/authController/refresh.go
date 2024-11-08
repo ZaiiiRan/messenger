@@ -1,8 +1,8 @@
 package authController
 
 import (
-	"backend/internal/models/user"
 	"backend/internal/models/token"
+	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
 )
