@@ -150,13 +150,17 @@ func validateToken(tokenString, key string) (*user.UserDTO, bool, error) {
 			ID:          uint64(claims["user_id"].(float64)),
 			Username:    claims["username"].(string),
 			Email:       claims["email"].(string),
-			Phone:       utils.StringPtr(claims["phone"].(string)),
 			Firstname:   claims["firstname"].(string),
 			Lastname:    claims["lastname"].(string),
-			Birthdate:   parseDateFromToken(claims["birthdate"]),
 			IsBanned:    claims["is_banned"].(bool),
 			IsActivated: claims["is_activated"].(bool),
 			IsDeleted:   claims["is_deleted"].(bool),
+		}
+		if phone, ok := claims["phone"].(string); ok {
+			userDTO.Phone = utils.StringPtr(phone)
+		}
+		if birthdate, ok := claims["birthdate"]; ok {
+			userDTO.Birthdate = parseDateFromToken(birthdate)
 		}
 		return &userDTO, false, nil
 	}
