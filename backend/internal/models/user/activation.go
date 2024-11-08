@@ -63,8 +63,8 @@ func (c *ActivationCode) Save() error {
 		}
 	} else {
 		// existing code
-		query := `UPDATE activation_codes SET code = $1, expires_at = $2`
-		_, err := db.Exec(query, c.Code, c.ExpiresAt.UTC())
+		query := `UPDATE activation_codes SET code = $1, expires_at = $2 WHERE id = $3`
+		_, err := db.Exec(query, c.Code, c.ExpiresAt.UTC(), c.ID)
 		if err != nil {
 			return appErr.InternalServerError("internal server error")
 		}

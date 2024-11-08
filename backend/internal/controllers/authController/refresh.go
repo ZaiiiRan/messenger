@@ -24,7 +24,14 @@ func Refresh(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	newAccessToken, newRefreshToken, err := token.GenerateTokens(userDTO)
+	userObj, err := user.GetUserByID(userDTO.ID)
+	if err != nil {
+		return err
+	}
+
+	newUserDTO := user.CreateUserDTOFromUserObj(userObj)
+
+	newAccessToken, newRefreshToken, err := token.GenerateTokens(newUserDTO)
 	if err != nil {
 		return err
 	}
@@ -33,5 +40,5 @@ func Refresh(c *fiber.Ctx) error {
 		return err
 	}
 
-	return sendTokenAndJSON(userDTO, newAccessToken, newRefreshToken, c)
+	return sendTokenAndJSON(newUserDTO, newAccessToken, newRefreshToken, c)
 }
