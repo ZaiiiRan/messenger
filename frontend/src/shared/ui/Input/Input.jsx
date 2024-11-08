@@ -22,28 +22,40 @@ date = false, disabled = false, oneDigit = false, error, name,onKeyDown }, ref) 
         mask = '99.99.9999'
     }
 
+    const handleInputChange = (e) => {
+        e.preventDefault()
+        if (onChange) {
+            onChange(e)
+        }
+    }
+
     return (
         <div className={`${styles.inputWrapper} ${className} ${error ? styles.error : ''}`}>
             { 
                 mask ? (
                     <InputMask
-                        ref={ref}
                         name={name}
                         disabled={disabled}
-                        className={`${styles.Input} ${className}`}
-                        placeholder={placeholder}
                         mask={mask}
                         value={value}
-                        onChange={onChange}
+                        onChange={handleInputChange}
                         maskChar="_"
                         onKeyDown={onKeyDown}
-                    />
+                        onInput={handleInputChange}
+                    >
+                        {() => <input
+                            type="tel"
+                            placeholder={placeholder}
+                            className={`${styles.Input} ${className}`}
+                            ref={ref}
+                        />}
+                    </InputMask>
                 ) : (
                     <input 
                         ref={ref}
                         name={name}
                         disabled={disabled}
-                        type={showPassword ? 'text' : 'password'} 
+                        type={showPassword ? (oneDigit ? 'tel' : 'text') : 'password'} 
                         placeholder={placeholder} 
                         className={`${styles.Input} ${className}`}
                         value={value}

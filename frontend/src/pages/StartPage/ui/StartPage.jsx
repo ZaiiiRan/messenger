@@ -21,7 +21,7 @@ const StartPage = () => {
             className='w-full_screen h-full_screen flex flex-col items-center justify-center 
                 2xl:gap-24 xl:gap-20 lg:gap-24 md:gap-36 sm:gap-48 mobile:gap-56 2k:gap-36 4k:gap-56'
         >
-            <div className='md:w-1/3 mobile:w-1/2 flex flex-col items-center 
+            <div className='md:w-1/3 mobile:w-full mobile:p-12 flex flex-col items-center 
                 2xl:gap-9 xl:gap-7 lg:gap-6 md:gap-9 sm:gap-9 mobile:gap-10 2k:gap-14 4k:gap-20'
             >
                 <div className='flex justify-center'>

@@ -12,7 +12,7 @@ const Login = observer(({ login, setLogin, loginErr, password, setPassword, pass
     const userStore = useAuth()
     
     return (
-        <form className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'>
+        <form className='flex flex-col lg:w-1/2 xl:w-1/3 mobile:w-full sm:px-28 mobile:px-12 md:px-36 lg:px-0 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'>
             <h1 
                 className='text-center font-extrabold 
                     md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'

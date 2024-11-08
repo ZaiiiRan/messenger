@@ -21,14 +21,14 @@ const Modal = observer(() => {
                         exit={{ opacity: 0, transform: 'scale(0)' }}
                         transition={{ duration: 0.3 }}
                         className={`${styles.Modal} bg-white
-                            flex flex-col rounded-3xl p-12 2k:p-20 4k:p-24 gap-12 2k:gap-16 4k:gap-20 lg:w-1/3 sm:w-96 mobile:w-72`}
+                            flex flex-col rounded-3xl md:p-12 mobile:p-8 2k:p-20 4k:p-24 gap-12 2k:gap-16 4k:gap-20 lg:w-1/3 sm:w-96 mobile:w-72`}
                     >
                         <h1 className='text-center font-extrabold 
                             md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'
                         >
                             {modalStore.title}
                         </h1>
-                        <div className='text-xl mobile:text-xl 2k:text-2xl 4k:text-4xl text-center'>
+                        <div className='text-xl mobile:text-lg 2k:text-2xl 4k:text-4xl text-center'>
                             {modalStore.text}
                         </div>
                         <Button 

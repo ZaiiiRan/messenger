@@ -14,7 +14,7 @@ const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, se
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className='flex flex-col lg:w-1/3 mobile:w-1/2 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
+            className='flex flex-col lg:w-1/2 xl:w-1/3 mobile:w-full sm:px-28 mobile:px-12 md:px-36 lg:px-0 mobile:gap-14 md:gap-12 2k:gap-16 4k:gap-24'
         >
             <div className='flex flex-col gap-3 2k:gap-6 4k:gap-10'>
                 <h1 
