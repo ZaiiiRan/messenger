@@ -31,7 +31,7 @@ func sendTokenAndJSON(userDTO *user.UserDTO, accessToken, refreshToken string, c
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HTTPOnly: true,
 		Path:     "/",
-		SameSite: "None",
+		SameSite: "Lax",
 	})
 	return c.JSON(fiber.Map{
 		"user":        userDTO,
@@ -46,5 +46,7 @@ func clearTokenFromCookie(c *fiber.Ctx) {
 		Value:    "",
 		Expires:  time.Now(),
 		HTTPOnly: true,
+		Path:     "/",
+		SameSite: "Lax",
 	})
 }
