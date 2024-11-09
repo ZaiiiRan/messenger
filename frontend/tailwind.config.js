@@ -17,6 +17,7 @@ export default {
         'light-brand-color': '#879FFF'
       },
       screens: {
+        'sm': '500px',
         'mobile': '200px',
         '2k': '1921px',
         '4k': '2561px'
