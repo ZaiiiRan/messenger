@@ -2,8 +2,8 @@ package token
 
 import (
 	pgDB "backend/internal/dbs/pgDB"
-	"backend/internal/models/user"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/models/user"
 	"backend/internal/utils"
 	"database/sql"
 	"errors"
@@ -98,6 +98,12 @@ func ValidateAccessToken(tokenString string) (*user.UserDTO, error) {
 
 // Validating refresh token
 func ValidateRefreshToken(tokenString string) (*user.UserDTO, error) {
+	_, err := FindToken(tokenString)
+	if err != nil && err.Error() ==  "token not found" {
+		return nil, appErr.Unauthorized("unauthorized")
+	} else if err != nil {
+		return nil, err
+	}
 	userDTO, expired, err := validateToken(tokenString, refreshKey)
 	if expired {
 		RemoveToken(tokenString)

@@ -15,6 +15,7 @@ func Refresh(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
+	clearTokenFromCookie(c)
 	var userDTO *user.UserDTO
 	userDTO, err := token.ValidateRefreshToken(refreshToken)
 	if err != nil {
