@@ -19,7 +19,7 @@ const StartPage = () => {
             exit={{ opacity: 0, x: 1000 }}
             transition={{ duration: 0.7 }}
             className='w-full_screen h-full_screen flex flex-col items-center justify-center 
-                2xl:gap-24 xl:gap-20 lg:gap-24 md:gap-36 sm:gap-36 mobile:gap-56 2k:gap-36 4k:gap-56'
+                2xl:gap-24 xl:gap-20 lg:gap-24 md:gap-36 sm:gap-24 mobile:gap-56 2k:gap-36 4k:gap-56'
         >
             <div className='lg:w-1/3 mobile:w-full mobile:p-12 sm:p-0 sm:w-1/2 flex flex-col items-center 
                 2xl:gap-9 xl:gap-7 lg:gap-6 md:gap-9 sm:gap-9 mobile:gap-10 2k:gap-14 4k:gap-20'

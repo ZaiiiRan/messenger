@@ -1,0 +1,45 @@
+main {
+    height: calc(100vh - 60px);
+}
+
+@media (min-width: 640px) {
+    main {
+        height: calc(100vh - 70px);
+    }
+}
+
+@media (min-width: 768px) {
+    main {
+        height: calc(100vh - 80px);
+    }
+}
+
+@media (min-width: 1024px) {
+    main {
+        height: calc(100vh - 100px);
+    }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+    main {
+        height: 100vh;
+        width: calc(100vw - 20px - 20px - 6rem);
+        margin-left: calc(20px + 20px + 6rem);
+    }
+}
+
+@media (min-width: 1921px) and (orientation: landscape) {
+    main {
+        height: 100vh;
+        width: calc(100vw - 40px - 40px - 8rem);
+        margin-left: calc(40px + 40px + 8rem);
+    }
+}
+
+@media (min-width: 2561px) and (orientation: landscape) {
+    main {
+        height: 100vh;
+        width: calc(100vw - 60px - 60px - 12rem);
+        margin-left: calc(60px + 60px + 12rem);
+    }
+}

@@ -1,0 +1,186 @@
+.Navigation {
+    background-color: var(--dark-mode-brand-color);
+    color: #F7F7FC;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    flex-direction: row;
+    height: 60px;
+    border-radius: 0;
+}
+
+.Nav-container {
+    height: 50px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.Nav-container__links {
+    width: 57%;
+    height: 100%;
+    margin-left: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.Avatar {
+    height: 70%;
+    aspect-ratio: 1/1;
+}
+
+.NavLink {
+    height: 90%;
+    width: auto;
+}
+.Link-Icon {
+    width: 40%;
+}
+
+@media (min-width: 640px) {
+    .Navigation {
+        height: 70px;
+    }
+    .Nav-container {
+        height: 60px;
+    }
+}
+
+@media (min-width: 768px) {
+    .Navigation {
+        height: 80px;
+    }
+    .Nav-container {
+        height: 70px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .Navigation {
+        height: 100px;
+    }
+    .Nav-container {
+        height: 90px;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .Navigation {
+        background-color: var(--default-brand-color);
+    }
+}
+
+.NavLink.active {
+    background-color: var(--light-brand-color);
+}
+
+.Avatar-standart {
+    background-color: var(--line-color);
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+    .Navigation {
+        left: 20px;
+        top: 20px;
+        bottom: 20px;
+        height: calc(100% - 40px);
+
+        width: 6rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        flex-direction: column;
+        border-radius: 1.5rem;
+    }
+    
+    .Nav-container {
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .Nav-container__links {
+        height: 85%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: start;
+        gap: 2rem;
+    }
+    
+    .Avatar {
+        width: 90%;
+        height: auto;
+        aspect-ratio: 1/1;
+    }
+    
+    .NavLink {
+        width: 100%;
+        height: auto;
+    }
+
+    .Link-Icon {
+        width: 50%;
+    }
+}
+
+@media (min-width: 1921px) and (orientation: landscape) {
+    .Navigation {
+        left: 40px;
+        top: 40px;
+        bottom: 40px;
+        height: calc(100% - 80px);
+
+        width: 8rem;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        border-radius: 1.5rem;
+    }
+    
+    .Nav-container {
+        width: 100%;
+        height: 100%;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    
+    .Nav-container__links {
+        gap: 3rem;
+    }
+}
+@media (min-width: 2561px) and (orientation: landscape) {
+    .Navigation {
+        left: 60px;
+        top: 60px;
+        bottom: 60px;
+        height: calc(100% - 120px);
+
+        width: 12rem;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+        border-radius: 1.5rem;
+    }
+    
+    .Nav-container {
+        width: 100%;
+        height: 100%;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    .Nav-container__links {
+        gap: 3rem;
+    }
+}

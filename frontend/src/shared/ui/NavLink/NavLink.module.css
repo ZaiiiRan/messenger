@@ -1,0 +1,49 @@
+.NavLink {
+    aspect-ratio: 1/1;
+    min-height: 30px;
+    min-width: 30px;
+    background-color: var(--dark-mode-brand-color);
+    color: #F7F7FC;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.NavLink:hover {
+    background-color: var(--light-brand-color);
+}
+
+.NavLink:active {
+    transform: scale(0.98);
+}
+
+@media (hover: none) and (prefers-color-scheme: dark) {
+    .NavLink:hover {
+        background-color: var(--dark-mode-brand-color);
+    }
+    .NavLink:active {
+        background-color: var(--light-brand-color);
+        transform: scale(0.98);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .NavLink:hover {
+        background-color: var(--default-brand-color);
+    }
+    .NavLink:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .NavLink {
+        background-color: var(--default-brand-color);
+    } 
+    .NavLink:hover {
+        background-color: var(--dark-brand-color);
+    }
+    .NavLink:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
+    }
+}

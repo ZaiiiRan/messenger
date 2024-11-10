@@ -8,20 +8,25 @@ import StartRedirect from '../hocs/StartRedirect'
 import RequireAuth from '../hocs/RequireAuth'
 import RequireActivate from '../hocs/RequireActivate'
 import ActivateRedirect from '../hocs/ActivateRedirect'
+import MainLayout from '../layouts/MainLayout'
 
 export const Router = () => {
     return(
         <BrowserRouter>
             <AnimatePresence mode="wait">
                 <Routes location={location} key={location.pathname}>
-                    <Route path='/' index element={ 
+                    <Route element={ 
                             <RequireAuth>
                                 <RequireActivate>
-                                    <div>че то</div>
+                                    <MainLayout />
                                 </RequireActivate>
                             </RequireAuth> 
                         }
-                    />
+                    >
+                        <Route path="/" element={<div>Home Page</div>} />
+                        <Route path="/friends" element={<div>Friends Page</div>} />
+                        <Route path="/options" element={<div>Options Page</div>} />
+                    </Route>
 
                     <Route path='/start' element={
                             <StartRedirect>
