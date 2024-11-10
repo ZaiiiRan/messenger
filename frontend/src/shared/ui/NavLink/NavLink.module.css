@@ -15,22 +15,12 @@
     transform: scale(0.98);
 }
 
-@media (hover: none) and (prefers-color-scheme: dark) {
+@media (hover: none) {
     .NavLink:hover {
         background-color: var(--dark-mode-brand-color);
     }
     .NavLink:active {
         background-color: var(--light-brand-color);
-        transform: scale(0.98);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .NavLink:hover {
-        background-color: var(--default-brand-color);
-    }
-    .NavLink:active {
-        background-color: var(--dark-brand-color);
         transform: scale(0.98);
     }
 }
@@ -41,6 +31,16 @@
     } 
     .NavLink:hover {
         background-color: var(--dark-brand-color);
+    }
+    .NavLink:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .NavLink:hover {
+        background-color: var(--default-brand-color);
     }
     .NavLink:active {
         background-color: var(--dark-brand-color);

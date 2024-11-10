@@ -14,15 +14,9 @@
 }
 
 
-@media (hover: none) and (prefers-color-scheme: dark) {
+@media (hover: none) {
     .LinkButton:hover {
         color: var(--dark-mode-brand-color);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .LinkButton:hover {
-        color: var(--default-brand-color);
     }
 }
 
@@ -35,5 +29,11 @@
     }
     .LinkButton:active {
         color: var(--dark-brand-color);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .LinkButton:hover {
+        color: var(--default-brand-color);
     }
 }

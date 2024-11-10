@@ -9,6 +9,7 @@ import RequireAuth from '../hocs/RequireAuth'
 import RequireActivate from '../hocs/RequireActivate'
 import ActivateRedirect from '../hocs/ActivateRedirect'
 import MainLayout from '../layouts/MainLayout'
+import { OptionsPage } from '../../pages/OptionsPage'
 
 export const Router = () => {
     return(
@@ -25,7 +26,7 @@ export const Router = () => {
                     >
                         <Route path="/" element={<div>Home Page</div>} />
                         <Route path="/friends" element={<div>Friends Page</div>} />
-                        <Route path="/options" element={<div>Options Page</div>} />
+                        <Route path="/options" element={<OptionsPage />} />
                     </Route>
 
                     <Route path='/start' element={

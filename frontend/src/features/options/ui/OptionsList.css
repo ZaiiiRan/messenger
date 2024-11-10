@@ -1,0 +1,104 @@
+.Options-List {
+    padding: 3rem 3rem;
+    width: 40%;
+    height: 100%;
+    background-color: var(--dark-color);
+    z-index: 10;
+}
+
+.Options-List__container {
+    display: flex;
+    flex-direction: column;
+}
+
+.Options-List__element {
+    cursor: pointer;
+    user-select: none;
+    width: 98%;
+    height: 70px;
+    transition: background-color .2s ease, transform .2s ease;
+}
+.Option-Icon {
+    aspect-ratio: 1/1;
+}
+.Option-Icon svg {
+    fill: var(--off-white-color);
+}
+
+.Options-List__element:hover {
+    background-color: var(--active-color);
+}
+
+.Options-List__element:active {
+    transform: scale(0.98);
+    background-color: var(--active-color);
+}
+
+@media (hover: none) {
+    .Options-List__element:hover {
+        background-color: var(--dark-color);
+    }
+    
+    .Options-List__element:active {
+        background-color: var(--active-color);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .Options-List {
+        background-color: var(--off-white-color);
+    }
+    
+    .Options-Widget {
+        background-color: var(--off-white-color);
+    }
+    
+    .Option-Icon svg {
+        fill: var(--active-color);
+    }
+    
+    .Options-List__element:hover {
+        background-color: var(--disabled-light-color);
+    }
+    
+    .Options-List__element:active {
+        background-color: var(--disabled-light-color);
+    }
+}
+
+@media (prefers-color-scheme: light) and (hover: none) {
+    .Options-List__element:hover {
+        background-color: var(--off-white-color);
+    }
+    
+    .Options-List__element:active {
+        background-color: var(--disabled-light-color);
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+    .Options-List {
+        padding: 2rem 2rem;
+    }
+    .Options-List__element {
+        height: 60px;
+    }
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    .Options-List {
+        padding: 4rem 4rem;
+    }
+    .Options-List__element {
+        height: 100px;
+    }
+}
+
+@media (min-width: 2561px) and (max-width: 3840px) {
+    .Options-List {
+        padding: 5rem 5rem;
+    }
+    .Options-List__element {
+        height: 120px;
+    }
+}

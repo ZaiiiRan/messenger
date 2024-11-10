@@ -21,22 +21,12 @@
     transform: none;
 }
 
-@media (hover: none) and (prefers-color-scheme: dark) {
+@media (hover: none) {
     .Button:hover {
         background-color: var(--dark-mode-brand-color);
     }
     .Button:active {
         background-color: var(--light-brand-color);
-        transform: scale(0.98);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .Button:hover {
-        background-color: var(--default-brand-color);
-    }
-    .Button:active {
-        background-color: var(--dark-brand-color);
         transform: scale(0.98);
     }
 }
@@ -54,5 +44,15 @@
     }
     .Button:disabled {
         background-color: var(--light-brand-color);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .Button:hover {
+        background-color: var(--default-brand-color);
+    }
+    .Button:active {
+        background-color: var(--dark-brand-color);
+        transform: scale(0.98);
     }
 }

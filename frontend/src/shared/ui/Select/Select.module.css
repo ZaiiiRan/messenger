@@ -1,0 +1,146 @@
+.SelectContainer {
+    position: relative;
+    min-width: 200px;
+}
+
+.selectHeader {
+    cursor: pointer;
+    background-color: var(--body-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color .2s ease, transform .2s ease;
+
+    height: 60px;
+    padding: 20px;
+}
+.selectHeader:hover {
+    background-color: var(--active-color);
+}
+.selectHeader:active {
+    background-color: var(--active-color);
+    transform: scale(0.98);
+}
+
+.optionsList {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    list-style: none;
+    background-color: var(--body-color);
+    overflow: hidden;
+
+    z-index: 100;
+}
+
+.optionItem {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color .2s ease, transform .2s ease;
+
+    height: 60px;
+    padding: 20px;
+}
+.optionItem:hover {
+    background-color: var(--active-color);
+}
+.optionItem:active {
+    background-color: var(--active-color);
+    transform: scale(0.98);
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    .selectHeader {
+        height: 80px;
+        padding: 30px;
+    }
+    .optionsList {
+        top: 100px;
+    }
+    .optionItem {
+        height: 80px;
+        padding: 30px;
+    }
+}
+@media (min-width: 2561px) and (max-width: 3840px) {
+    .selectHeader {
+        height: 100px;
+        padding: 40px;
+    }
+    .optionsList {
+        top: 130px;
+    }
+    .optionItem {
+        height: 100px;
+        padding: 40px;
+    }
+}
+@media (min-width: 1025px) and (max-width: 1280px) {
+    .selectHeader {
+        height: 50px;
+        padding: 20px;
+    }
+    .optionsList {
+        top: 60px;
+    }
+    .optionItem {
+        height: 50px;
+        padding: 20px;
+    }
+}
+
+
+
+@media (hover: none) {
+    .selectHeader:hover {
+        background-color: var(--body-color);
+    }
+    .selectHeader:active {
+        background-color: var(--active-color);
+    }
+    .optionItem:hover {
+        background-color: var(--body-color);
+    }
+    .optionItem:active {
+        background-color: var(--active-color);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .selectHeader {
+        background-color: var(--line-color);
+    }
+    .selectHeader:hover {
+        background-color: var(--disabled-light-color);
+    }
+    .selectHeader:active {
+        background-color: var(--disabled-light-color);
+    }
+    
+    .optionsList {
+        background-color: var(--line-color);
+    }
+    .optionItem:hover {
+        background-color: var(--disabled-light-color);
+    }
+    .optionItem:active {
+        background-color: var(--disabled-light-color);
+    }
+}
+
+@media (hover: none) and (prefers-color-scheme: light) {
+    .selectHeader:hover {
+        background-color: var(--line-color);
+    }
+    .selectHeader:active {
+        background-color: var(--disabled-light-color);
+    }
+    .optionItem:hover {
+        background-color: var(--line-color);
+    }
+    .optionItem:active {
+        background-color: var(--disabled-light-color);
+    }
+}
