@@ -76,6 +76,34 @@
     }
 }
 
+@media (max-width: 1023px) {
+    .Options-List {
+        width: 100vw;
+        z-index: 3;
+        border-radius: 0;
+    }
+}
+
+@media (min-width: 1024px) and (orientation: portrait) {
+    .Options-List {
+        width: 100vw;
+        z-index: 3;
+        border-radius: 0;
+    }
+}
+
+@media (min-width: 200px) and (max-width: 500px) {
+    .Options-List {
+        padding: 1.5rem 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+    .Options-List {
+        padding: 2rem 2rem;
+    }
+}
+
 @media (min-width: 1024px) and (max-width: 1280px) {
     .Options-List {
         padding: 2rem 2rem;
