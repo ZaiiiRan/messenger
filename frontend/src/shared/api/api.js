@@ -23,7 +23,9 @@ api.interceptors.response.use((config) => {
             localStorage.setItem('token', response.data.accessToken)
             return api.request(originalRequest)
         } catch (e) {
-            localStorage.removeItem('token')
+            if (e.status === 401) {
+                localStorage.removeItem('token')
+            }
             console.log(e)
         }
     }

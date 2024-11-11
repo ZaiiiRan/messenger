@@ -1,23 +1,27 @@
 main {
     position: absolute;
     height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
 }
 
 @media (min-width: 640px) {
     main {
         height: calc(100vh - 70px);
+        height: calc(100dvh - 70px);
     }
 }
 
 @media (min-width: 768px) {
     main {
         height: calc(100vh - 80px);
+        height: calc(100dvh - 80px);
     }
 }
 
 @media (min-width: 1024px) {
     main {
         height: calc(100vh - 100px);
+        height: calc(100dvh - 100px);
     }
 }
 
@@ -25,6 +29,7 @@ main {
     main {
         top: 20px;
         height: calc(100vh - 20px - 20px);
+        height: calc(100dvh - 20px - 20px);
         width: calc(100vw - 20px - 60px - 6rem);
         margin-left: calc(20px + 60px + 6rem);
         padding-right: 20px;
@@ -35,8 +40,10 @@ main {
     main {
         top: 40px;
         height: calc(100vh - 40px - 40px);
+        height: calc(100dvh - 40px - 40px);
         width: calc(100vw - 40px - 40px - 8rem);
-        margin-left: calc(40px + 40px + 8rem);
+        margin-left: calc(40px + 40px + 60px + 8rem);
+        padding-right: 35px;
     }
 }
 
@@ -44,7 +51,9 @@ main {
     main {
         top: 60px;
         height: calc(100vh - 60px - 60px);
+        height: calc(100dvh - 60px - 60px);
         width: calc(100vw - 60px - 60px - 12rem);
-        margin-left: calc(60px + 60px + 12rem);
+        margin-left: calc(60px + 60px + 80px + 12rem);
+        padding-right: 50px;
     }
 }

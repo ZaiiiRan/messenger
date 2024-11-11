@@ -91,7 +91,8 @@
         left: 20px;
         top: 20px;
         bottom: 20px;
-        height: calc(100% - 40px);
+        height: calc(100vh - 40px);
+        height: calc(100dvh - 40px);
 
         width: 6rem;
         padding-top: 2rem;
@@ -141,7 +142,8 @@
         left: 40px;
         top: 40px;
         bottom: 40px;
-        height: calc(100% - 80px);
+        height: calc(100vh - 40px - 40px);
+        height: calc(100dvh - 40px - 40px);
 
         width: 8rem;
         padding-top: 3rem;
@@ -165,7 +167,8 @@
         left: 60px;
         top: 60px;
         bottom: 60px;
-        height: calc(100% - 120px);
+        height: calc(100vh - 120px);
+        height: calc(100dvh - 120px);
 
         width: 12rem;
         padding-top: 4rem;
