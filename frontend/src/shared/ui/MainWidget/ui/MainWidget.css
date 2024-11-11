@@ -2,7 +2,7 @@
     padding: 3rem 3rem;
     width: 55%;
     height: 100%;
-    background-color: var(--dark-color);
+    background-color: var(--widget-background);
     z-index: 5;
 }
 
@@ -12,10 +12,10 @@
 }
 
 .backBtn:hover {
-    background-color: var(--active-color);
+    background-color: var(--main-hover);
 }
 .backBtn:active {
-    background-color: var(--active-color);
+    background-color: var(--main-hover);
     transform: scale(0.98);
 }
 
@@ -24,31 +24,7 @@
         background-color: transparent;
     }
     .backBtn:active {
-        background-color: var(--active-color);
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    .backBtn:hover {
-        background-color: var(--disabled-light-color);
-    }
-    .backBtn:active {
-        background-color: var(--disabled-light-color);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .backBtn:hover {
-        background-color: transparent;
-    }
-    .backBtn:active {
-        background-color: var(--disabled-light-color);
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    .Main-Widget {
-        background-color: var(--off-white-color);
+        background-color: var(--main-hover);
     }
 }
 

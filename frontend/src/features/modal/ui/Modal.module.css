@@ -1,9 +1,3 @@
 .Modal {
-    background-color: var(--dark-color);
-}
-
-@media (prefers-color-scheme: light) {
-    .Modal {
-        background-color: var(--off-white-color);
-    }
+    background-color: var(--modal-background);
 }

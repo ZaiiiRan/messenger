@@ -5,7 +5,7 @@
 
 .selectHeader {
     cursor: pointer;
-    background-color: var(--body-color);
+    background-color: var(--select-background);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -15,10 +15,10 @@
     padding: 20px;
 }
 .selectHeader:hover {
-    background-color: var(--active-color);
+    background-color: var(--select-hover);
 }
 .selectHeader:active {
-    background-color: var(--active-color);
+    background-color: var(--select-hover);
     transform: scale(0.98);
 }
 
@@ -28,7 +28,7 @@
     left: 0;
     width: 100%;
     list-style: none;
-    background-color: var(--body-color);
+    background-color: var(--select-background);
     overflow: hidden;
 
     z-index: 100;
@@ -44,10 +44,10 @@
     padding: 20px;
 }
 .optionItem:hover {
-    background-color: var(--active-color);
+    background-color: var(--select-hover);
 }
 .optionItem:active {
-    background-color: var(--active-color);
+    background-color: var(--select-hover);
     transform: scale(0.98);
 }
 
@@ -91,56 +91,17 @@
     }
 }
 
-
-
 @media (hover: none) {
     .selectHeader:hover {
-        background-color: var(--body-color);
+        background-color: var(--select-background);
     }
     .selectHeader:active {
-        background-color: var(--active-color);
+        background-color: var(--select-hover);
     }
     .optionItem:hover {
-        background-color: var(--body-color);
+        background-color: var(--select-background);
     }
     .optionItem:active {
-        background-color: var(--active-color);
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    .selectHeader {
-        background-color: var(--line-color);
-    }
-    .selectHeader:hover {
-        background-color: var(--disabled-light-color);
-    }
-    .selectHeader:active {
-        background-color: var(--disabled-light-color);
-    }
-    
-    .optionsList {
-        background-color: var(--line-color);
-    }
-    .optionItem:hover {
-        background-color: var(--disabled-light-color);
-    }
-    .optionItem:active {
-        background-color: var(--disabled-light-color);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .selectHeader:hover {
-        background-color: var(--line-color);
-    }
-    .selectHeader:active {
-        background-color: var(--disabled-light-color);
-    }
-    .optionItem:hover {
-        background-color: var(--line-color);
-    }
-    .optionItem:active {
-        background-color: var(--disabled-light-color);
+        background-color: var(--select-hover);
     }
 }

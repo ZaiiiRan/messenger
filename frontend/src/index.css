@@ -9,14 +9,13 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: #fff;
-  background-color: #0F1828;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  /* dev */
   --primary-default-color: #5F2EEA;
   --off-white-color: #FCFCFC;
   --placeholder-color: #A0A3BD;
@@ -32,10 +31,49 @@
   --dark-mode-brand-color: #375FFF;
   --light-brand-color: #879FFF;
   --background-brand-color: #D2D5F9;
+  /* dev */
+
+
+  --main-hover: #0F1828;
+  --select-background: #1B2B48;
+  --select-hover: #0F1828;
+  --loader-color: #879FFF;
+  --widget-background: #152033;
+  --input-placeholder: #ADB5BD;
+  --input-background: #152033;
+  --button-background: #002DE3;
+  --button-hover-background: #001A83;
+  --button-disabled-background: #879FFF;
+  --avatar-standart-background: #EDEDED;
+  --navlink-active: #879FFF;
+  --nav-background: #375FFF;
+  --modal-background: #152033;
+  --icon-color: #FCFCFC;
+  --background-color: #0F1828;
+  --text-color: #fff; 
   --danger-color: #E94242;
   --warning-color: #FDCF41;
   --success-color: #2CC069;
   --safe-color: #7BCBCF;
+}
+:root[data-color-scheme="light"] {
+  --main-hover: #D4DBE7;
+  --select-background: #EDEDED;
+  --select-hover: #D4DBE7;
+  --loader-color: #001A83;
+  --widget-background: #FCFCFC;
+  --input-placeholder: #ADB5BD;
+  --input-background: #F7F7FC;
+  --button-background: #375FFF;
+  --button-hover-background: #879FFF;
+  --button-disabled-background: #001A83;
+  --avatar-standart-background: #EDEDED;
+  --navlink-active: #879FFF;
+  --nav-background: #002DE3;
+  --modal-background: #FCFCFC;
+  --icon-color: #0F1828;
+  --background-color: #EDEDED;
+  --text-color: #213547; 
 }
 
 body {
@@ -44,6 +82,9 @@ body {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @media (orientation: landscape) {
@@ -52,9 +93,9 @@ body {
   }
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #EDEDED;
-  }
+.Icon {
+  aspect-ratio: 1/1;
+}
+.Icon svg {
+  fill: var(--icon-color);
 }

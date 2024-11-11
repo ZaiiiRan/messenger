@@ -2,19 +2,13 @@
     padding: 3rem 3rem;
     width: 40%;
     height: 100%;
-    background-color: var(--dark-color);
+    background-color: var(--widget-background);
     z-index: 10;
 }
 
 .Widget-List__container {
     display: flex;
     flex-direction: column;
-}
-
-@media (prefers-color-scheme: light) {
-    .Widget-List {
-        background-color: var(--off-white-color);
-    }
 }
 
 @media (max-width: 1023px) {

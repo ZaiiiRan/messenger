@@ -10,6 +10,7 @@ import RequireActivate from '../hocs/RequireActivate'
 import ActivateRedirect from '../hocs/ActivateRedirect'
 import MainLayout from '../layouts/MainLayout'
 import { OptionsPage } from '../../pages/OptionsPage'
+import { FriendsPage } from '../../pages/FriendsPage'
 
 export const Router = () => {
     return(
@@ -25,7 +26,7 @@ export const Router = () => {
                         }
                     >
                         <Route path="/" element={<div>Home Page</div>} />
-                        <Route path="/friends" element={<div>Friends Page</div>} />
+                        <Route path="/friends" element={<FriendsPage />} />
                         <Route path="/options" element={<OptionsPage />} />
                     </Route>
 

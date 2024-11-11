@@ -1,0 +1,43 @@
+.MenuItem {
+    cursor: pointer;
+    user-select: none;
+    width: 98%;
+    height: 70px;
+    transition: background-color .2s ease, transform .2s ease;
+}
+.MenuItem:hover {
+    background-color: var(--main-hover);
+}
+
+.MenuItem:active {
+    transform: scale(0.98);
+    background-color: var(--main-hover);
+}
+
+@media (hover: none) {
+    .MenuItem:hover {
+        background-color: transparent;
+    }
+    
+    .MenuItem:active {
+        background-color: var(--main-hover);
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+    .MenuItem {
+        height: 60px;
+    }
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    .MenuItem {
+        height: 100px;
+    }
+}
+
+@media (min-width: 2561px) and (max-width: 3840px) {
+    .MenuItem {
+        height: 120px;
+    }
+}

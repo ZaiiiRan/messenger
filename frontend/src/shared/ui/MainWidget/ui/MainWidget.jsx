@@ -19,7 +19,7 @@ const MainWidget = ({ goBack, title, children }) => {
                         rounded-3xl flex items-center justify-center'
                     onClick={goBack}
                 >
-                    <div className='Option-Icon flex items-center justify-center h-1/4 aspect-square'>
+                    <div className='Icon flex items-center justify-center h-1/4 aspect-square'>
                         <svg viewBox="0 0 7.424 12.02" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs/>
                             <path id="Vector" d="M0 6.01L6 12.02L7.42 10.6L2.82 6L7.42 1.4L6 0L0 6.01Z" fillOpacity="1.000000" fillRule="nonzero"/>

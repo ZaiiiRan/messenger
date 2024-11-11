@@ -8,9 +8,15 @@ import { observer } from 'mobx-react'
 import { Loader } from '../shared/ui/Loader'
 import { useTranslation } from 'react-i18next'
 import '../shared/config/i18n'
+import { themeStore } from '../shared/theme'
 
 
 function App() {
+
+  useEffect(() => {
+    themeStore.applyTheme(themeStore.theme)
+  }, [])
+
   const { t } = useTranslation()
   const [isLandscape, setIsLandscape] = useState(
     window.matchMedia("(orientation: landscape) and (max-height: 599px)").matches

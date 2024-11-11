@@ -2,48 +2,26 @@
     aspect-ratio: 1/1;
     min-height: 30px;
     min-width: 30px;
-    background-color: var(--dark-mode-brand-color);
+    background-color: var(--nav-background);
     color: #F7F7FC;
     transition: background-color .2s ease, transform .2s ease;
 }
 
 .NavLink:hover {
-    background-color: var(--light-brand-color);
+    background-color: var(--navlink-active);
 }
 
 .NavLink:active {
+    background-color: var(--navlink-active);
     transform: scale(0.98);
 }
 
 @media (hover: none) {
     .NavLink:hover {
-        background-color: var(--dark-mode-brand-color);
+        background-color: var(--nav-background);
     }
     .NavLink:active {
-        background-color: var(--light-brand-color);
-        transform: scale(0.98);
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    .NavLink {
-        background-color: var(--default-brand-color);
-    } 
-    .NavLink:hover {
-        background-color: var(--dark-brand-color);
-    }
-    .NavLink:active {
-        background-color: var(--dark-brand-color);
-        transform: scale(0.98);
-    }
-}
-
-@media (hover: none) and (prefers-color-scheme: light) {
-    .NavLink:hover {
-        background-color: var(--default-brand-color);
-    }
-    .NavLink:active {
-        background-color: var(--dark-brand-color);
+        background-color: var(--navlink-active);
         transform: scale(0.98);
     }
 }

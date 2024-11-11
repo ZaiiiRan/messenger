@@ -1,5 +1,5 @@
 .Navigation {
-    background-color: var(--dark-mode-brand-color);
+    background-color: var(--nav-background);
     color: #F7F7FC;
     position: fixed;
     width: 100%;
@@ -72,18 +72,12 @@
     }
 }
 
-@media (prefers-color-scheme: light) {
-    .Navigation {
-        background-color: var(--default-brand-color);
-    }
-}
-
 .NavLink.active {
-    background-color: var(--light-brand-color);
+    background-color: var(--navlink-active);
 }
 
 .Avatar-standart {
-    background-color: var(--line-color);
+    background-color: var(--avatar-standart-background);
 }
 
 @media (min-width: 1024px) and (orientation: landscape) {

@@ -1,12 +1,13 @@
-/* eslint-disable react/prop-types */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { Select } from '../../../shared/ui/Select'
 import 'flag-icons/css/flag-icons.min.css'
 import { useTranslation } from 'react-i18next'
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { MainWidget } from '../../../shared/ui/MainWidget'
+import { observer } from 'mobx-react-lite'
+import { themeStore } from '../../../shared/theme'
 
-const AppearanceOptions = ({ goBack }) => {
+const AppearanceOptions = observer(({ goBack }) => {
     const { i18n } = useTranslation()
     const { t } = useTranslation('optionsFeature')
 
@@ -35,6 +36,7 @@ const AppearanceOptions = ({ goBack }) => {
 
     const handleLanguageChange = (selectedLang) => {
         i18n.changeLanguage(selectedLang.key)
+        goBack()
     }
 
     const themeOptions = useMemo(() => [
@@ -43,36 +45,9 @@ const AppearanceOptions = ({ goBack }) => {
         { key: 'system', label: t('System') }
     ], [t])
 
-    const [theme, setTheme] = useState('system')
-
     const handleThemeChange = (selectedTheme) => {
-        setTheme(selectedTheme.key)
-        updateThemeClass(selectedTheme.key)
+        themeStore.setTheme(selectedTheme.key)
     }
-
-    const updateThemeClass = (selectedTheme) => {
-        document.body.classList.remove('light-theme', 'dark-theme')
-        if (selectedTheme === 'light') {
-            document.body.classList.add('light-theme')
-        } else if (selectedTheme === 'dark') {
-            document.body.classList.add('dark-theme')
-        }
-    }
-
-    useEffect(() => {
-        if (theme === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: light)')
-            const systemThemeListener = (e) => {
-                document.body.classList.toggle('light-theme', e.matches)
-                document.body.classList.toggle('dark-theme', !e.matches)
-            };
-
-            mediaQuery.addEventListener('change', systemThemeListener);
-            systemThemeListener(mediaQuery)
-
-            return () => mediaQuery.removeEventListener('change', systemThemeListener)
-        }
-    }, [theme])
 
     return (
         <MainWidget title={ t('Appearance') } goBack={goBack}>
@@ -119,13 +94,13 @@ const AppearanceOptions = ({ goBack }) => {
                             mobile:text-base md:text-lg' 
                         options={themeOptions} 
                         onChange={handleThemeChange} 
-                        defaultValue={themeOptions.find(opt => opt.key === theme)} 
+                        defaultValue={themeOptions.find(opt => opt.key === themeStore.theme)} 
                     />
                 </div>
                 
             </div>
         </MainWidget>
     )
-}
+})
 
 export default AppearanceOptions

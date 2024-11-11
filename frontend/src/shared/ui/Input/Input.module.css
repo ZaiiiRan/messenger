@@ -1,5 +1,5 @@
 .inputWrapper {
-    background-color: var(--dark-color);
+    background-color: var(--input-background);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -17,11 +17,11 @@
     min-width: 30px;
     min-height: 30px;
     outline: none;
-    background-color: #152033;
+    background-color: var(--input-background);
 }
 
 .Input::placeholder {
-    color: var(--disbaled-dark-color);
+    color: var(--input-placeholder);
 }
 
 .eyeIcon {
@@ -31,9 +31,9 @@
 
 @media (prefers-color-scheme: light) {
     .inputWrapper {
-        background-color: #F7F7FC;
+        background-color: var(--input-background);
     }
     .Input {
-        background-color: #F7F7FC;
+        background-color: var(--input-background);
     }
 }
