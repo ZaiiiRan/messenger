@@ -3,7 +3,6 @@ package socialController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/shortUser"
-	"backend/internal/models/socialUser"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,7 +31,7 @@ func readFetchUsersRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
 }
 
 // fetch user list
-func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID uint64, search string, limit, offset int) ([]socialUser.SocialUser, error)) error {
+func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID uint64, search string, limit, offset int) ([]shortUser.ShortUser, error)) error {
 	user, err := getUserDTOFromLocals(c)
 	if err != nil {
 		return err
@@ -60,19 +59,7 @@ func GetUsers(c *fiber.Ctx) error {
 		return appErr.BadRequest("search parameter is very short")
 	}
 
-	user, err := getUserDTOFromLocals(c)
-	if err != nil {
-		return err
-	}
-
-	users, err := shortUser.Search(user.ID, req.Search, req.Limit, req.Offset)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(fiber.Map{
-		"users": users,
-	})
+	return fetchUserList(c, req, shortUser.SearchAll)
 }
 
 // Get friends
@@ -81,7 +68,7 @@ func GetFriends(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return fetchUserList(c, req, socialUser.GetUserFriendsByUsernameOrEmail)
+	return fetchUserList(c, req, shortUser.SearchFriends)
 }
 
 // Get incoming friend requests
@@ -90,7 +77,7 @@ func GetIncomingFriendRequests(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return fetchUserList(c, req, socialUser.GetUserIncomingFriendRequestsByUsernameOrEmail)
+	return fetchUserList(c, req, shortUser.SearchIncomingFriendRequests)
 }
 
 // Get outgoing friend requests
@@ -99,7 +86,7 @@ func GetOutgoingFriendRequests(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return fetchUserList(c, req, socialUser.GetUserOutgoingFriendRequestsByUsernameOrEmail)
+	return fetchUserList(c, req, shortUser.SearchOutgoingFriendRequests)
 }
 
 // Get blocked users
@@ -108,5 +95,5 @@ func GetBlockedUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return fetchUserList(c, req, socialUser.GetUserBlockListByUsernameOrEmail)
+	return fetchUserList(c, req, shortUser.SearchBlockList)
 }
