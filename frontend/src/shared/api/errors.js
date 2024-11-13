@@ -44,6 +44,10 @@ const apiErrors = {
     "invalid activation code": "Invalid activation code",
     "failed to activate user account": "Failed to activate user account",
 
+    // users fetching
+    "search parameter is empty": "Search parameter is empty",
+    "search parameter is very short": "Search parameter is very short",
+    "users not found": "Users not found",
 }
 
 export default apiErrors

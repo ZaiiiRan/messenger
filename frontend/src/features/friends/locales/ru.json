@@ -3,5 +3,16 @@
     "Your friends": "Ваши друзья",
     "Incoming requests": "Входящие заявки",
     "Outgoing requests": "Исходящие заявки",
-    "Find friends": "Найти друзей"
+    "Black list": "Черный список",
+    "Find friends": "Найти друзей",
+    "Username or email": "Имя пользователя или Email",
+    "We couldn't find anyone": "Мы не смогли никого найти",
+    "Error": "Ошибка",
+
+    "Unauthorized": "Не авторизован",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Search parameter is empty": "Поисковой параметр пуст",
+    "Search parameter is very short": "Поисковой параметр слишком короткий",
+    "Users not found": "Пользователи не найдены",
+    "Internal server error": "Внутренняя ошибка сервера"
 }

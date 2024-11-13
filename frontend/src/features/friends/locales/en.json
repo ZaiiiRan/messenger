@@ -3,5 +3,16 @@
     "Your friends": "Your friends",
     "Incoming requests": "Incoming requests",
     "Outgoing requests": "Outgoing requests",
-    "Find friends": "Find friends"
+    "Black list": "Black list",
+    "Find friends": "Find friends",
+    "Username or email": "Username or Email",
+    "We couldn't find anyone": "We couldn't find anyone",
+    "Error": "Error",
+
+    "Search parameter is empty": "Search parameter is empty",
+    "Search parameter is very short": "Search parameter is very short",
+    "Users not found": "Users not found",
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Unauthorized": "Unauthorized",
+    "Internal server error": "Internal server error"
 }

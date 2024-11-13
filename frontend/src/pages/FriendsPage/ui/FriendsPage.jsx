@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { FriendsMenu } from '../../../features/friends'
+import { FindFriends, Friends, IncomingFriendRequests, OutgoingFriendRequests, BlackList } from '../../../features/friends'
 
 
 const FriendsPage = () => {
@@ -25,7 +26,31 @@ const FriendsPage = () => {
         <FriendsMenu open={open}/>
 
             <AnimatePresence mode='wait'>
-                
+                {
+                    selected === 'search_friends' && (
+                        <FindFriends goBack={goBack} />
+                    )
+                }
+                {
+                    selected === 'your_friends' && (
+                        <Friends goBack={goBack} />
+                    )
+                }
+                {
+                    selected === 'incoming_requests' && (
+                        <IncomingFriendRequests goBack={goBack} />
+                    )
+                }
+                {
+                    selected === 'outgoing_requests' && (
+                        <OutgoingFriendRequests goBack={goBack} />
+                    )
+                }
+                {
+                    selected === 'black_list' && (
+                        <BlackList goBack={goBack} />
+                    )
+                }
             </AnimatePresence>
         </motion.div>
     )

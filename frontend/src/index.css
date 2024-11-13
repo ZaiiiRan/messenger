@@ -38,7 +38,7 @@
   --select-background: #1B2B48;
   --select-hover: #0F1828;
   --loader-color: #879FFF;
-  --widget-background: #152033;
+  --widget-background: #151e2c;
   --input-placeholder: #ADB5BD;
   --input-background: #152033;
   --button-background: #002DE3;
@@ -98,4 +98,18 @@ body {
 }
 .Icon svg {
   fill: var(--icon-color);
+}
+
+.scrollContainer {
+  overflow-y: overlay;
+}
+.scrollContainer::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollContainer::-webkit-scrollbar-thumb {
+  background-color: var(--select-background);
+  border-radius: 4px;
 }

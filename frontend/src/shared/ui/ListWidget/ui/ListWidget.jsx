@@ -12,7 +12,7 @@ const ListWidget = ({ title, children }) => {
                 { title }
             </h1>
 
-            <div className='Widget-List__container flex flex-col items-center gap-5'>
+            <div className='scrollContainer Widget-List__container flex flex-col items-center gap-5'>
                 { children }
             </div>
 

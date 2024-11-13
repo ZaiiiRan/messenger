@@ -4,7 +4,7 @@
     "The code is not completely filled out": "Код заполнен не полностью",
     "Internal server error": "Внутренняя ошибка сервера",
 
-    "Unauthorized": "Unauthorized",
+    "Unauthorized": "Не авторизован",
     "An unexpected error occurred": "Произошла непредвиденная ошибка",
     "Error occured while sending activation code": "Произошла ошибка при отправке кода активации аккаунта",
     "User already activated": "Ваш аккаунт уже активирован",

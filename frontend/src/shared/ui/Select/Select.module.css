@@ -13,6 +13,7 @@
 
     height: 60px;
     padding: 20px;
+    user-select: none;
 }
 .selectHeader:hover {
     background-color: var(--select-hover);
@@ -42,6 +43,7 @@
 
     height: 60px;
     padding: 20px;
+    user-select: none;
 }
 .optionItem:hover {
     background-color: var(--select-hover);
