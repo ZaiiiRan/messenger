@@ -2,12 +2,18 @@
 import './Navigation.css'
 import { NavLink } from '../../../shared/ui/NavLink'
 import { Button } from '../../../shared/ui/Button'
+import { useAuth } from '../../../entities/user'
 
 const Navigation = ({ className }) => {
+    const userStore = useAuth()
+
     return (
         <div className={`Navigation rounded-3xl flex items-center justify-between ${className}`}>
             <div className='Nav-container'>
-                <Button className='Avatar rounded-3xl'>
+                <Button 
+                    className='Avatar rounded-3xl'
+                    onClick={() => userStore.setOpen(true)}
+                >
                     <div className='flex items-center justify-center w-full h-full Avatar-standart rounded-3xl'>
                         <div className='flex items-center justify-center w-1/2 aspect-square'>
                             <svg viewBox="0 0 16 19" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -47,20 +53,6 @@ const Navigation = ({ className }) => {
                     </NavLink>
                 </div>
             </div>
-
-            
-            
-
-            {/* <div className='w-full flex flex-col items-center gap-3'>
-                <NavLink className='flex items-center justify-center' to='/logout'>
-                    <div className='w-1/2 aspect-square'>
-                        <svg viewBox="0 0 45 46.4018" fill="none" xmlns="http://www.w3.org/2000/svg">
-	                        <defs/>
-	                        <path id="Vector" d="M18.31 0.28C19.31 -0.02 20.38 -0.09 21.41 0.1C22.45 0.28 23.43 0.7 24.27 1.33C25.12 1.96 25.8 2.77 26.28 3.71C26.75 4.65 26.99 5.69 27 6.74L27 39.65C26.99 40.7 26.75 41.74 26.28 42.68C25.8 43.62 25.12 44.43 24.27 45.06C23.43 45.69 22.45 46.11 21.41 46.29C20.38 46.48 19.31 46.41 18.31 46.11L4.81 42.06C3.42 41.65 2.2 40.79 1.33 39.63C0.46 38.46 0 37.05 0 35.6L0 10.79C0 9.34 0.46 7.93 1.33 6.77C2.2 5.6 3.42 4.75 4.81 4.33L18.31 0.28ZM29.25 5.2C29.25 4.6 29.48 4.03 29.9 3.6C30.33 3.18 30.9 2.95 31.5 2.95L38.25 2.95C40.04 2.95 41.75 3.66 43.02 4.92C44.28 6.19 45 7.91 45 9.7L45 11.95C45 12.54 44.76 13.11 44.34 13.54C43.91 13.96 43.34 14.2 42.75 14.2C42.15 14.2 41.58 13.96 41.15 13.54C40.73 13.11 40.5 12.54 40.5 11.95L40.5 9.7C40.5 9.1 40.26 8.53 39.84 8.1C39.41 7.68 38.84 7.45 38.25 7.45L31.5 7.45C30.9 7.45 30.33 7.21 29.9 6.79C29.48 6.36 29.25 5.79 29.25 5.2ZM42.75 32.2C43.34 32.2 43.91 32.43 44.34 32.85C44.76 33.28 45 33.85 45 34.45L45 36.7C45 38.49 44.28 40.2 43.02 41.47C41.75 42.73 40.04 43.45 38.25 43.45L31.5 43.45C30.9 43.45 30.33 43.21 29.9 42.79C29.48 42.36 29.25 41.79 29.25 41.2C29.25 40.6 29.48 40.03 29.9 39.6C30.33 39.18 30.9 38.95 31.5 38.95L38.25 38.95C38.84 38.95 39.41 38.71 39.84 38.29C40.26 37.86 40.5 37.29 40.5 36.7L40.5 34.45C40.5 33.85 40.73 33.28 41.15 32.85C41.58 32.43 42.15 32.2 42.75 32.2ZM15.75 20.95C15.15 20.95 14.58 21.18 14.15 21.6C13.73 22.03 13.5 22.6 13.5 23.2C13.5 23.79 13.73 24.36 14.15 24.79C14.58 25.21 15.15 25.45 15.75 25.45L15.75 25.45C16.34 25.45 16.92 25.21 17.34 24.79C17.76 24.36 18 23.79 18 23.2C18 22.6 17.76 22.03 17.34 21.6C16.92 21.18 16.34 20.95 15.75 20.95L15.75 20.95Z" fill="#FFFFFF" fillOpacity="1.000000" fillRule="evenodd"/>
-                        </svg>
-                    </div>
-                </NavLink>
-            </div> */}
         </div>
     )
 }

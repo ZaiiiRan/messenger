@@ -41,7 +41,7 @@
   --widget-background: #151e2c;
   --input-placeholder: #ADB5BD;
   --input-background: #152033;
-  --button-background: #002DE3;
+  --button-background: #375FFF;
   --button-hover-background: #001A83;
   --button-disabled-background: #879FFF;
   --avatar-standart-background: #EDEDED;
@@ -64,7 +64,7 @@
   --widget-background: #FCFCFC;
   --input-placeholder: #ADB5BD;
   --input-background: #F7F7FC;
-  --button-background: #375FFF;
+  --button-background: #002DE3;
   --button-hover-background: #879FFF;
   --button-disabled-background: #001A83;
   --avatar-standart-background: #EDEDED;
@@ -112,4 +112,30 @@ body {
 .scrollContainer::-webkit-scrollbar-thumb {
   background-color: var(--select-background);
   border-radius: 4px;
+}
+
+.backBtn {
+  cursor: pointer;
+  transition: background-color .2s ease, transform .2s ease;
+}
+
+.backBtn:hover {
+  background-color: var(--main-hover);
+}
+.backBtn:active {
+  background-color: var(--main-hover);
+  transform: scale(0.98);
+}
+
+@media (hover: none) {
+  .backBtn:hover {
+      background-color: transparent;
+  }
+  .backBtn:active {
+      background-color: var(--main-hover);
+  }
+}
+
+.Avatar-standart {
+  background-color: var(--avatar-standart-background);
 }

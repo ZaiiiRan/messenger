@@ -7,6 +7,7 @@ class UserStore {
     isAuth = false
     isLoading = false
     isBegin = true
+    isOpen = false
 
     constructor() {
         makeAutoObservable(this)
@@ -26,6 +27,10 @@ class UserStore {
 
     setBegin(bool) {
         this.isBegin = bool
+    }
+
+    setOpen(bool) {
+        this.isOpen = bool
     }
 
     async login(username, password) {

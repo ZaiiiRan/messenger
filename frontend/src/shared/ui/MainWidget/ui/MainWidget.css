@@ -6,28 +6,6 @@
     z-index: 5;
 }
 
-.backBtn {
-    cursor: pointer;
-    transition: background-color .2s ease, transform .2s ease;
-}
-
-.backBtn:hover {
-    background-color: var(--main-hover);
-}
-.backBtn:active {
-    background-color: var(--main-hover);
-    transform: scale(0.98);
-}
-
-@media (hover: none) {
-    .backBtn:hover {
-        background-color: transparent;
-    }
-    .backBtn:active {
-        background-color: var(--main-hover);
-    }
-}
-
 @media (max-width: 1023px) {
     .Main-Widget {
         position: absolute;
