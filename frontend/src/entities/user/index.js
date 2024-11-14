@@ -1,3 +1,9 @@
+import { i18n } from '../../shared/config/i18n'
+import en from './locales/en.json'
+import ru from './locales/ru.json'
+i18n.addResourceBundle('en', 'userCard', en)
+i18n.addResourceBundle('ru', 'userCard', ru)
+
 import validateUsername from "./validations/validateUsername"
 import validateEmail from "./validations/validateEmail"
 import validatePhone from "./validations/validatePhone"
