@@ -7,7 +7,7 @@ const FriendsMenu = ({ open }) => {
     const { t } = useTranslation('friendsFeature')
 
     return (
-        <ListWidget title={ t('People') }>
+        <ListWidget title={ t('People') } className='h-full'>
             <MenuItem 
                 onClick={() => open('search_friends')}
                 text={ t('Find friends') }

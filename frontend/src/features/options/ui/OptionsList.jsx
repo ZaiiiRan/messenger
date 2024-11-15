@@ -7,7 +7,7 @@ const OptionsList = ({ open }) => {
     const { t } = useTranslation('optionsFeature')
 
     return (
-        <ListWidget title={ t('Settings') }>
+        <ListWidget title={ t('Settings') } className='h-full'>
             <MenuItem 
                 onClick={() => open('appearance')}
                 text={ t('Appearance') }

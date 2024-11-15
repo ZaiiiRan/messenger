@@ -4,9 +4,13 @@ import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../../entities/user'
+import { Loader } from '../../../shared/ui/Loader'
 
 const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr, birthdate, setBirthdate, birthdateErr }) => {
     const { t } = useTranslation('registerFeature')
+
+    const userStore = useAuth()
     
     const handleFormKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -75,11 +79,17 @@ const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr,
                 </Button>
                 <Button 
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
-                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl flex items-center justify-center'
                     onClick={onNext}
                     id='submitBtn'
                 >
-                    { t('Register') } 
+                    {
+                        userStore.isLoading ? (
+                            <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
+                        ) : (
+                            t('Register')
+                        )
+                    }
                 </Button>
             </div>
         </motion.form>
