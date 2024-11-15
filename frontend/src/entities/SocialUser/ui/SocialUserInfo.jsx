@@ -16,7 +16,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
     const addFriend = async (action) => {
         try {
             setLoading(true)
-            await socialUserAPI.addFriend(data.user.id)
+            const response = await socialUserAPI.addFriend(data.user.id)
             setModalTitle(t('Success'))
             if (action === 'request') {
                 setModalText(t('Friend request sent'))
@@ -26,7 +26,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
             }
             
             openModal()
-            await onUpdate()
+            onUpdate(response.data.user)
             setUserManipulation(true)
         } catch (e) {
             setModalTitle(t('Error'))
@@ -43,7 +43,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
     const removeFriend = async (action) => {
         try {
             setLoading(true)
-            await socialUserAPI.removeFriend(data.user.id)
+            const response = await socialUserAPI.removeFriend(data.user.id)
             setModalTitle(t('Success'))
             if (action === 'decline') {
                 if (data.user.username.length > 15) setModalText(t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
@@ -55,7 +55,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
                 else setModalText(`${data.user.username} ${t('has been removed from friends')}`)
             }
             openModal()
-            await onUpdate()
+            onUpdate(response.data.user)
             setUserManipulation(true)
         } catch (e) {
             setModalTitle(t('Error'))
@@ -72,13 +72,13 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
     const blockUser = async () => {
         try {
             setLoading(true)
-            await socialUserAPI.blockUser(data.user.id)
+            const response = await socialUserAPI.blockUser(data.user.id)
             
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been blocked'))
             else setModalText(`${data.user.username} ${t('has been blocked')}`)
             openModal()
-            await onUpdate()
+            onUpdate(response.data.user)
             setUserManipulation(true)
         } catch (e) {
             setModalTitle(t('Error'))
@@ -95,12 +95,12 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation }) => {
     const unblockUser = async () => {
         try {
             setLoading(true)
-            await socialUserAPI.unblockUser(data.user.id)
+            const response = await socialUserAPI.unblockUser(data.user.id)
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been unblocked'))
             else setModalText(`${data.user.username} ${t('has been unblocked')}`)
             openModal()
-            await onUpdate()
+            onUpdate(response.data.user)
             setUserManipulation(true)
         } catch (e) {
             setModalTitle(t('Error'))

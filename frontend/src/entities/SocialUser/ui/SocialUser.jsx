@@ -49,7 +49,7 @@ const SocialUser = ({ id, onError, setUserManipulation }) => {
                 isFetching ? (
                     <SocialUserInfoSkeleton />
                 ) : (
-                    <SocialUserInfo data={data} onUpdate={load} setUserManipulation={setUserManipulation} />
+                    <SocialUserInfo data={data} onUpdate={setData} setUserManipulation={setUserManipulation} />
                 )
             }
         </motion.div>
