@@ -1,6 +1,5 @@
 .Widget-List {
     padding: 3rem 3rem;
-    width: 40%;
     background-color: var(--widget-background);
     z-index: 10;
 }
@@ -46,14 +45,12 @@
 
 @media (min-width: 1921px) and (max-width: 2560px) {
     .Widget-List {
-        width: 35%;
         padding: 4rem 4rem;
     }
 }
 
 @media (min-width: 2561px) and (max-width: 3840px) {
     .Widget-List {
-        width: 35%;
         padding: 5rem 5rem;
     }
 }

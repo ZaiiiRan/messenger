@@ -10,7 +10,8 @@ export default {
         'full_screen': '100vh'
       },
       width: {
-        'full_screen': '100vw'
+        'full_screen': '100vw',
+        '7/20': '35%'
       },
       backgroundColor: {
         'dark-brand-color': '#001A83',
@@ -20,7 +21,7 @@ export default {
         'sm': '500px',
         'mobile': '200px',
         '2k': '1921px',
-        '4k': '2561px'
+        '4k': '2561px',
       },
     },
   },

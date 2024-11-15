@@ -11,6 +11,7 @@ import ActivateRedirect from '../hocs/ActivateRedirect'
 import MainLayout from '../layouts/MainLayout'
 import { OptionsPage } from '../../pages/OptionsPage'
 import { FriendsPage } from '../../pages/FriendsPage'
+import { MessengingPage } from '../../pages/MessengingPage'
 
 export const Router = () => {
     return(
@@ -25,9 +26,9 @@ export const Router = () => {
                             </RequireAuth> 
                         }
                     >
-                        <Route path="/" element={<div>Home Page</div>} />
-                        <Route path="/friends" element={<FriendsPage />} />
-                        <Route path="/options" element={<OptionsPage />} />
+                        <Route path="/" element={ <MessengingPage /> } />
+                        <Route path="/friends" element={ <FriendsPage /> } />
+                        <Route path="/options" element={ <OptionsPage /> } />
                     </Route>
 
                     <Route path='/start' element={
