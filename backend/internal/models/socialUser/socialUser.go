@@ -21,115 +21,117 @@ func CreateSocialUser(dto *user.UserDTO, friendStatus *string) *SocialUser {
 }
 
 // Adding to friend list
-func AddFriend(userID, friendID uint64) error {
-	friend, err := user.GetUserByID(friendID)
+func AddFriend(userID, friendID uint64) (*SocialUser, error) {
+	friend, err := GetTargetByID(userID, friendID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if !friend.IsActivated || friend.IsDeleted {
-		return appErr.BadRequest("user not found")
+	if !friend.User.IsActivated || friend.User.IsDeleted {
+		return nil, appErr.BadRequest("user not found")
 	}
-	if friend.IsBanned {
-		return appErr.BadRequest("user is banned")
+	if friend.User.IsBanned {
+		return nil, appErr.BadRequest("user is banned")
 	}
 
 	db := pgDB.GetDB()
-	status, err := GetRelations(userID, friendID)
-	if err != nil {
-		return err
-	}
-	if status != nil && *status == "blocked by target" {
-		return appErr.BadRequest("you are blocked by this user")
-	} else if status != nil && *status == "blocked" {
-		return appErr.BadRequest("you blocked this user")
-	} else if status != nil && *status == "accepted" {
-		return appErr.BadRequest("you are already friends")
-	} else if status != nil && *status == "outgoing request" {
-		return appErr.BadRequest("friend request has already been sent")
-	} else if status != nil && *status == "incoming request" {
+	var newStatus string
+
+	if friend.FriendStatus != nil && *friend.FriendStatus == "blocked by target" {
+		return nil, appErr.BadRequest("you are blocked by this user")
+	} else if friend.FriendStatus != nil && *friend.FriendStatus == "blocked" {
+		return nil, appErr.BadRequest("you blocked this user")
+	} else if friend.FriendStatus != nil && *friend.FriendStatus == "accepted" {
+		return nil, appErr.BadRequest("you are already friends")
+	} else if friend.FriendStatus != nil && *friend.FriendStatus == "outgoing request" {
+		return nil, appErr.BadRequest("friend request has already been sent")
+	} else if friend.FriendStatus != nil && *friend.FriendStatus == "incoming request" {
 		_, err = db.Exec(`UPDATE friends SET status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted')
 		WHERE (friend_1_id = $1 AND friend_2_id = $2) OR (friend_1_id = $2 AND friend_2_id = $1)`, userID, friendID)
+		newStatus = "accepted"
 	} else {
 		_, err = db.Exec(`INSERT INTO friends (friend_1_id, friend_2_id, status_id)
 		VALUES ($1, $2, (SELECT id FROM friend_statuses WHERE name = 'request'))`, userID, friendID)
+		newStatus = "outgoing request"
 	}
 	if err != nil {
-		return appErr.InternalServerError("internal server error")
+		return nil, appErr.InternalServerError("internal server error")
 	}
+	friend.FriendStatus = &newStatus
 
-	return nil
+	return friend, nil
 }
 
 // Removing friend from friend list
-func RemoveFriend(userID, friendID uint64) error {
-	_, err := user.GetUserByID(friendID)
+func RemoveFriend(userID, friendID uint64) (*SocialUser, error) {
+	friend, err := GetTargetByID(userID, friendID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db := pgDB.GetDB()
-	status, err := GetRelations(userID, friendID)
-	if err != nil {
-		return err
-	}
-	if status != nil {
+	if friend.FriendStatus != nil && *friend.FriendStatus != "blocked by target" && *friend.FriendStatus != "blocked" {
 		_, err = db.Exec(`DELETE FROM friends WHERE (friend_1_id = $1 AND friend_2_id = $2)
 		OR (friend_1_id = $2 AND friend_2_id = $1)`, userID, friendID)
 		if err != nil {
-			return appErr.InternalServerError("internal server error")
+			return nil, appErr.InternalServerError("internal server error")
 		}
+		friend.FriendStatus = nil
 	}
-	return nil
+	return friend, nil
 }
 
 // Adding user to block list
-func BlockUser(userID, targetID uint64) error {
-	_, err := user.GetUserByID(targetID)
+func BlockUser(userID, targetID uint64) (*SocialUser, error) {
+	target, err := GetTargetByID(userID, targetID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	db := pgDB.GetDB()
-	status, err := GetRelations(userID, targetID)
-	if err != nil {
-		return err
-	}
-	if status != nil && *status == "blocked" {
-		return appErr.BadRequest("you have already blocked this user")
-	} else if status != nil && *status != "blocked by target" {
+	var newStatus string
+
+	if target.FriendStatus != nil && *target.FriendStatus == "blocked" {
+		return nil, appErr.BadRequest("you have already blocked this user")
+	} else if target.FriendStatus != nil && *target.FriendStatus != "blocked by target" {
 		_, err = db.Exec(`DELETE FROM friends WHERE (friend_1_id = $1 AND friend_2_id = $2)
 		OR (friend_1_id = $2 AND friend_2_id = $1)`, userID, targetID)
 		if err != nil {
-			return appErr.InternalServerError("inernal server error")
+			return nil, appErr.InternalServerError("inernal server error")
 		}
 	}
 
 	_, err = db.Exec(`INSERT INTO friends (friend_1_id, friend_2_id, status_id)
     VALUES ($1, $2, (SELECT id FROM friend_statuses WHERE name = 'blocked'))`, userID, targetID)
 	if err != nil {
-		return appErr.InternalServerError("inernal server error")
+		return nil, appErr.InternalServerError("inernal server error")
 	}
-	return nil
+	newStatus = "blocked"
+	target.FriendStatus = &newStatus
+	return target, nil
 }
 
 // Removing user from block list
-func UnblockUser(userID, targetID uint64) error {
-	_, err := user.GetUserByID(targetID)
+func UnblockUser(userID, targetID uint64) (*SocialUser, error) {
+	target, err := GetTargetByID(userID, targetID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db := pgDB.GetDB()
-	status, err := GetRelations(userID, targetID)
-	if err != nil {
-		return err
-	}
-	if status != nil && *status == "blocked" {
+
+	if target.FriendStatus != nil && *target.FriendStatus == "blocked" {
 		_, err = db.Exec(`DELETE FROM friends WHERE friend_1_id = $1 AND friend_2_id = $2 
         AND status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked')`, userID, targetID)
 		if err != nil {
-			return appErr.InternalServerError("inernal server error")
+			return nil, appErr.InternalServerError("inernal server error")
 		}
 	}
 
-	return nil
+	status, err := GetRelations(userID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	target.FriendStatus = status
+
+	return target, nil
 }
 
 // Get relations between two users
@@ -153,6 +155,14 @@ func GetRelations(userID, targetID uint64) (*string, error) {
 		WHERE 
 			(f.friend_1_id = $1 AND f.friend_2_id = $2)
 			OR (f.friend_1_id = $2 AND f.friend_2_id = $1)
+		ORDER BY 
+			CASE 
+				WHEN f.friend_1_id = $1 AND f.status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked') THEN 1
+				WHEN f.friend_2_id = $1 AND f.status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked') THEN 2
+				WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted') THEN 3
+				WHEN f.status_id = (SELECT id FROM friend_statuses WHERE name = 'request') THEN 4
+				ELSE 5
+			END
 		LIMIT 1
 	`
 

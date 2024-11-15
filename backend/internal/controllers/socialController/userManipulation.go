@@ -32,12 +32,13 @@ func AddFriend(c *fiber.Ctx) error {
 	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
-	err = socialUser.AddFriend(user.ID, req.UserID)
+	friend, err := socialUser.AddFriend(user.ID, req.UserID)
 	if err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{
 		"message": "ok",
+		"user": friend,
 	})
 }
 
@@ -54,12 +55,13 @@ func RemoveFriend(c *fiber.Ctx) error {
 	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
-	err = socialUser.RemoveFriend(user.ID, req.UserID)
+	target, err := socialUser.RemoveFriend(user.ID, req.UserID)
 	if err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{
 		"message": "friend deleted",
+		"user": target,
 	})
 }
 
@@ -76,12 +78,13 @@ func BlockUser(c *fiber.Ctx) error {
 	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
-	err = socialUser.BlockUser(user.ID, req.UserID)
+	target, err := socialUser.BlockUser(user.ID, req.UserID)
 	if err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{
 		"message": "user blocked",
+		"user": target,
 	})
 }
 
@@ -98,12 +101,13 @@ func UnblockUser(c *fiber.Ctx) error {
 	if err := checkSelfID(user.ID, req.UserID); err != nil {
 		return err
 	}
-	err = socialUser.UnblockUser(user.ID, req.UserID)
+	target, err := socialUser.UnblockUser(user.ID, req.UserID)
 	if err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{
 		"message": "user unblocked",
+		"user": target,
 	})
 }
 
