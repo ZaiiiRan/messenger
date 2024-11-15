@@ -47,7 +47,7 @@ func SearchFriends(userID uint64, search string, limit, offset int) ([]ShortUser
 			AND (f.friend_1_id = $1 OR f.friend_2_id = $1)
 			AND f.status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted')
 			AND ($2 = '' OR u.username ILIKE '%' || $2 || '%' OR u.email ILIKE '%' || $2 || '%')
-		ORDER BY (u.username = $2 OR u.email = $2) DESC
+		ORDER BY (u.username = $2 OR u.email = $2) DESC, u.username
 		LIMIT $3 OFFSET $4
 	`
 
@@ -69,7 +69,7 @@ func SearchIncomingFriendRequests(userID uint64, search string, limit, offset in
 			AND u.is_banned = FALSE
 			AND u.is_activated = TRUE
 			AND ($2 = '' OR u.username ILIKE '%' || $2 || '%' OR u.email ILIKE '%' || $2 || '%')
-		ORDER BY (u.username = $2 OR u.email = $2) DESC
+		ORDER BY (u.username = $2 OR u.email = $2) DESC, u.username
 		LIMIT $3 OFFSET $4
 	`
 
@@ -91,7 +91,7 @@ func SearchOutgoingFriendRequests(userID uint64, search string, limit, offset in
 			AND u.is_banned = FALSE
 			AND u.is_activated = TRUE
 			AND ($2 = '' OR u.username ILIKE '%' || $2 || '%' OR u.email ILIKE '%' || $2 || '%')
-		ORDER BY (u.username = $2 OR u.email = $2) DESC
+		ORDER BY (u.username = $2 OR u.email = $2) DESC, u.username
 		LIMIT $3 OFFSET $4
 	`
 
@@ -113,7 +113,7 @@ func SearchBlockList(userID uint64, search string, limit, offset int) ([]ShortUs
 			AND u.is_banned = FALSE
 			AND u.is_activated = TRUE
 			AND ($2 = '' OR u.username ILIKE '%' || $2 || '%' OR u.email ILIKE '%' || $2 || '%')
-		ORDER BY (u.username = $2 OR u.email = $2) DESC
+		ORDER BY (u.username = $2 OR u.email = $2) DESC, u.username
 		LIMIT $3 OFFSET $4
 	`
 
