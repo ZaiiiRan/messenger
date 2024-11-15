@@ -5,7 +5,7 @@ import { observer } from 'mobx-react'
 import { Button } from '../../../shared/ui/Button'
 import { useTranslation } from 'react-i18next'
 
-const User = observer(() => {
+const UserModal = observer(() => {
     const { t } = useTranslation('userCard')
 
     const logout = async (e) => {
@@ -116,4 +116,4 @@ const User = observer(() => {
     )
 })
 
-export default User
+export default UserModal

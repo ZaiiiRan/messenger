@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { FriendsMenu } from '../../../features/friends'
-import { FindFriends, Friends, IncomingFriendRequests, OutgoingFriendRequests, BlackList } from '../../../features/friends'
+import { UserList } from '../../../features/friends'
+import { shortUsersFetching } from '../../../entities/ShortUser'
 
 
 const FriendsPage = () => {
@@ -28,27 +29,27 @@ const FriendsPage = () => {
             <AnimatePresence mode='wait'>
                 {
                     selected === 'search_friends' && (
-                        <FindFriends goBack={goBack} />
+                        <UserList key="search_friends" goBack={goBack} title={'Find friends'} fetchFunction={shortUsersFetching.fetchShortUser} minSearchLength={4} checkAfterUpdate={false} />
                     )
                 }
                 {
                     selected === 'your_friends' && (
-                        <Friends goBack={goBack} />
+                        <UserList key="your_friends" goBack={goBack} title={'Your friends'} fetchFunction={shortUsersFetching.fetchFriends} />
                     )
                 }
                 {
                     selected === 'incoming_requests' && (
-                        <IncomingFriendRequests goBack={goBack} />
+                        <UserList key="incoming_requests" goBack={goBack} title={'Incoming requests'} fetchFunction={shortUsersFetching.fetchIncomingFriendRequests} />
                     )
                 }
                 {
                     selected === 'outgoing_requests' && (
-                        <OutgoingFriendRequests goBack={goBack} />
+                        <UserList key="outgoing_requests" goBack={goBack} title={'Outgoing requests'} fetchFunction={shortUsersFetching.fetchOutgoingFriendRequests} />
                     )
                 }
                 {
                     selected === 'black_list' && (
-                        <BlackList goBack={goBack} />
+                        <UserList key="black_list" goBack={goBack} title={'Black list'} fetchFunction={shortUsersFetching.fetchBlackList} />
                     )
                 }
             </AnimatePresence>

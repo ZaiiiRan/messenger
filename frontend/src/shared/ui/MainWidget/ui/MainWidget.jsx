@@ -2,9 +2,10 @@
 import './MainWidget.css'
 import { motion } from 'framer-motion'
 
-const MainWidget = ({ goBack, title, children }) => {
+const MainWidget = ({ key, goBack, title, children }) => {
     return (
         <motion.div 
+            key={key}
             initial={{ opacity: 0, x: -500 }}
             animate={{ opacity: 1, x: 0}}
             exit={{ opacity: 0, x: -500 }}

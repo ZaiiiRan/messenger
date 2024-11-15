@@ -48,6 +48,16 @@ const apiErrors = {
     "search parameter is empty": "Search parameter is empty",
     "search parameter is very short": "Search parameter is very short",
     "users not found": "Users not found",
+
+    // social functions
+    "invalid user id": "User not found",
+    "user not found": "User not found",
+    "user is banned": "User is banned from the service",
+    "you are blocked by this user": "You are blocked by this user",
+    "you blocked this user": "You blocked this user",
+    "you are already friends": "You are already friends",
+    "friend request has already been sent": "Friend request has already been sent",
+    
 }
 
 export default apiErrors

@@ -50,7 +50,7 @@ const AppearanceOptions = observer(({ goBack }) => {
     }
 
     return (
-        <MainWidget title={ t('Appearance') } goBack={goBack}>
+        <MainWidget key={'Appearance'} title={ t('Appearance') } goBack={goBack}>
             <div className='flex flex-col gap-8 2k:gap-12 4k:gap-20'>
                 <div className='flex 2xl:w-1/2 xl:w-4/6 justify-between'>
                     <div className='flex items-center gap-3'>

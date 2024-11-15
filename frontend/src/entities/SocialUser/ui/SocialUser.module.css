@@ -1,0 +1,31 @@
+.skeleton {
+    background-color: var(--select-background);
+    border-radius: 0.5rem;
+    margin-top: 0.125rem;
+    margin-bottom: 0.125rem;
+
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.avatarSkeleton {
+    background-color: var(--select-background);
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.buttonSkeleton {
+    background-color: var(--select-background);
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
