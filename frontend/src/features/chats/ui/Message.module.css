@@ -1,0 +1,34 @@
+.Message {
+    min-height: 50px;
+    z-index: 20;
+    background-color: var(--widget-background);
+    color: var(--text-color);
+}
+
+.Message.self {
+    background-color: var(--button-background);
+    color: #ffffff;
+}
+.checkMark {
+    fill: var(--input-placeholder);
+}
+.checkMarkReaded {
+    fill: var(--success-color);
+}
+.from {
+    color: var(--button-background);
+    transition: color 0.2s ease;
+}
+.from:hover {
+    color: var(--button-disabled-background);
+}
+
+.Time {
+    color: var(--input-placeholder);
+}
+
+@media (hover: none) {
+    .from:hover {
+        color: var(--button-background);
+    }
+}

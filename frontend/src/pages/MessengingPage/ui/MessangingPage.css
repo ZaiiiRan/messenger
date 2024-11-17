@@ -1,0 +1,5 @@
+@media (min-width: 1024px) and (orientation: portrait) {
+    .chat_lists {
+        width: 100vw;
+    }
+}

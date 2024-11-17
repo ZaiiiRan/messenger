@@ -23,6 +23,9 @@ export default {
         '2k': '1921px',
         '4k': '2561px',
       },
+      maxWidth: {
+        '4/5': '80%',
+      },
     },
   },
   plugins: [],

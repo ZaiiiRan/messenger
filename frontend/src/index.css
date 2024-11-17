@@ -87,6 +87,10 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+* {
+  behavior: smooth;
+}
+
 @media (orientation: landscape) {
   body {
     overflow: hidden;
@@ -103,13 +107,13 @@ body {
 .scrollContainer {
   overflow-y: overlay;
 }
-.scrollContainer::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 6px;
 }
-.scrollContainer::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
-.scrollContainer::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: var(--select-background);
   border-radius: 4px;
 }

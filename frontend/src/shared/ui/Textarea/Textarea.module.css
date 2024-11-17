@@ -1,0 +1,35 @@
+.textareaWrapper {
+    background-color: var(--input-background);
+    display: flex;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    align-items: center;
+}
+
+.Textarea {
+    width: 100%;
+    min-height: 20px;
+    max-height: calc(20px * 4);
+    overflow-y: auto;
+    resize: none;
+    outline: none;
+    border: none;
+    background-color: var(--input-background);
+    line-height: 20px;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.Textarea::placeholder {
+    color: var(--input-placeholder);
+    user-select: none;
+}
+
+@media (prefers-color-scheme: light) {
+    .textareaWrapper {
+        background-color: var(--input-background);
+    }
+    .Textarea {
+        background-color: var(--input-background);
+    }
+}

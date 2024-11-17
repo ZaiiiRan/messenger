@@ -1,0 +1,88 @@
+.ChatCard {
+    cursor: pointer;
+    user-select: none;
+    width: 98%;
+    height: 100px;
+    min-height: 100px;
+    transition: background-color .2s ease, transform .2s ease;
+}
+.ChatCard:hover {
+    background-color: var(--main-hover);
+}
+
+.ChatCard:active {
+    transform: scale(0.98);
+    background-color: var(--main-hover);
+}
+
+.Unread {
+    background-color: var(--button-background);
+    color: #fff;
+}
+.checkMark {
+    fill: var(--input-placeholder);
+}
+.checkMarkReaded {
+    fill: var(--success-color);
+}
+
+.Time {
+    color: var(--input-placeholder);
+}
+
+.skeleton {
+    background-color: var(--select-background);
+    border-radius: 0.5rem;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.avatarSkeleton {
+    width: 100%;
+    height: 100%;
+    background-color: var(--select-background);
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@media (hover: none) {
+    .ChatCard:hover {
+        background-color: transparent;
+    }
+    
+    .ChatCard:active {
+        background-color: var(--main-hover);
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+    .ChatCard {
+        height: 80px;
+        min-height: 80px;
+    }
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    .ChatCard {
+        height: 150px;
+        min-height: 150px;
+    }
+}
+
+@media (min-width: 2561px) and (max-width: 3840px) {
+    .ChatCard {
+        height: 200px;
+        min-height: 200px;
+    }
+}
