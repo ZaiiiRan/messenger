@@ -28,10 +28,16 @@ const SocialUserInfoSkeleton = () => {
                 </div>
             </div>
 
-            <div className='flex flex-col gap-7 mt-2 2k:mt-4 4k:mt-6 2k:gap-10 4k:gap-14'>
-                <div className={`${styles.buttonSkeleton} h-14 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96 rounded-3xl`}></div>
-                <div className={`${styles.buttonSkeleton} h-14 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96 rounded-3xl`}></div>
-                
+            <div className='flex justify-between'>
+                <div className='flex flex-col gap-7 mt-2 2k:mt-4 4k:mt-6 2k:gap-10 4k:gap-14'>
+                    <div className={`${styles.buttonSkeleton} h-14 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96 rounded-3xl`}></div>
+                    <div className={`${styles.buttonSkeleton} h-14 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96 rounded-3xl`}></div>
+                            
+                </div>
+
+                <div className='flex flex-col gap-7 mt-2 2k:mt-4 4k:mt-6 2k:gap-10 4k:gap-14'>
+                    <div className={`${styles.buttonSkeleton} h-14 aspect-square 2k:h-20 4k:h-32 rounded-3xl`}></div>
+                </div>
             </div>
         </>
     )
