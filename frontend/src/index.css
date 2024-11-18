@@ -34,6 +34,7 @@
   /* dev */
 
 
+  --chat-background: #0F1828;
   --main-hover: #0F1828;
   --select-background: #1B2B48;
   --select-hover: #0F1828;
@@ -57,6 +58,7 @@
   --safe-color: #7BCBCF;
 }
 :root[data-color-scheme="light"] {
+  --chat-background: #F5F5F5;;
   --main-hover: #D4DBE7;
   --select-background: #EDEDED;
   --select-hover: #D4DBE7;

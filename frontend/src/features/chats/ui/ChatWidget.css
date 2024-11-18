@@ -21,7 +21,7 @@
 }
 .Chat-Main-Area {
     width: 100%;
-    background-color: var(--background-color);
+    background-color: var(--chat-background);
 }
 .Send-Button {
     cursor: pointer;
