@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { OptionsList, AppearanceOptions } from '../../../features/options'
+import { OptionsList, AppearanceOptions } from '../../../widgets/options'
 import { useState } from 'react'
 
 

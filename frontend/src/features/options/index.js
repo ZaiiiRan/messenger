@@ -4,6 +4,6 @@ import ru from './locales/ru.json'
 i18n.addResourceBundle('en', 'optionsFeature', en)
 i18n.addResourceBundle('ru', 'optionsFeature', ru)
 
-import OptionsList from "./ui/OptionsList"
-import AppearanceOptions from './ui/AppearanceOptions'
-export { OptionsList, AppearanceOptions }
+import LanguageChanging from './ui/LaguageChanging'
+import ThemeChanging from './ui/ThemeChanging'
+export { LanguageChanging, ThemeChanging }

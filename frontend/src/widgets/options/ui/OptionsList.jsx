@@ -4,7 +4,7 @@ import { ListWidget } from '../../../shared/ui/ListWidget'
 import { MenuItem } from '../../../shared/ui/MenuItem'
 
 const OptionsList = ({ open }) => {
-    const { t } = useTranslation('optionsFeature')
+    const { t } = useTranslation('optionsWidget')
 
     return (
         <ListWidget title={ t('Settings') } className='h-full w-2/5 2k:w-7/20'>
