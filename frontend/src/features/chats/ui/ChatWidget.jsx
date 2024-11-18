@@ -9,6 +9,9 @@ import { Loader } from '../../../shared/ui/Loader'
 import Message from './Message'
 import getDateLabel from '../../../utils/dateLabel'
 import getTime from '../../../utils/timeLabel'
+import MessageSkeleton from './MessageSkeleton'
+
+const MESSAGES_BLOCK_COUNT = 2
 
 const ChatWidget = ({ key, goBack }) => {
     const { t } = useTranslation('chatsFeature')
@@ -234,7 +237,32 @@ const ChatWidget = ({ key, goBack }) => {
                             />
                         </div>
                     ) : (
+
                         <>
+                            {
+                                Array(MESSAGES_BLOCK_COUNT).fill(0).map(() => (
+                                    <>
+                                        <MessageSkeleton 
+                                            displayFrom={true}
+                                            lines={2}
+                                        />
+                                        <MessageSkeleton 
+                                            displayFrom={true}
+                                            lines={3}
+                                            me={true}
+                                        />
+                                        <MessageSkeleton 
+                                            displayFrom={true}
+                                            lines={4}
+                                            me={true}
+                                        />
+                                        <MessageSkeleton 
+                                            displayFrom={true}
+                                            lines={1}
+                                        />
+                                    </>
+                                ))
+                            }
                             {
                                 groupMessagesByDate(messages).map((group, index) => 
                                     <>
