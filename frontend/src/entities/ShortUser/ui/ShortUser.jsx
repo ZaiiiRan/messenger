@@ -1,11 +1,11 @@
 /* eslint-disable react/prop-types */
 import styles from './ShortUser.module.css'
 
-const ShortUser = ({ firstname, lastname, username, isDeleted, isBanned, isActivated, onClick }) => {
+const ShortUser = ({ firstname, lastname, username, isDeleted, isBanned, isActivated, onClick, isClickable=true }) => {
     return (
         <div 
             className={`${styles.ShortUser} flex items-center px-5 py-2 
-                2k:px-8 2k:py-3 4k:px-12 4k:py-4 rounded-3xl xl:gap-5 mobile:gap-4 2k:gap-8 4k:gap-12`}
+                2k:px-8 2k:py-3 4k:px-12 4k:py-4 rounded-3xl xl:gap-5 mobile:gap-4 2k:gap-8 4k:gap-12 ${isClickable ? '' : styles.notClickable}`}
             onClick={onClick}
         >
             <div className='md:h-2/3 mobile:h-3/5 rounded-3xl aspect-square'>
@@ -25,17 +25,17 @@ const ShortUser = ({ firstname, lastname, username, isDeleted, isBanned, isActiv
                 </div>
             </div>
 
-            <div className='flex flex-col 4k:gap-2'>
+            <div className='flex flex-col 4k:gap-2 max-w-[90%]'>
                 <div 
                     className='2xl:text-xl xl:text-lg lg:text-base 2k:text-2xl 4k:text-3xl
-                        md:text-xl sm:text-lg mobile:text-text-base'
+                        md:text-xl sm:text-lg mobile:text-text-base text-ellipsis overflow-hidden'
                 >
                     { firstname } {lastname}
                 </div>
 
                 <div
                     className='2xl:text-base xl:text-sm lg:text-sm 2k:text-lg 4k:text-xl
-                        md:text-base sm:text-sm mobile:text-sm'
+                        md:text-base sm:text-sm mobile:text-sm  text-ellipsis overflow-hidden'
                 >
                     {username}
                 </div>

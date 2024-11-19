@@ -40,7 +40,7 @@ const MainWidget = ({
                     </div>
                 </div>
                 <h1 className='font-extrabold 2xl:text-3xl xl:text-2xl lg:text-xl 2k:text-4xl 4k:text-5xl
-                    md:text-3xl sm:text-2xl mobile:text-xl'
+                    md:text-3xl sm:text-2xl mobile:text-xl whitespace-nowrap text-ellipsis overflow-hidden'
                 >
                     { title }
                 </h1>

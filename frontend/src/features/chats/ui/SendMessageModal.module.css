@@ -1,8 +1,8 @@
 .SendMessageModalBG {
-    z-index: 200;
+    z-index: 50;
 }
 .SendMessageModal {
-    background-color: var(--modal-background);
+    background-color: var(--widget-background);
 
     width: 33%;
     padding: 3rem 3rem;

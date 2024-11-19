@@ -3,5 +3,10 @@
     "People": "Люди",
     "Yesterday": "Вчера",
     "Today": "Сегодня",
-    "Enter message": "Введите сообщение"
+    "Enter message": "Введите сообщение",
+
+    "New message": "Новое сообщение",
+    "Send": "Отправить",
+    "Error": "Ошибка",
+    "Message is empty": "Сообщение пустое"
 }

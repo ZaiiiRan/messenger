@@ -6,6 +6,9 @@
     min-height: 100px;
     transition: background-color .2s ease, transform .2s ease;
 }
+.ShortUser.notClickable {
+    cursor: auto;
+}
 .ShortUser:hover {
     background-color: var(--main-hover);
 }
@@ -13,6 +16,13 @@
 .ShortUser:active {
     transform: scale(0.98);
     background-color: var(--main-hover);
+}
+
+.ShortUser:hover.notClickable {
+    background-color: transparent;
+}
+.ShortUser:active.notClickable {
+    transform: scale(1);
 }
 
 .skeleton {
@@ -48,6 +58,13 @@
     
     .ShortUser:active {
         background-color: var(--main-hover);
+    }
+
+    .ShortUser:hover.notClickable {
+        background-color: transparent;
+    }
+    .ShortUser:active.notClickable {
+        transform: scale(1);
     }
 }
 

@@ -1,3 +1,7 @@
+.ModalBG {
+    z-index: 100;
+}
+
 .Modal {
     background-color: var(--modal-background);
 }

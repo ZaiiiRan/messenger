@@ -2,7 +2,16 @@
 import { MainWidget } from '../../../shared/ui/MainWidget'
 import { SocialUser } from '../../../entities/SocialUser'
 
-const UserWidget = ({ key, selectedUser, checkAfterUpdate = true, setUserManipulation, onLoadError, goBack, className }) => {
+const UserWidget = ({ 
+    key, 
+    selectedUser, 
+    checkAfterUpdate = true, 
+    setUserManipulation, 
+    onLoadError, 
+    goBack, 
+    className, 
+    onMessageClick 
+}) => {
     return (
         <MainWidget 
             key={key}
@@ -13,7 +22,12 @@ const UserWidget = ({ key, selectedUser, checkAfterUpdate = true, setUserManipul
             exitAnimation={{ opacity: 0 }}
             className={className}
         >
-            <SocialUser id={selectedUser.user_id} onError={onLoadError} setUserManipulation={checkAfterUpdate ? setUserManipulation : () => {}} />
+            <SocialUser 
+                id={selectedUser.user_id} 
+                onError={onLoadError} 
+                setUserManipulation={checkAfterUpdate ? setUserManipulation : () => {}} 
+                onMessageClick={onMessageClick} 
+            />
         </MainWidget>
     )
 }

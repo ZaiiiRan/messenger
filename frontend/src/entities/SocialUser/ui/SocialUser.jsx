@@ -8,7 +8,7 @@ import { useModal } from '../../../features/modal'
 import { useTranslation } from 'react-i18next'
 import { apiErrors } from '../../../shared/api'
 
-const SocialUser = ({ id, onError, setUserManipulation }) => {
+const SocialUser = ({ id, onError, setUserManipulation, onMessageClick }) => {
     const { t } = useTranslation('socialUser')
     const [data, setData] = useState()
     const [isFetching, setFetching] = useState(true)
@@ -44,7 +44,12 @@ const SocialUser = ({ id, onError, setUserManipulation }) => {
                 isFetching ? (
                     <SocialUserInfoSkeleton />
                 ) : (
-                    <SocialUserInfo data={data} onUpdate={setData} setUserManipulation={setUserManipulation} />
+                    <SocialUserInfo 
+                        data={data} 
+                        onUpdate={setData} 
+                        setUserManipulation={setUserManipulation} 
+                        onMessageClick={onMessageClick} 
+                    />
                 )
             }
         </div>
