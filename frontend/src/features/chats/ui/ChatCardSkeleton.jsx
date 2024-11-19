@@ -30,7 +30,7 @@ const ChatCardSkeleton = () => {
             </div>
 
             {/* Status */}
-            <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4'>
+            <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4 ml-auto'>
                 <div
                     className={`${styles.skeleton} w-10 h-4 2k:h-5 4k:h-7 rounded-lg`}
                 >

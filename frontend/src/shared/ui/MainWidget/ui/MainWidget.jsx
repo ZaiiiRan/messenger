@@ -2,15 +2,27 @@
 import './MainWidget.css'
 import { motion } from 'framer-motion'
 
-const MainWidget = ({ key, goBack, title, children }) => {
+const MainWidget = ({ 
+    key, 
+    goBack, 
+    title, 
+    children, 
+    initialAnimation={ opacity: 0, x: -500 }, 
+    animation={opacity: 1, x: 0 }, 
+    exitAnimation={ opacity: 0, x: -500 },
+    className
+}) => {
     return (
         <motion.div 
             key={key}
-            initial={{ opacity: 0, x: -500 }}
-            animate={{ opacity: 1, x: 0}}
-            exit={{ opacity: 0, x: -500 }}
+            initial={initialAnimation}
+            animate={animation}
+            exit={exitAnimation}
             transition={{ duration: 0.3 }}
-            className='Main-Widget rounded-3xl flex flex-col gap-8 2k:gap-14 4k:gap-24'
+            className={`Main-Widget rounded-3xl flex flex-col gap-8 2k:gap-14 4k:gap-24 
+                ${className ? className : 
+                    'lg:static lg:w-[55%] lg:h-full lg:z-10 mobile:w-full_screen mobile:absolute mobile:top-0 mobile:left-0 mobile:h-full mobile:z-20 portrait:w-full_screen portrait:absolute portrait:top-0 portrait:left-0 portrait:h-full portrait:z-20'
+                }`}
         >
             {/* Title */}
             <div className='flex items-center gap-5 2k:gap-7 4k:gap-9'>

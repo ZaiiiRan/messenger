@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { ListWidget } from '../../../shared/ui/ListWidget'
 import { MenuItem } from '../../../shared/ui/MenuItem'
 
-const FriendsMenu = ({ open }) => {
-    const { t } = useTranslation('friendsFeature')
+const PeopleMenu = ({ open }) => {
+    const { t } = useTranslation('peopleWidget')
 
     return (
         <ListWidget title={ t('People') } className='h-full w-2/5 2k:w-7/20'>
@@ -54,4 +54,4 @@ const FriendsMenu = ({ open }) => {
     )
 }
 
-export default FriendsMenu
+export default PeopleMenu

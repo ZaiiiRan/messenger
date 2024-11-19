@@ -61,7 +61,7 @@ const ChatCard = ({ type, name, lastMessage, unreadCount, onClick }) => {
             </div>
 
             {/* Status */}
-            <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4'>
+            <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4 ml-auto'>
                 <div
                     className={`${styles.Time} lg:text-sm 2k:text-base 4k:text-xl
                         md:text-sm sm:text-sm mobile:text-xs`}

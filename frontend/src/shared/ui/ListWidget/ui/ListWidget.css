@@ -1,7 +1,7 @@
 .Widget-List {
     padding: 3rem 3rem;
     background-color: var(--widget-background);
-    z-index: 10;
+    z-index: 11;
 }
 
 .Widget-List__container {

@@ -7,7 +7,6 @@ import SocialUserInfo from './SocialUserInfo'
 import { useModal } from '../../../features/modal'
 import { useTranslation } from 'react-i18next'
 import { apiErrors } from '../../../shared/api'
-import { motion } from 'framer-motion'
 
 const SocialUser = ({ id, onError, setUserManipulation }) => {
     const { t } = useTranslation('socialUser')
@@ -38,11 +37,7 @@ const SocialUser = ({ id, onError, setUserManipulation }) => {
     }, [id])
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+        <div
             className='flex flex-col gap-8 2k:gap-14 4k:gap-24'
         >
             {
@@ -52,7 +47,7 @@ const SocialUser = ({ id, onError, setUserManipulation }) => {
                     <SocialUserInfo data={data} onUpdate={setData} setUserManipulation={setUserManipulation} />
                 )
             }
-        </motion.div>
+        </div>
     )
 }
 

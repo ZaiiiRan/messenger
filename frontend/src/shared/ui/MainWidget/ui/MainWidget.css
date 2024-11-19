@@ -1,19 +1,10 @@
 .Main-Widget {
     padding: 3rem 3rem;
-    width: 55%;
-    height: 100%;
     background-color: var(--widget-background);
-    z-index: 5;
 }
 
 @media (max-width: 1023px) {
     .Main-Widget {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 100vw;
-        z-index: 15;
         border-radius: 0;
     }
 }
@@ -26,12 +17,6 @@
 
 @media (min-width: 1024px) and (orientation: portrait) {
     .Main-Widget {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 100vw;
-        z-index: 15;
         border-radius: 0;
     }
 }
@@ -44,14 +29,12 @@
 
 @media (min-width: 1921px) and (max-width: 2560px) {
     .Main-Widget {
-        width: 55%;
         padding: 4rem 4rem;
     }
 }
 
 @media (min-width: 2561px) and (max-width: 3840px) {
     .Main-Widget {
-        width: 55%;
         padding: 5rem 5rem;
     }
 }

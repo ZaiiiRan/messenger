@@ -34,7 +34,7 @@ const Navigation = ({ className }) => {
                         </div>
                     </NavLink>
 
-                    <NavLink className='flex items-center justify-center NavLink' to='/friends'>
+                    <NavLink className='flex items-center justify-center NavLink' to='/people'>
                         <div className='Link-Icon'>
                             <svg viewBox="0 0 26.6666 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs/>

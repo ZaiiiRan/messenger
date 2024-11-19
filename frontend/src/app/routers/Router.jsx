@@ -10,7 +10,7 @@ import RequireActivate from '../hocs/RequireActivate'
 import ActivateRedirect from '../hocs/ActivateRedirect'
 import MainLayout from '../layouts/MainLayout'
 import { OptionsPage } from '../../pages/OptionsPage'
-import { FriendsPage } from '../../pages/FriendsPage'
+import { PeoplePage } from '../../pages/PeoplePage'
 import { MessengingPage } from '../../pages/MessengingPage'
 
 export const Router = () => {
@@ -27,7 +27,7 @@ export const Router = () => {
                         }
                     >
                         <Route path="/" element={ <MessengingPage /> } />
-                        <Route path="/friends" element={ <FriendsPage /> } />
+                        <Route path="/people" element={ <PeoplePage /> } />
                         <Route path="/options" element={ <OptionsPage /> } />
                     </Route>
 
