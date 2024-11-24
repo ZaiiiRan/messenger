@@ -15,7 +15,7 @@ CREATE TABLE users (
     is_banned BOOLEAN NOT NULL DEFAULT FALSE,
     is_activated BOOLEAN NOT NULL DEFAULT FALSE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE tokens (
@@ -57,7 +57,7 @@ CREATE TABLE chat_members (
     user_id BIGINT NOT NULL REFERENCES users(id),
     role_id SMALLINT NOT NULL,
 
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    removed_by BIGINT REFERENCES users(id) -- NULL if user left the chat
 );
 
 CREATE TABLE messages (
@@ -67,9 +67,15 @@ CREATE TABLE messages (
     content TEXT,
     sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_edited TIMESTAMP,
-
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+CREATE TABLE messages_read_status (
+    message_id BIGINT NOT NULL REFERENCES messages(id),
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP
+)
 
 CREATE TABLE media_files (
     id BIGSERIAL PRIMARY KEY,
