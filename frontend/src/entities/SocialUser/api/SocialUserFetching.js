@@ -2,7 +2,7 @@ import { api } from '../../../shared/api'
 
 class SocialUserAPI {
     async fetch(id) {
-        return api.post('/social/get-user', { user_id: id })
+        return api.get(`/social/user/${id}`)
     }
 
     async addFriend(id) {

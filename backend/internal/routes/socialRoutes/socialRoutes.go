@@ -50,7 +50,7 @@ func unblockUser(c *fiber.Ctx) error {
 func SetupRoutes(app fiber.Router) {
 	social := app.Group("/social")
 	social.Post("/search-users", authMiddleware.AuthMiddleware, getUsers)
-	social.Post("/get-user", authMiddleware.AuthMiddleware, getUser)
+	social.Get("/user/:id", authMiddleware.AuthMiddleware, getUser)
 	social.Post("/get-friends", authMiddleware.AuthMiddleware, getFriends)
 	social.Post("/get-incoming-friend-requests", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
 	social.Post("/get-outgoing-friend-requests", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)

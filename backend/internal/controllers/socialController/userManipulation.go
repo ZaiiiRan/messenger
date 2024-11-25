@@ -3,6 +3,7 @@ package socialController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/socialUser"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -113,18 +114,20 @@ func UnblockUser(c *fiber.Ctx) error {
 
 // Get User dto with friend status
 func GetUser(c *fiber.Ctx) error {
-	var req UserManipulationRequest
-	if err := c.BodyParser(&req); err != nil {
+	idStr := c.Params("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
 		return appErr.BadRequest("invalid request format")
 	}
+
 	user, err := getUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
-	if err := checkSelfID(user.ID, req.UserID); err != nil {
+	if err := checkSelfID(user.ID, id); err != nil {
 		return err
 	}
-	dto, err := socialUser.GetTargetByID(user.ID, req.UserID)
+	dto, err := socialUser.GetTargetByID(user.ID, id)
 	if err != nil {
 		return err
 	}
