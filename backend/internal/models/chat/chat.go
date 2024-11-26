@@ -51,7 +51,9 @@ func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.User
 
 	for _, memberID := range members {
 		user, err := user.GetUserByID(memberID)
-		if err != nil {
+		if err != nil && err.Error() == "user not found" {
+			return nil, nil, appErr.BadRequest(fmt.Sprintf("user with id %d not found", memberID))
+		} else if err != nil {
 			return nil, nil, err
 		}
 		member := ChatMember{
@@ -72,7 +74,6 @@ func (chat *Chat) Save(members []ChatMember) error {
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
-		fmt.Println(err)
 		return appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -97,7 +98,6 @@ func (chat *Chat) Save(members []ChatMember) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		fmt.Println(err)
 		return appErr.InternalServerError("internal server error")
 	}
 
@@ -105,31 +105,100 @@ func (chat *Chat) Save(members []ChatMember) error {
 }
 
 func (chat *Chat) AddMember(targetID uint64) error {
-	// if !chat.IsGroupChat {
-	// 	return appErr.BadRequest("chat is not a group chat")
-	// }
-	// if chat.isMember(targetID) {
-	// 	return appErr.BadRequest(fmt.Sprintf("user with id %d is already a member", targetID))
-	// }
-	// user, err := user.GetUserByID(targetID)
-	// if err != nil {
-	// 	return err
-	// }
-	// member := ChatMember{
-	// 	User: shortUser.CreateShortUserFromUser(user),
-	// 	Role: "member",
-	// }
-	// chat.Members = append(chat.Members, member)
+	if !chat.IsGroupChat {
+		return appErr.BadRequest("chat is not a group chat")
+	}
+	target_role, err := chat.GetMemberRole(targetID)
+	if err != nil {
+		return err
+	}
+	if target_role != nil {
+		return appErr.BadRequest(fmt.Sprintf("user with id %d is already a member", targetID))
+	}
+	user, err := user.GetUserByID(targetID)
+	if err != nil {
+		return err
+	}
+	member := &ChatMember{
+		User: shortUser.CreateShortUserFromUser(user),
+		Role: "member",
+	}
+
+	tx, err := pgDB.GetDB().Begin()
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+	err = chat.addMemberToDB(tx, member)
+	if err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
 	return nil
 }
 
-func (chat *Chat) isMember(targetID uint64) bool {
-	// for _, member := range chat.Members {
-	// 	if member.User.ID == targetID {
-	// 		return true
-	// 	}
-	// }
-	return false
+func (chat *Chat) GetMemberRole(memberID uint64) (*string, error) {
+	db := pgDB.GetDB()
+	var role *string
+	err := db.QueryRow(`
+		SELECT cr.role
+		FROM chat_members cm
+		LEFT JOIN chat_roles cr ON cm.role_id = cr.id
+		WHERE cm.user_id = $1`, memberID).Scan(&role)
+	if err != nil && err == sql.ErrNoRows {
+		role = nil
+	} else if err != nil {
+		fmt.Println(err)
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	return role, nil
+}
+
+func (chat *Chat) GetAllChatMembers() ([]ChatMember, error) {
+	db := pgDB.GetDB()
+	rows, err := db.Query(`
+		SELECT cm.user_id, cr.role, u.username, u.firstname, u.lastname, u.is_deleted, u.is_banned, u.is_activated
+		FROM chat_members cm
+		JOIN chat_roles cr ON cm.role_id = cr.id
+		JOIN users u ON cm.user_id = u.id
+		WHERE cm.chat_id = $1`, chat.ID)
+	if err == sql.ErrNoRows {
+		return nil, appErr.NotFound("chat members not found")
+	} else if err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	defer rows.Close()
+
+	var members []ChatMember
+	for rows.Next() {
+		var member ChatMember
+		var user shortUser.ShortUser
+
+		err := rows.Scan(
+			&user.ID,
+			&member.Role,
+			&user.Username,
+			&user.Firstname,
+			&user.Lastname,
+			&user.IsDeleted,
+			&user.IsBanned,
+			&user.IsActivated,
+		)
+		if err != nil {
+			return nil, appErr.InternalServerError("internal server error")
+		}
+
+		member.User = &user
+		members = append(members, member)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	return members, nil
 }
 
 func GetChatByID(id uint64) (*Chat, error) {
@@ -145,46 +214,6 @@ func GetChatByID(id uint64) (*Chat, error) {
 	if chat.Name != nil && *chat.Name != "" {
 		chat.IsGroupChat = true
 	}
-
-	// rows, err := db.Query(`
-	// 	SELECT cm.user_id, cr.role, u.username, u.firstname, u.lastname, u.is_deleted, u.is_banned, u.is_activated
-	// 	FROM chat_members cm
-	// 	JOIN chat_roles cr ON cm.role_id = cr.id
-	// 	JOIN users u ON cm.user_id = u.id
-	// 	WHERE cm.chat_id = $1`, id)
-	// if err != nil {
-	// 	return nil, appErr.InternalServerError("internal server error")
-	// }
-
-	// defer rows.Close()
-
-	// var members []ChatMember
-	// for rows.Next() {
-	// 	var member ChatMember
-	// 	var user shortUser.ShortUser
-
-	// 	err := rows.Scan(
-	// 		&user.ID,
-	// 		&member.Role,
-	// 		&user.Username,
-	// 		&user.Firstname,
-	// 		&user.Lastname,
-	// 		&user.IsDeleted,
-	// 		&user.IsBanned,
-	// 		&user.IsActivated,
-	// 	)
-	// 	if err != nil {
-	// 		return nil, appErr.InternalServerError("internal server error")
-	// 	}
-
-	// 	member.User = &user
-	// 	members = append(members, member)
-	// }
-	// if err = rows.Err(); err != nil {
-	// 	return nil, appErr.InternalServerError("internal server error")
-	// }
-
-	// chat.Members = members
 
 	return &chat, nil
 }

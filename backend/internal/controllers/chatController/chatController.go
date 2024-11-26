@@ -75,11 +75,6 @@ func AddMembers(c *fiber.Ctx) error {
 		}
 	}
 
-	err = chat.Save(nil)
-	if err != nil {
-		return err
-	}
-
 	return c.JSON(fiber.Map{
 		"message": "members added",
 		"chat":    chat,
