@@ -31,12 +31,12 @@ func CreateChat(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	chat, err := chatModel.CreateChat(req.Name, req.Members, req.IsGroup, user)
+	chat, members, err := chatModel.CreateChat(req.Name, req.Members, req.IsGroup, user)
 	if err != nil {
 		return err
 	}
 
-	err = chat.Save()
+	err = chat.Save(members)
 	if err != nil {
 		return err
 	}
@@ -44,6 +44,7 @@ func CreateChat(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "chat created",
 		"chat":    chat,
+		"members": members,
 	})
 }
 
@@ -74,7 +75,7 @@ func AddMembers(c *fiber.Ctx) error {
 		}
 	}
 
-	err = chat.Save()
+	err = chat.Save(nil)
 	if err != nil {
 		return err
 	}
