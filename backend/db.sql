@@ -39,8 +39,7 @@ CREATE TABLE friends (
 
 CREATE TABLE chats (
     id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    is_group_chat BOOLEAN NOT NULL DEFAULT FALSE,
+    name TEXT
 
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
@@ -50,7 +49,7 @@ CREATE TABLE chat_roles (
     role TEXT NOT NULL UNIQUE
 );
 
-INSERT INTO chat_roles (role) VALUES ('member'), ('admin');
+INSERT INTO chat_roles (role) VALUES ('member'), ('admin'), ('owner');
 
 CREATE TABLE chat_members (
     chat_id BIGINT NOT NULL REFERENCES chats(id),
@@ -75,7 +74,7 @@ CREATE TABLE messages_read_status (
     user_id BIGINT NOT NULL REFERENCES users(id),
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMP
-)
+);
 
 CREATE TABLE media_files (
     id BIGSERIAL PRIMARY KEY,

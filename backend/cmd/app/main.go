@@ -5,6 +5,7 @@ import (
 	"backend/internal/middleware/errorHandler"
 	"backend/internal/routes/authRoutes"
 	"backend/internal/routes/socialRoutes"
+	"backend/internal/routes/chatRoutes"
 	"log"
 	"os"
 
@@ -39,6 +40,7 @@ func main() {
 
 	authRoutes.SetupRoutes(app)
 	socialRoutes.SetupRoutes(app)
+	chatRoutes.SetupRoutes(app)
 
 	log.Fatal(app.Listen(":" + port))
 }
