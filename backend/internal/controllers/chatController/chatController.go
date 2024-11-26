@@ -80,3 +80,33 @@ func AddMembers(c *fiber.Ctx) error {
 		"chat":    chat,
 	})
 }
+
+type LeaveRequest struct {
+	ChatID uint64 `json:"chat_id"`
+}
+
+func Leave(c *fiber.Ctx) error {
+	var req LeaveRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chat, err := chatModel.GetChatByID(req.ChatID)
+	if err != nil {
+		return err
+	}
+
+	err = chat.RemoveMember(user.ID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "you has been removed from chat",
+	})
+}

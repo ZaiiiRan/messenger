@@ -128,13 +128,56 @@ func (chat *Chat) AddMember(targetID uint64) error {
 	if err != nil {
 		return appErr.InternalServerError("internal server error")
 	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+		}
+	}()
+
 	err = chat.addMemberToDB(tx, member)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return appErr.InternalServerError("internal server error")
 	}
+	return nil
+}
+
+func (chat *Chat) RemoveMember(memberID, removedByID uint64) error {
+	if !chat.IsGroupChat {
+		return appErr.BadRequest("chat is not a group chat")
+	}
+	target_role, err := chat.GetMemberRole(memberID)
+	if err != nil {
+		return err
+	}
+	if target_role == nil {
+		return appErr.BadRequest(fmt.Sprintf("user with id %d is not a member", memberID))
+	}
+
+	tx, err := pgDB.GetDB().Begin()
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+
+	err = chat.removeMemberFromDB(tx, memberID, removedByID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+
 	return nil
 }
 
@@ -250,6 +293,18 @@ func (chat *Chat) addMemberToDB(tx *sql.Tx, member *ChatMember) error {
 		return appErr.InternalServerError("internal server error")
 	}
 	_, err = tx.Exec(`INSERT INTO chat_members (chat_id, user_id, role_id) VALUES ($1, $2, $3)`, chat.ID, member.User.ID, roleID)
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+	return nil
+}
+
+func (chat *Chat) removeMemberFromDB(tx *sql.Tx, memberID, removedByID uint64) error {
+	_, err := tx.Exec(`
+		UPDATE chat_members
+		SET
+			removed_by = $1
+		WHERE user_id = $2`, removedByID, memberID)
 	if err != nil {
 		return appErr.InternalServerError("internal server error")
 	}

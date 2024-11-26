@@ -15,9 +15,14 @@ func addMembers(c *fiber.Ctx) error {
 	return controller.AddMembers(c)
 }
 
+func leave(c *fiber.Ctx) error {
+	return controller.Leave(c)
+} 
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chat")
 	chat.Post("/create-chat", authMiddleware.AuthMiddleware, createChat)
 	chat.Post("/add-members", authMiddleware.AuthMiddleware, addMembers)
+	chat.Post("/leave", authMiddleware.AuthMiddleware, leave)
 }
 
