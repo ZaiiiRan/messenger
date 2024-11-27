@@ -203,6 +203,40 @@ func RenameChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "chat renamed",
-		"chat": chat,
+		"chat":    chat,
+	})
+}
+
+type ChangeRoleRequest struct {
+	ChatID   uint64 `json:"chat_id"`
+	MemberID uint64 `json:"member_id"`
+	Role     string `json:"role"`
+}
+
+func ChatMemberRoleChange(c *fiber.Ctx) error {
+	var req ChangeRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chat, err := chatModel.GetChatByID(req.ChatID)
+	if err != nil {
+		return err
+	}
+
+	member, err := chat.ChatMemberRoleChange(req.MemberID, req.Role, user.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "chat renamed",
+		"chat":    chat,
+		"member":  member,
 	})
 }

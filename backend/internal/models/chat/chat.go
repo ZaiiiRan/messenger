@@ -116,12 +116,13 @@ func (chat *Chat) SaveWithMembers(newMembers []ChatMember) ([]ChatMember, error)
 	return members, nil
 }
 
-func (chat *Chat) Rename(newName string, sender uint64) error {
+// Rename chat
+func (chat *Chat) Rename(newName string, senderID uint64) error {
 	if !chat.IsGroupChat {
 		return appErr.BadRequest("chat is not a group chat")
 	}
 
-	self, err := chat.GetChatMemberByID(sender)
+	self, err := chat.GetChatMemberByID(senderID)
 	if err != nil {
 		return err
 	}
@@ -161,6 +162,72 @@ func (chat *Chat) Rename(newName string, sender uint64) error {
 	}
 
 	return nil
+}
+
+// Chat member role changing
+func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, senderID uint64) (*ChatMember, error) {
+	if !chat.IsGroupChat {
+		return nil, appErr.BadRequest("chat is not a group chat")
+	}
+
+	self, err := chat.GetChatMemberByID(senderID)
+	if err != nil {
+		return nil, err
+	}
+	if self.RemovedBy != nil {
+		return nil, appErr.BadRequest("you don't have enough rights")
+	}
+	if self.Role == Roles.Member {
+		return nil, appErr.BadRequest("you don't have enough rights")
+	}
+	if memberID == senderID {
+		return nil, appErr.BadRequest("you can't change your role")
+	}
+
+	member, err := chat.GetChatMemberByID(memberID)
+	if err != nil {
+		return nil, err
+	}
+	if member.RemovedBy != nil {
+		return nil, appErr.BadRequest("member removed")
+	}
+
+	roleValue := GetRoleValue(&newRole)
+	if roleValue == Roles.NotMember {
+		return nil, appErr.BadRequest("unknown role")
+	}
+
+	if self.Role < Roles.Admin || self.Role <= roleValue || (member.Role == self.Role && roleValue < member.Role) || member.Role > self.Role {
+		return nil, appErr.BadRequest("you don't have enough rights")
+	}
+	if member.Role == roleValue {
+		return nil, appErr.BadRequest(fmt.Sprintf("member with id %d is already %s", memberID, newRole))
+	}
+
+	member.Role = roleValue
+
+	tx, err := pgDB.GetDB().Begin()
+	if err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+		}
+	}()
+
+	err = chat.saveMemberToDB(tx, member)
+
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	return member, nil
 }
 
 // Return user to chat
@@ -384,19 +451,18 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID, senderID uint64) (*ChatMemb
 // Get chat member role
 func (chat *Chat) GetMemberRole(memberID uint64) (int, error) {
 	db := pgDB.GetDB()
-	var role *string
+	var role string
 	err := db.QueryRow(`
 		SELECT cr.role
 		FROM chat_members cm
 		LEFT JOIN chat_roles cr ON cm.role_id = cr.id
-		WHERE cm.user_id = $1`, memberID).Scan(&role)
+		WHERE cm.user_id = $1 AND cm.chat_id = $2`, memberID, chat.ID).Scan(&role)
 	if err != nil && err == sql.ErrNoRows {
-		role = nil
+		role = "not member"
 	} else if err != nil {
-		fmt.Println(err)
 		return Roles.NotMember, appErr.InternalServerError("internal server error")
 	}
-	roleValue := GetRoleValue(role)
+	roleValue := GetRoleValue(&role)
 	return roleValue, nil
 }
 

@@ -4,7 +4,6 @@ type role struct {
 	Owner     int
 	Admin     int
 	Member    int
-	Guest     int
 	NotMember int
 }
 
