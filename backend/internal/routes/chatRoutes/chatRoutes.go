@@ -19,10 +19,20 @@ func leave(c *fiber.Ctx) error {
 	return controller.Leave(c)
 } 
 
+func removeMembers(c *fiber.Ctx) error {
+	return controller.RemoveMembers(c)
+}
+
+func returnToChat(c *fiber.Ctx) error {
+	return controller.ReturnToChat(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chat")
 	chat.Post("/create-chat", authMiddleware.AuthMiddleware, createChat)
 	chat.Post("/add-members", authMiddleware.AuthMiddleware, addMembers)
 	chat.Post("/leave", authMiddleware.AuthMiddleware, leave)
+	chat.Post("/remove-members", authMiddleware.AuthMiddleware, removeMembers)
+	chat.Post("/return", authMiddleware.AuthMiddleware, returnToChat)
 }
 

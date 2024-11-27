@@ -56,7 +56,8 @@ CREATE TABLE chat_members (
     user_id BIGINT NOT NULL REFERENCES users(id),
     role_id SMALLINT NOT NULL,
 
-    removed_by BIGINT REFERENCES users(id) -- NULL if user left the chat
+    removed_by BIGINT REFERENCES users(id),
+    added_by BIGINT REFERENCES users(id)
 );
 
 CREATE TABLE messages (
