@@ -32,11 +32,11 @@ func CreateChat(c *fiber.Ctx) error {
 	}
 
 	chat, members, err := chatModel.CreateChat(req.Name, req.Members, req.IsGroup, user)
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-	members,err = chat.SaveWithMembers(members)
+	members, err = chat.SaveWithMembers(members)
 	if err != nil {
 		return err
 	}
@@ -172,5 +172,37 @@ func RemoveMembers(c *fiber.Ctx) error {
 		"message":         "members removed",
 		"chat":            chat,
 		"removed_members": removed,
+	})
+}
+
+type RenameChatRequest struct {
+	ChatID uint64 `json:"chat_id"`
+	Name   string `json:"name"`
+}
+
+func RenameChat(c *fiber.Ctx) error {
+	var req RenameChatRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chat, err := chatModel.GetChatByID(req.ChatID)
+	if err != nil {
+		return err
+	}
+
+	err = chat.Rename(req.Name, user.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "chat renamed",
+		"chat": chat,
 	})
 }

@@ -27,6 +27,10 @@ func returnToChat(c *fiber.Ctx) error {
 	return controller.ReturnToChat(c)
 }
 
+func renameChat(c *fiber.Ctx) error {
+	return controller.RenameChat(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chat")
 	chat.Post("/create-chat", authMiddleware.AuthMiddleware, createChat)
@@ -34,5 +38,6 @@ func SetupRoutes(app *fiber.App) {
 	chat.Post("/leave", authMiddleware.AuthMiddleware, leave)
 	chat.Post("/remove-members", authMiddleware.AuthMiddleware, removeMembers)
 	chat.Post("/return", authMiddleware.AuthMiddleware, returnToChat)
+	chat.Post("/rename", authMiddleware.AuthMiddleware, renameChat)
 }
 
