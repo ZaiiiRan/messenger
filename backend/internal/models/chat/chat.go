@@ -36,8 +36,20 @@ func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.User
 		if len(members) < 2 {
 			return nil, nil, appErr.BadRequest("need at least 2 members for group chat")
 		}
-	} else if len(members) < 1 {
-		return nil, nil, appErr.BadRequest("need at least 1 member for private chat")
+	} else {
+		if len(members) < 1 {
+			return nil, nil, appErr.BadRequest("need at least 1 member for private chat")
+		} else if len(members) > 1 {
+			return nil, nil, appErr.BadRequest("max 1 member for private chat")
+		}
+
+		privateChatExists, err := CheckPrivateChatExists(ownerDTO.ID, members[0])
+		if err != nil {
+			return nil, nil, err
+		}
+		if privateChatExists {
+			return nil, nil, appErr.BadRequest(fmt.Sprintf("chat between user with id %d and %d already exists", ownerDTO.ID, members[0]))
+		}
 	}
 
 	chat := &Chat{
@@ -560,6 +572,24 @@ func GetChatByID(id uint64) (*Chat, error) {
 	}
 
 	return &chat, nil
+}
+
+// Chat existing checking
+func CheckPrivateChatExists(member1, member2 uint64) (bool, error) {
+	var chatID uint64
+	db := pgDB.GetDB()
+	err := db.QueryRow(`
+		SELECT c.id FROM chats c
+		JOIN chat_members cm ON cm.chat_id = c.id
+		WHERE c.name IS NULL 
+		AND ((added_by = $1 AND cm.user_id = $2) OR (added_by = $2 AND cm.user_id = $1))
+	`, member1, member2).Scan(&chatID)
+	if err != nil && err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, appErr.InternalServerError("internal server error")
+	}
+	return chatID != 0, nil
 }
 
 // validate chat name

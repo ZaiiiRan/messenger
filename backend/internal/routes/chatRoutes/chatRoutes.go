@@ -43,5 +43,5 @@ func SetupRoutes(app *fiber.App) {
 	chat.Post("/remove-members", authMiddleware.AuthMiddleware, removeMembers)
 	chat.Post("/return", authMiddleware.AuthMiddleware, returnToChat)
 	chat.Post("/rename", authMiddleware.AuthMiddleware, renameChat)
-	chat.Post("change-role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
+	chat.Post("/change-role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
 }

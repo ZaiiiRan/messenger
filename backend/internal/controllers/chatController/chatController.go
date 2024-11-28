@@ -235,7 +235,7 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "chat renamed",
+		"message": "role changed",
 		"chat":    chat,
 		"member":  member,
 	})
