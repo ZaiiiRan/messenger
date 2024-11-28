@@ -32,22 +32,27 @@ func WrapError(statusCode int, err error) *AppError {
 	}
 }
 
-// Bad request error
+// Bad request error (400)
 func BadRequest(errMessage string) *AppError {
 	return NewAppError(fiber.StatusBadRequest, errMessage)
 }
 
-// Unauthorized error
+// Unauthorized error (401)
 func Unauthorized(errMessage string) *AppError {
 	return NewAppError(fiber.StatusUnauthorized, errMessage)
 }
 
-// Not found error
+// Not found error (404)
 func NotFound(errMessage string) *AppError {
 	return NewAppError(fiber.StatusNotFound, errMessage)
 }
 
-// Internal server error
+// Forbidden error (403)
+func Forbidden(errMessage string) *AppError {
+	return NewAppError(fiber.StatusForbidden, errMessage)
+}
+
+// Internal server error (500)
 func InternalServerError(errMessage string) *AppError {
 	return NewAppError(fiber.StatusInternalServerError, errMessage)
 }
