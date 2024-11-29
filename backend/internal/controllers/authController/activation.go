@@ -2,17 +2,11 @@ package authController
 
 import (
 	appErr "backend/internal/errors/appError"
-	"backend/internal/models/user"
 	"backend/internal/models/token"
-	"strings"
+	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-// Activate Refister request format
-type ActivateRequest struct {
-	Code   string `json:"code"`
-}
 
 // Account Activation
 func ActivateAccount(c *fiber.Ctx) error {
@@ -44,8 +38,4 @@ func ActivateAccount(c *fiber.Ctx) error {
 	}
 
 	return sendTokenAndJSON(userDTO, newAccessToken, newRefreshToken, c)
-}
-
-func (a *ActivateRequest) trimSpaces() {
-	a.Code = strings.TrimSpace(a.Code)
 }

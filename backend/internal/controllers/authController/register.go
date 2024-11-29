@@ -4,22 +4,10 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"backend/internal/utils"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-// Register request format
-type RegisterRequest struct {
-	Username  string  `json:"username"`
-	Email     string  `json:"email"`
-	Password  string  `json:"password"`
-	Firstname string  `json:"firstname"`
-	Lastname  string  `json:"lastname"`
-	Phone     *string `json:"phone"`
-	Birthdate *string `json:"birthdate"`
-}
 
 // Register user
 func RegisterUser(c *fiber.Ctx) error {
@@ -64,21 +52,4 @@ func parseBirthdate(date *string) (*time.Time, error) {
 		birthdate = parsedDate
 	}
 	return birthdate, nil
-}
-
-// trim spaces in register request
-func (r *RegisterRequest) trimSpaces() {
-	r.Username = strings.TrimSpace(r.Username)
-	r.Email = strings.TrimSpace(r.Email)
-	r.Password = strings.TrimSpace(r.Password)
-	r.Firstname = strings.TrimSpace(r.Firstname)
-	r.Lastname = strings.TrimSpace(r.Lastname)
-	if r.Phone != nil {
-		trimmedPhone := strings.TrimSpace(*r.Phone)
-		r.Phone = &trimmedPhone
-	}
-	if r.Birthdate != nil {
-		trimmedBirthdate := strings.TrimSpace(*r.Birthdate)
-		r.Birthdate = &trimmedBirthdate
-	}
 }

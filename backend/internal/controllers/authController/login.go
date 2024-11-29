@@ -3,16 +3,9 @@ package authController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-// Login request format
-type LoginRequest struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}
 
 // Login
 func Login(c *fiber.Ctx) error {
@@ -44,9 +37,4 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	return createUserDTOAndTokensResponse(userObject, c)
-}
-
-func (l *LoginRequest) trimSpaces() {
-	l.Login = strings.TrimSpace(l.Login)
-	l.Password = strings.TrimSpace(l.Password)
 }

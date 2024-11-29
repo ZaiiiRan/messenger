@@ -33,9 +33,9 @@ func refresh(c *fiber.Ctx) error {
 func SetupRoutes(app fiber.Router) {
 	auth := app.Group("/auth")
 	auth.Post("/register", register)
-	auth.Post("/activate", authMiddleware.AuthMiddleware, activate)
+	auth.Patch("/activate", authMiddleware.AuthMiddleware, activate)
 	auth.Get("/resend", authMiddleware.AuthMiddleware, resend)
 	auth.Post("/login", login)
-	auth.Get("/logout", logout)
+	auth.Delete("/logout", logout)
 	auth.Get("/refresh", refresh)
 }
