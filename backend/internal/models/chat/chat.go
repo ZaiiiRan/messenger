@@ -4,9 +4,11 @@ import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/shortUser"
+	"backend/internal/models/chatMember"
 	"backend/internal/models/socialUser"
 	"backend/internal/models/user"
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -17,76 +19,41 @@ type Chat struct {
 	IsDeleted   bool    `json:"is_deleted"`
 }
 
-type ChatMember struct {
-	User      *shortUser.ShortUser `json:"user"`
-	Role      int                  `json:"role"`
-	RemovedBy *uint64
-	AddedBy   uint64
-	ChatID    uint64 `json:"chat_id"`
-}
-
 // Creating chat object with validations (for inserting)
-func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.UserDTO) (*Chat, []ChatMember, error) {
+func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.UserDTO) (*Chat, []chatMember.ChatMember, error) {
+	err := validateBeforeCreatingChat(name, members, isGroup, ownerDTO)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	var chatName *string
 	if isGroup {
-		if err := validateName(name); err != nil {
-			return nil, nil, err
-		}
 		chatName = &name
-		if len(members) < 2 {
-			return nil, nil, appErr.BadRequest("need at least 2 members for group chat")
-		}
-	} else {
-		if len(members) < 1 {
-			return nil, nil, appErr.BadRequest("need at least 1 member for private chat")
-		} else if len(members) > 1 {
-			return nil, nil, appErr.BadRequest("max 1 member for private chat")
-		}
-
-		privateChatExists, err := CheckPrivateChatExists(ownerDTO.ID, members[0])
-		if err != nil {
-			return nil, nil, err
-		}
-		if privateChatExists {
-			return nil, nil, appErr.BadRequest(fmt.Sprintf("chat between user with id %d and %d already exists", ownerDTO.ID, members[0]))
-		}
 	}
 
-	chat := &Chat{
-		Name:        chatName,
-		IsGroupChat: isGroup,
-	}
+	chat := &Chat{Name: chatName, IsGroupChat: isGroup}
 
-	var chatMembers []ChatMember
-	ownerRole := Roles.Owner
+	var chatMembers []chatMember.ChatMember
+	ownerRole := chatMember.Roles.Owner
 	if !isGroup {
-		ownerRole = Roles.Member
+		ownerRole = chatMember.Roles.Member
 	}
 
-	chatMembers = append(chatMembers, ChatMember{
+	chatMembers = append(chatMembers, chatMember.ChatMember{
 		User:    shortUser.CreateShortUserFromUserDTO(ownerDTO),
 		Role:    ownerRole,
 		AddedBy: ownerDTO.ID,
 	})
 
 	for _, memberID := range members {
-		user, err := user.GetUserByID(memberID)
-		if err != nil {
-			if err.Error() == "user not found" {
-				return nil, nil, appErr.BadRequest(fmt.Sprintf("user with id %d not found", memberID))
-			}
-			return nil, nil, err
-		}
-		relations, err := socialUser.GetRelations(ownerDTO.ID, memberID)
+		user, err := getUserForAdding(memberID, ownerDTO.ID)
 		if err != nil {
 			return nil, nil, err
 		}
-		if (relations != nil && *relations != "accepted") || (relations == nil) {
-			return nil, nil, appErr.BadRequest(fmt.Sprintf("user with id %d is not in your friends list", memberID))
-		}
-		chatMembers = append(chatMembers, ChatMember{
+
+		chatMembers = append(chatMembers, chatMember.ChatMember{
 			User:    shortUser.CreateShortUserFromUser(user),
-			Role:    Roles.Member,
+			Role:    chatMember.Roles.Member,
 			AddedBy: ownerDTO.ID,
 		})
 	}
@@ -95,7 +62,7 @@ func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.User
 }
 
 // Save chat with members
-func (chat *Chat) SaveWithMembers(newMembers []ChatMember) ([]ChatMember, error) {
+func (chat *Chat) SaveWithMembers(newMembers []chatMember.ChatMember) ([]chatMember.ChatMember, error) {
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
 		return nil, appErr.InternalServerError("internal server error")
@@ -111,7 +78,7 @@ func (chat *Chat) SaveWithMembers(newMembers []ChatMember) ([]ChatMember, error)
 		return nil, err
 	}
 
-	var members []ChatMember
+	var members []chatMember.ChatMember
 	for _, member := range newMembers {
 		if err := chat.saveMemberToDB(tx, &member); err != nil {
 			tx.Rollback()
@@ -129,24 +96,20 @@ func (chat *Chat) SaveWithMembers(newMembers []ChatMember) ([]ChatMember, error)
 }
 
 // Rename chat
-func (chat *Chat) Rename(newName string, senderID uint64) error {
+func (chat *Chat) Rename(newName string, actor *chatMember.ChatMember) error {
 	if !chat.IsGroupChat {
 		return appErr.BadRequest("chat is not a group chat")
 	}
 
-	self, err := chat.GetChatMemberByID(senderID)
-	if err != nil {
-		return err
-	}
-	if self.RemovedBy != nil || self.Role < Roles.Admin {
-		return appErr.BadRequest("you don't have enough rights")
+	if actor.Role < chatMember.Roles.Admin {
+		return appErr.Forbidden("you don't have enough rights")
 	}
 
 	if *chat.Name == newName {
 		return appErr.BadRequest("the names are the same")
 	}
 
-	err = validateName(newName)
+	err := validateName(newName)
 	if err != nil {
 		return err
 	}
@@ -177,40 +140,36 @@ func (chat *Chat) Rename(newName string, senderID uint64) error {
 }
 
 // Chat member role changing
-func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, senderID uint64) (*ChatMember, error) {
+func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	if !chat.IsGroupChat {
 		return nil, appErr.BadRequest("chat is not a group chat")
 	}
 
-	self, err := chat.GetChatMemberByID(senderID)
-	if err != nil {
-		return nil, err
+	if actor.Role == chatMember.Roles.Member {
+		return nil, appErr.Forbidden("you don't have enough rights")
 	}
-	if self.RemovedBy != nil {
-		return nil, appErr.BadRequest("you don't have enough rights")
-	}
-	if self.Role == Roles.Member {
-		return nil, appErr.BadRequest("you don't have enough rights")
-	}
-	if memberID == senderID {
-		return nil, appErr.BadRequest("you can't change your role")
+	if memberID == actor.User.ID {
+		return nil, appErr.Forbidden("you can't change your role")
 	}
 
 	member, err := chat.GetChatMemberByID(memberID)
 	if err != nil {
 		return nil, err
 	}
-	if member.RemovedBy != nil {
-		return nil, appErr.BadRequest("member removed")
+	if member.Removed() {
+		return nil, appErr.BadRequest("you cannot assign a role to an excluded member")
 	}
 
-	roleValue := GetRoleValue(&newRole)
-	if roleValue == Roles.NotMember {
+	roleValue := chatMember.GetRoleValue(&newRole)
+	if roleValue == chatMember.Roles.NotMember {
 		return nil, appErr.BadRequest("unknown role")
 	}
+	if roleValue == chatMember.Roles.Owner {
+		return nil, appErr.BadRequest("owner role cannot be assigned")
+	}
 
-	if self.Role < Roles.Admin || self.Role <= roleValue || (member.Role == self.Role && roleValue < member.Role) || member.Role > self.Role {
-		return nil, appErr.BadRequest("you don't have enough rights")
+	if actor.Role <= roleValue || (member.Role == actor.Role && roleValue < member.Role) || member.Role > actor.Role {
+		return nil, appErr.Forbidden("you don't have enough rights")
 	}
 	if member.Role == roleValue {
 		return nil, appErr.BadRequest(fmt.Sprintf("member with id %d is already %s", memberID, newRole))
@@ -242,20 +201,19 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, senderID
 	return member, nil
 }
 
-// Return user to chat
-func (chat *Chat) ReturnToChat(memberID uint64) (*ChatMember, error) {
+// Leave from chat
+func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	if !chat.IsGroupChat {
 		return nil, appErr.BadRequest("chat is not a group chat")
 	}
-	self, err := chat.GetChatMemberByID(memberID)
-	if err != nil {
-		return nil, err
+
+	if member.RemovedBy != nil && *member.RemovedBy != member.User.ID {
+		return nil, appErr.Forbidden("you have been removed from the chat")
 	}
-	if self.RemovedBy == nil {
-		return nil, appErr.BadRequest("you are already in chat")
-	}
-	if *self.RemovedBy != memberID {
-		return nil, appErr.BadRequest("you have been excluded from the chat")
+
+	member.RemovedBy = &member.User.ID
+	if member.Role != chatMember.Roles.Owner {
+		member.Role = chatMember.Roles.Member
 	}
 
 	tx, err := pgDB.GetDB().Begin()
@@ -268,12 +226,7 @@ func (chat *Chat) ReturnToChat(memberID uint64) (*ChatMember, error) {
 		}
 	}()
 
-	self.RemovedBy = nil
-	if self.Role != Roles.Owner {
-		self.Role = Roles.Member
-	}
-
-	err = chat.saveMemberToDB(tx, self)
+	err = chat.saveMemberToDB(tx, member)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -283,20 +236,25 @@ func (chat *Chat) ReturnToChat(memberID uint64) (*ChatMember, error) {
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
-	return self, nil
+	return member, nil
 }
 
-// Add members to chat
-func (chat *Chat) AddMembers(newMembersIDs []uint64, senderID uint64) ([]ChatMember, error) {
+// Return a left user to chat
+func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	if !chat.IsGroupChat {
 		return nil, appErr.BadRequest("chat is not a group chat")
 	}
-	self, err := chat.GetChatMemberByID(senderID)
-	if err != nil {
-		return nil, err
+
+	if member.RemovedBy == nil {
+		return nil, appErr.BadRequest("you are already in chat")
 	}
-	if self.RemovedBy != nil {
-		return nil, appErr.BadRequest("you don't have enough rights")
+	if *member.RemovedBy != member.User.ID {
+		return nil, appErr.Forbidden("you have been removed from the chat")
+	}
+
+	member.RemovedBy = nil
+	if member.Role != chatMember.Roles.Owner {
+		member.Role = chatMember.Roles.Member
 	}
 
 	tx, err := pgDB.GetDB().Begin()
@@ -309,10 +267,45 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, senderID uint64) ([]ChatMem
 		}
 	}()
 
-	var added []ChatMember
+	err = chat.saveMemberToDB(tx, member)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	return member, nil
+}
+
+// Add members to chat
+func (chat *Chat) AddMembers(newMembersIDs []uint64, addingMember *chatMember.ChatMember) ([]chatMember.ChatMember, error) {
+	if !chat.IsGroupChat {
+		return nil, appErr.BadRequest("chat is not a group chat")
+	}
+
+	tx, err := pgDB.GetDB().Begin()
+	if err != nil {
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var added []chatMember.ChatMember
 	for _, memberID := range newMembersIDs {
-		member, err := chat.addMember(tx, memberID, senderID)
+		if addingMember.User.ID == memberID {
+			tx.Rollback()
+			return nil, appErr.BadRequest("you can't add yourself")
+		}
+
+		member, err := chat.addMember(tx, memberID, addingMember)
 		if err != nil {
+			tx.Rollback()
 			return nil, err
 		}
 		added = append(added, *member)
@@ -326,52 +319,58 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, senderID uint64) ([]ChatMem
 }
 
 // add 1 member to chat
-func (chat *Chat) addMember(tx *sql.Tx, targetID, senderID uint64) (*ChatMember, error) {
-	user, err := user.GetUserByID(targetID)
-	if err != nil {
-		if err.Error() == "user not found" {
-			return nil, appErr.BadRequest(fmt.Sprintf("user with id %d not found", targetID))
-		}
-		return nil, err
-	}
-
-	relations, err := socialUser.GetRelations(senderID, targetID)
+func (chat *Chat) addMember(tx *sql.Tx, targetID uint64, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
+	user, err := getUserForAdding(targetID, addingMember.User.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if (relations != nil && *relations != "accepted") || (relations == nil) {
-		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d is not in your friends list", targetID))
-	}
-
+	var appError *appErr.AppError
 	target, err := chat.GetChatMemberByID(targetID)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && (errors.As(err, &appError) && appError.StatusCode != 404) {
 		return nil, err
 	}
 
-	if target != nil && target.RemovedBy != nil {
-		target.RemovedBy = nil
-		target.Role = Roles.Member
-		target.AddedBy = senderID
-
-		err = chat.saveMemberToDB(tx, target)
+	if target != nil && target.Removed() {
+		target, err = chat.addOldMemberToChat(tx, target, addingMember)
 		if err != nil {
 			return nil, err
 		}
 		return target, nil
 	}
 
-	if target != nil && target.RemovedBy == nil {
+	if target != nil && !target.Removed() {
 		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d is already a chat member", targetID))
 	}
 
-	newMember := &ChatMember{
-		User:    shortUser.CreateShortUserFromUser(user),
-		AddedBy: senderID,
-		Role:    Roles.Member,
+	target, err = chat.addNewMemberToChat(tx, user, addingMember)
+	if err != nil {
+		return nil, err
 	}
+	return target, err
+}
 
-	err = chat.saveMemberToDB(tx, newMember)
+// returning old member to chat
+func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
+	target.RemovedBy = nil
+	target.Role = chatMember.Roles.Member
+	target.AddedBy = addingMember.User.ID
+
+	err := chat.saveMemberToDB(tx, target)
+	if err != nil {
+		return nil, err
+	}
+	return target, nil
+}
+
+// adding new member to chat
+func (chat *Chat) addNewMemberToChat(tx *sql.Tx, user *user.User, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
+	newMember := &chatMember.ChatMember{
+		User:    shortUser.CreateShortUserFromUser(user),
+		AddedBy: addingMember.User.ID,
+		Role:    chatMember.Roles.Member,
+	}
+	err := chat.saveMemberToDB(tx, newMember)
 	if err != nil {
 		return nil, err
 	}
@@ -380,16 +379,9 @@ func (chat *Chat) addMember(tx *sql.Tx, targetID, senderID uint64) (*ChatMember,
 }
 
 // Remove members from chat
-func (chat *Chat) RemoveMembers(membersIDs []uint64, senderID uint64) ([]ChatMember, error) {
+func (chat *Chat) RemoveMembers(membersIDs []uint64, removingMember *chatMember.ChatMember) ([]chatMember.ChatMember, error) {
 	if !chat.IsGroupChat {
 		return nil, appErr.BadRequest("chat is not a group chat")
-	}
-	self, err := chat.GetChatMemberByID(senderID)
-	if err != nil {
-		return nil, err
-	}
-	if self.RemovedBy != nil {
-		return nil, appErr.BadRequest("you don't have enough rights")
 	}
 
 	tx, err := pgDB.GetDB().Begin()
@@ -402,9 +394,14 @@ func (chat *Chat) RemoveMembers(membersIDs []uint64, senderID uint64) ([]ChatMem
 		}
 	}()
 
-	var removed []ChatMember
+	var removed []chatMember.ChatMember
 	for _, memberID := range membersIDs {
-		member, err := chat.removeMember(tx, memberID, senderID)
+		if removingMember.User.ID == memberID {
+			tx.Rollback()
+			return nil, appErr.BadRequest("you can't remove yourself")
+		}
+
+		member, err := chat.removeMember(tx, memberID, removingMember)
 		if err != nil {
 			return nil, err
 		}
@@ -419,38 +416,29 @@ func (chat *Chat) RemoveMembers(membersIDs []uint64, senderID uint64) ([]ChatMem
 }
 
 // remove 1 member from chat
-func (chat *Chat) removeMember(tx *sql.Tx, memberID, senderID uint64) (*ChatMember, error) {
+func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	member, err := chat.GetChatMemberByID(memberID)
 	if err != nil {
 		return nil, err
 	}
 	if member.RemovedBy != nil && member.User.ID != *member.RemovedBy {
 		return nil, appErr.BadRequest(fmt.Sprintf("the member with id %d has already been deleted", memberID))
-	} else if member.RemovedBy != nil && member.User.ID == *member.RemovedBy && *member.RemovedBy != senderID {
+	} else if member.RemovedBy != nil && member.User.ID == *member.RemovedBy {
 		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d has left the chat", memberID))
-	} else if member.RemovedBy != nil && member.User.ID == *member.RemovedBy && *member.RemovedBy == senderID {
-		return nil, appErr.BadRequest("you have already left the chat")
 	}
 
-	if member.AddedBy != senderID {
-		removerRole, err := chat.GetMemberRole(senderID)
-		if err != nil {
-			return nil, err
-		}
-		if removerRole == Roles.NotMember {
+	if member.AddedBy != removingMember.User.ID {
+		if removingMember.Role == chatMember.Roles.NotMember {
 			return nil, appErr.InternalServerError("internal server error")
 		}
 
-		if removerRole < member.Role {
-			return nil, appErr.BadRequest("you don't have enough rights")
+		if removingMember.Role <= member.Role {
+			return nil, appErr.Forbidden("trying to delete a member with a higher role")
 		}
-	} else if (member.AddedBy == senderID && member.User.ID != senderID) && member.Role > Roles.Member {
-		return nil, appErr.BadRequest("you don't have enough rights")
+	} else if member.AddedBy == removingMember.User.ID && member.Role >= removingMember.Role {
+		return nil, appErr.BadRequest("trying to delete a member with a higher role")
 	}
-	member.RemovedBy = &senderID
-	if member.Role != Roles.Owner {
-		member.Role = Roles.Member
-	}
+	member.RemovedBy = &removingMember.User.ID
 
 	err = chat.saveMemberToDB(tx, member)
 	if err != nil {
@@ -472,28 +460,28 @@ func (chat *Chat) GetMemberRole(memberID uint64) (int, error) {
 	if err != nil && err == sql.ErrNoRows {
 		role = "not member"
 	} else if err != nil {
-		return Roles.NotMember, appErr.InternalServerError("internal server error")
+		return chatMember.Roles.NotMember, appErr.InternalServerError("internal server error")
 	}
-	roleValue := GetRoleValue(&role)
+	roleValue := chatMember.GetRoleValue(&role)
 	return roleValue, nil
 }
 
 // Get chat member by id from db
-func (chat *Chat) GetChatMemberByID(targetID uint64) (*ChatMember, error) {
+func (chat *Chat) GetChatMemberByID(targetID uint64) (*chatMember.ChatMember, error) {
 	db := pgDB.GetDB()
-	var member ChatMember
+	var member chatMember.ChatMember
 	role, err := chat.GetMemberRole(targetID)
 	if err != nil {
 		return nil, err
 	}
-	if role == Roles.NotMember {
+	if role == chatMember.Roles.NotMember {
 		return nil, appErr.NotFound(fmt.Sprintf("user with id %d in chat with id %d not found", targetID, chat.ID))
 	}
 	member.Role = role
 
 	user, err := user.GetUserByID(targetID)
 	if err != nil && err.Error() == "user not found" {
-		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d not found", targetID))
+		return nil, appErr.NotFound(fmt.Sprintf("user with id %d not found", targetID))
 	} else if err != nil {
 		return nil, err
 	}
@@ -503,14 +491,14 @@ func (chat *Chat) GetChatMemberByID(targetID uint64) (*ChatMember, error) {
 
 	err = db.QueryRow(`SELECT removed_by, added_by FROM chat_members WHERE chat_id = $1 AND user_id = $2`, chat.ID, targetID).Scan(&member.RemovedBy, &member.AddedBy)
 	if err != nil && err == sql.ErrNoRows {
-		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d in chat with id %d not found", targetID, chat.ID))
+		return nil, appErr.NotFound(fmt.Sprintf("user with id %d in chat with id %d not found", targetID, chat.ID))
 	} else if err != nil {
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return &member, nil
 }
 
-func (chat *Chat) GetAllChatMembers() ([]ChatMember, error) {
+func (chat *Chat) GetAllChatMembers() ([]chatMember.ChatMember, error) {
 	db := pgDB.GetDB()
 	rows, err := db.Query(`
 		SELECT cm.user_id, cr.role, u.username, u.firstname, u.lastname, u.is_deleted, u.is_banned, u.is_activated
@@ -526,9 +514,9 @@ func (chat *Chat) GetAllChatMembers() ([]ChatMember, error) {
 
 	defer rows.Close()
 
-	var members []ChatMember
+	var members []chatMember.ChatMember
 	for rows.Next() {
-		var member ChatMember
+		var member chatMember.ChatMember
 		var user shortUser.ShortUser
 
 		err := rows.Scan(
@@ -592,15 +580,21 @@ func CheckPrivateChatExists(member1, member2 uint64) (bool, error) {
 	return chatID != 0, nil
 }
 
-// validate chat name
-func validateName(name string) error {
-	if name == "" {
-		return appErr.BadRequest("chat name is empty")
+// get user object with access checking
+func getUserForAdding(userID uint64, requestSendingMemberID uint64) (*user.User, error) {
+	user, err := user.GetUserByID(userID)
+	if err != nil {
+		var appError *appErr.AppError
+		if errors.As(err, &appError) && appError.StatusCode == 404 {
+			return nil, appErr.NotFound(fmt.Sprintf("user with id %d not found", userID))
+		}
+		return nil, err
 	}
-	if len(name) < 5 {
-		return appErr.BadRequest("chat name must be at least 5 characters")
+	err = checkUserAccess(user, requestSendingMemberID)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return user, nil
 }
 
 // save chat in db
@@ -620,10 +614,10 @@ func (chat *Chat) saveChatToDB(tx *sql.Tx) error {
 }
 
 // save chat member in db
-func (chat *Chat) saveMemberToDB(tx *sql.Tx, member *ChatMember) error {
+func (chat *Chat) saveMemberToDB(tx *sql.Tx, member *chatMember.ChatMember) error {
 	isInserting := member.ChatID == 0
 
-	roleString := GetRoleString(member.Role)
+	roleString := chatMember.GetRoleString(member.Role)
 	if roleString == "" {
 		return appErr.InternalServerError("internal server error")
 	}
@@ -645,5 +639,88 @@ func (chat *Chat) saveMemberToDB(tx *sql.Tx, member *ChatMember) error {
 			return appErr.InternalServerError("internal server error")
 		}
 	}
+	return nil
+}
+
+
+
+// Getting a chat object and its member object (request sender)
+func GetChatAndMember(chatID uint64, memberID uint64) (*Chat, *chatMember.ChatMember, error) {
+	var appError *appErr.AppError
+
+	chat, err := GetChatByID(chatID)
+	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
+		return nil, nil, appErr.Forbidden("you cannot access this chat")
+	} else if err != nil {
+		return nil, nil, err
+	}
+
+	member, err := chat.GetChatMemberByID(memberID)
+	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
+		return nil, nil, appErr.Forbidden("you cannot access this chat")
+	} else if err != nil {
+		return nil, nil, err
+	}
+
+	return chat, member, nil
+}
+
+// checking user access (friend status and activation) for adding to chat
+func checkUserAccess(target *user.User, requestSendingMemberID uint64) error {
+	if target.IsBanned {
+		return appErr.BadRequest(fmt.Sprintf("user with id %d is banned", target.ID))
+	}
+	if !target.IsActivated || target.IsDeleted {
+		return appErr.NotFound(fmt.Sprintf("user with id %d not found", target.ID))
+	}
+
+	relations, err := socialUser.GetRelations(requestSendingMemberID, target.ID)
+	if err != nil {
+		return err
+	}
+
+	if (relations != nil && *relations != "accepted") || (relations == nil) {
+		return appErr.BadRequest(fmt.Sprintf("user with id %d is not in your friends list", target.ID))
+	}
+
+	return nil
+}
+
+// validate chat name
+func validateName(name string) error {
+	if name == "" {
+		return appErr.BadRequest("chat name is empty")
+	}
+	if len(name) < 5 {
+		return appErr.BadRequest("chat name must be at least 5 characters")
+	}
+	return nil
+}
+
+// validate chat name and members count
+func validateBeforeCreatingChat(name string, members []uint64, isGroup bool, ownerDTO *user.UserDTO) error {
+	if isGroup {
+		if err := validateName(name); err != nil {
+			return err
+		}
+		if len(members) < 2 {
+			return appErr.BadRequest("need at least 2 members for group chat")
+		}
+	} else {
+		if len(members) < 1 {
+			return appErr.BadRequest("need at least 1 member for private chat")
+		} else if len(members) > 1 {
+			return appErr.BadRequest("max 1 member for private chat")
+		}
+
+		privateChatExists, err := CheckPrivateChatExists(ownerDTO.ID, members[0])
+		if err != nil {
+			return err
+		}
+		if privateChatExists {
+			return appErr.BadRequest(fmt.Sprintf("chat between user with id %d and %d already exists", ownerDTO.ID, members[0]))
+		}
+	}
+
 	return nil
 }

@@ -1,4 +1,4 @@
-package chat
+package chatMember
 
 type role struct {
 	Owner     int
