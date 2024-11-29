@@ -237,6 +237,7 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	})
 }
 
+// parse chat id from params
 func parseChatID(c *fiber.Ctx) (uint64, error) {
 	chatIDParam := c.Params("chat_id")
 	chatID, err := strconv.ParseUint(chatIDParam, 0, 64)
@@ -246,6 +247,7 @@ func parseChatID(c *fiber.Ctx) (uint64, error) {
 	return chatID, nil
 }
 
+// parse member id from params
 func parseMemberID(c *fiber.Ctx) (uint64, error) {
 	memberIDParam := c.Params("member_id")
 	memberID, err := strconv.ParseUint(memberIDParam, 0, 64)
@@ -255,6 +257,7 @@ func parseMemberID(c *fiber.Ctx) (uint64, error) {
 	return memberID, nil
 }
 
+// get chat object and verify user access
 func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
 	chat, member, err := chatModel.GetChatAndMember(chatID, userID)
 	if err != nil {

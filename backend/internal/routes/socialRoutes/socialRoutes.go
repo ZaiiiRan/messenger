@@ -49,14 +49,27 @@ func unblockUser(c *fiber.Ctx) error {
 
 func SetupRoutes(app fiber.Router) {
 	social := app.Group("/social")
-	social.Post("/search-users", authMiddleware.AuthMiddleware, getUsers)
+
+	// Users
+	social.Post("/users", authMiddleware.AuthMiddleware, getUsers)
 	social.Get("/user/:id", authMiddleware.AuthMiddleware, getUser)
-	social.Post("/get-friends", authMiddleware.AuthMiddleware, getFriends)
-	social.Post("/get-incoming-friend-requests", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
-	social.Post("/get-outgoing-friend-requests", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)
-	social.Post("/get-blocked-users", authMiddleware.AuthMiddleware, getBlockedUsers)
-	social.Post("/add-friend", authMiddleware.AuthMiddleware, addFriend)
-	social.Post("/remove-friend", authMiddleware.AuthMiddleware, removeFriend)
-	social.Post("/block-user", authMiddleware.AuthMiddleware, blockUser)
-	social.Post("/unblock-user", authMiddleware.AuthMiddleware, unblockUser)
+
+	// Friends
+	social.Post("/friends", authMiddleware.AuthMiddleware, getFriends)
+
+	// Friend requests
+	social.Post("/friend-requests/incoming", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
+	social.Post("/friend-requests/outgoing", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)
+
+	// Block list
+	social.Post("/block-list", authMiddleware.AuthMiddleware, getBlockedUsers)
+
+	// Friend management
+	social.Post("/users/:id/friend", authMiddleware.AuthMiddleware, addFriend)
+	social.Delete("/users/:id/friend", authMiddleware.AuthMiddleware, removeFriend)
+
+	// Block/Unblock
+	social.Post("/users/:id/block", authMiddleware.AuthMiddleware, blockUser)
+	social.Delete("/users/:id/block", authMiddleware.AuthMiddleware, unblockUser)
+
 }
