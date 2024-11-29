@@ -5,7 +5,6 @@ import (
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chatMember"
 	"backend/internal/models/user"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -235,26 +234,6 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 		"chat":    chat,
 		"member":  member,
 	})
-}
-
-// parse chat id from params
-func parseChatID(c *fiber.Ctx) (uint64, error) {
-	chatIDParam := c.Params("chat_id")
-	chatID, err := strconv.ParseUint(chatIDParam, 0, 64)
-	if err != nil {
-		return 0, appErr.BadRequest("invalid request format")
-	}
-	return chatID, nil
-}
-
-// parse member id from params
-func parseMemberID(c *fiber.Ctx) (uint64, error) {
-	memberIDParam := c.Params("member_id")
-	memberID, err := strconv.ParseUint(memberIDParam, 0, 64)
-	if err != nil {
-		return 0, appErr.BadRequest("invalid request format")
-	}
-	return memberID, nil
 }
 
 // get chat object and verify user access

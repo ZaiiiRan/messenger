@@ -1,7 +1,11 @@
 package chatController
 
 import (
+	appErr "backend/internal/errors/appError"
+	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // Chat request format
@@ -24,4 +28,24 @@ type ChangeRoleRequest struct {
 // trim spaces for change member role request
 func (r *ChangeRoleRequest) trimSpaces() {
 	r.Role = strings.TrimSpace(r.Role)
+}
+
+// parse chat id from params
+func parseChatID(c *fiber.Ctx) (uint64, error) {
+	chatIDParam := c.Params("chat_id")
+	chatID, err := strconv.ParseUint(chatIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return chatID, nil
+}
+
+// parse member id from params
+func parseMemberID(c *fiber.Ctx) (uint64, error) {
+	memberIDParam := c.Params("member_id")
+	memberID, err := strconv.ParseUint(memberIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return memberID, nil
 }
