@@ -3,21 +3,12 @@ package chatController
 import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
+	"backend/internal/models/chatMember"
 	"backend/internal/models/user"
-	"strings"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-type CreateChatRequest struct {
-	Name    string   `json:"name"`
-	Members []uint64 `json:"members"`
-	IsGroup bool     `json:"is_group"`
-}
-
-func (r *CreateChatRequest) TrimSpaces() {
-	r.Name = strings.TrimSpace(r.Name)
-}
 
 func CreateChat(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
@@ -25,11 +16,11 @@ func CreateChat(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req CreateChatRequest
+	var req ChatRequest
 	if err := c.BodyParser(&req); err != nil {
 		return appErr.BadRequest("invalid request format")
 	}
-	req.TrimSpaces()
+	req.trimSpaces()
 
 	chat, members, err := chatModel.CreateChat(req.Name, req.Members, req.IsGroup, user)
 	if err != nil {
@@ -47,18 +38,18 @@ func CreateChat(c *fiber.Ctx) error {
 	})
 }
 
-type MembersManipulationRequest struct {
-	ChatID  uint64   `json:"chat_id"`
-	Members []uint64 `json:"members"`
-}
-
 func AddMembers(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req MembersManipulationRequest
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	var req ChatRequest
 	if err := c.BodyParser(&req); err != nil {
 		return appErr.BadRequest("invalid request format")
 	}
@@ -67,13 +58,9 @@ func AddMembers(c *fiber.Ctx) error {
 		return appErr.BadRequest("empty user list")
 	}
 
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
-	}
-
-	if requestSendingMember.Removed() {
-		return appErr.Forbidden("you cannot access this chat")
 	}
 
 	newMembers, err := chat.AddMembers(req.Members, requestSendingMember)
@@ -88,28 +75,20 @@ func AddMembers(c *fiber.Ctx) error {
 	})
 }
 
-type LeaveRequest struct {
-	ChatID uint64 `json:"chat_id"`
-}
-
 func Leave(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req LeaveRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
-	}
-
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	chatID, err := parseChatID(c)
 	if err != nil {
 		return err
 	}
 
-	if requestSendingMember.Removed() {
-		return appErr.Forbidden("you cannot access this chat")
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
 	}
 
 	_, err = chat.LeaveFromChat(requestSendingMember)
@@ -129,12 +108,12 @@ func ReturnToChat(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req LeaveRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
 	}
 
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndMember(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -156,7 +135,12 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req MembersManipulationRequest
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	var req ChatRequest
 	if err := c.BodyParser(&req); err != nil {
 		return appErr.BadRequest("invalid request format")
 	}
@@ -165,13 +149,9 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return appErr.BadRequest("empty user list")
 	}
 
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
-	}
-
-	if requestSendingMember.Removed() {
-		return appErr.Forbidden("you cannot access this chat")
 	}
 
 	removed, err := chat.RemoveMembers(req.Members, requestSendingMember)
@@ -186,29 +166,26 @@ func RemoveMembers(c *fiber.Ctx) error {
 	})
 }
 
-type RenameChatRequest struct {
-	ChatID uint64 `json:"chat_id"`
-	Name   string `json:"name"`
-}
-
 func RenameChat(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req RenameChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
-	}
-
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	chatID, err := parseChatID(c)
 	if err != nil {
 		return err
 	}
 
-	if requestSendingMember.Removed() {
-		return appErr.Forbidden("you cannot access this chat")
+	var req ChatRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	req.trimSpaces()
+
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
 	}
 
 	err = chat.Rename(req.Name, requestSendingMember)
@@ -222,29 +199,33 @@ func RenameChat(c *fiber.Ctx) error {
 	})
 }
 
-type ChangeRoleRequest struct {
-	ChatID   uint64 `json:"chat_id"`
-	MemberID uint64 `json:"member_id"`
-	Role     string `json:"role"`
-}
-
 func ChatMemberRoleChange(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*user.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req ChangeRoleRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
 	}
-
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(req.ChatID, user.ID)
+	memberID, err := parseMemberID(c)
 	if err != nil {
 		return err
 	}
 
-	member, err := chat.ChatMemberRoleChange(req.MemberID, req.Role, requestSendingMember)
+	var req ChangeRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	req.trimSpaces()
+
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	member, err := chat.ChatMemberRoleChange(memberID, req.Role, requestSendingMember)
 	if err != nil {
 		return err
 	}
@@ -254,4 +235,33 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 		"chat":    chat,
 		"member":  member,
 	})
+}
+
+func parseChatID(c *fiber.Ctx) (uint64, error) {
+	chatIDParam := c.Params("chat_id")
+	chatID, err := strconv.ParseUint(chatIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return chatID, nil
+}
+
+func parseMemberID(c *fiber.Ctx) (uint64, error) {
+	memberIDParam := c.Params("member_id")
+	memberID, err := strconv.ParseUint(memberIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return memberID, nil
+}
+
+func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
+	chat, member, err := chatModel.GetChatAndMember(chatID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if member.Removed() {
+		return nil, nil, appErr.Forbidden("you cannot access this chat")
+	}
+	return chat, member, nil
 }

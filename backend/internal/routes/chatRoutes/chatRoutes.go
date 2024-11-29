@@ -36,12 +36,12 @@ func chatMemberRoleChange(c *fiber.Ctx) error {
 }
 
 func SetupRoutes(app *fiber.App) {
-	chat := app.Group("/chat")
-	chat.Post("/create-chat", authMiddleware.AuthMiddleware, createChat)
-	chat.Post("/add-members", authMiddleware.AuthMiddleware, addMembers)
-	chat.Post("/leave", authMiddleware.AuthMiddleware, leave)
-	chat.Post("/remove-members", authMiddleware.AuthMiddleware, removeMembers)
-	chat.Post("/return", authMiddleware.AuthMiddleware, returnToChat)
-	chat.Post("/rename", authMiddleware.AuthMiddleware, renameChat)
-	chat.Post("/change-role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
+	chat := app.Group("/chats")
+	chat.Post("/", authMiddleware.AuthMiddleware, createChat)
+	chat.Patch("/:chat_id", authMiddleware.AuthMiddleware, renameChat)
+	chat.Post("/:chat_id/members", authMiddleware.AuthMiddleware, addMembers)
+	chat.Delete("/:chat_id/members", authMiddleware.AuthMiddleware, removeMembers)
+	chat.Patch("/:chat_id/leave", authMiddleware.AuthMiddleware, leave)
+	chat.Patch("/:chat_id/return", authMiddleware.AuthMiddleware, returnToChat)
+	chat.Patch("/:chat_id/members/:member_id/role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
 }
