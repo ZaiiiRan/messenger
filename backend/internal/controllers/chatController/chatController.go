@@ -236,6 +236,33 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	})
 }
 
+func DeleteChat(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	err = chat.Delete(requestSendingMember)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "chat has been deleted",
+		"deleted_chat": chat,
+	})
+}
+
 // get chat object and verify user access
 func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
 	chat, member, err := chatModel.GetChatAndMember(chatID, userID)

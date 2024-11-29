@@ -3,8 +3,8 @@ package chat
 import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
-	"backend/internal/models/shortUser"
 	"backend/internal/models/chatMember"
+	"backend/internal/models/shortUser"
 	"backend/internal/models/socialUser"
 	"backend/internal/models/user"
 	"database/sql"
@@ -115,6 +115,40 @@ func (chat *Chat) Rename(newName string, actor *chatMember.ChatMember) error {
 	}
 
 	chat.Name = &newName
+
+	tx, err := pgDB.GetDB().Begin()
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+		}
+	}()
+
+	err = chat.saveChatToDB(tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+
+	return nil
+}
+
+func (chat *Chat) Delete(actor *chatMember.ChatMember) error {
+	if !chat.IsGroupChat {
+		return appErr.BadRequest("chat is not a group chat")
+	}
+
+	if actor.Role < chatMember.Roles.Owner {
+		return appErr.Forbidden("you don't have enough rights")
+	}
+
+	chat.IsDeleted = true
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
@@ -549,7 +583,7 @@ func GetChatByID(id uint64) (*Chat, error) {
 	db := pgDB.GetDB()
 
 	var chat Chat
-	err := db.QueryRow(`SELECT id, name, is_deleted FROM chats WHERE id = $1 AND is_deleted != TRUE`, id).Scan(&chat.ID, &chat.Name, &chat.IsDeleted)
+	err := db.QueryRow(`SELECT id, name, is_deleted FROM chats WHERE id = $1 AND is_deleted = FALSE`, id).Scan(&chat.ID, &chat.Name, &chat.IsDeleted)
 	if err == sql.ErrNoRows {
 		return nil, appErr.NotFound("chat not found")
 	} else if err != nil {
@@ -641,8 +675,6 @@ func (chat *Chat) saveMemberToDB(tx *sql.Tx, member *chatMember.ChatMember) erro
 	}
 	return nil
 }
-
-
 
 // Getting a chat object and its member object (request sender)
 func GetChatAndMember(chatID uint64, memberID uint64) (*Chat, *chatMember.ChatMember, error) {
