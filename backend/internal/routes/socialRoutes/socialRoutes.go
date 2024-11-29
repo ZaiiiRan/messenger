@@ -51,25 +51,25 @@ func SetupRoutes(app fiber.Router) {
 	social := app.Group("/social")
 
 	// Users
-	social.Post("/users", authMiddleware.AuthMiddleware, getUsers)
-	social.Get("/user/:id", authMiddleware.AuthMiddleware, getUser)
+	social.Post("/users/search", authMiddleware.AuthMiddleware, getUsers)
+	social.Get("/users/:id", authMiddleware.AuthMiddleware, getUser)
 
 	// Friends
-	social.Post("/friends", authMiddleware.AuthMiddleware, getFriends)
+	social.Post("/friends/friend-list", authMiddleware.AuthMiddleware, getFriends)
 
 	// Friend requests
-	social.Post("/friend-requests/incoming", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
-	social.Post("/friend-requests/outgoing", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)
+	social.Post("/friends/friend-requests/incoming", authMiddleware.AuthMiddleware, getIncomingFriendRequests)
+	social.Post("/friends/friend-requests/outgoing", authMiddleware.AuthMiddleware, getOutgoingFriendRequests)
 
 	// Block list
-	social.Post("/block-list", authMiddleware.AuthMiddleware, getBlockedUsers)
+	social.Post("/block/block-list", authMiddleware.AuthMiddleware, getBlockedUsers)
 
 	// Friend management
-	social.Post("/users/:id/friend", authMiddleware.AuthMiddleware, addFriend)
-	social.Delete("/users/:id/friend", authMiddleware.AuthMiddleware, removeFriend)
+	social.Post("/friends/management/:id", authMiddleware.AuthMiddleware, addFriend)
+	social.Delete("/friends/management/:id", authMiddleware.AuthMiddleware, removeFriend)
 
 	// Block/Unblock
-	social.Post("/users/:id/block", authMiddleware.AuthMiddleware, blockUser)
-	social.Delete("/users/:id/block", authMiddleware.AuthMiddleware, unblockUser)
+	social.Post("/block/management/:id", authMiddleware.AuthMiddleware, blockUser)
+	social.Delete("/block/management/:id", authMiddleware.AuthMiddleware, unblockUser)
 
 }
