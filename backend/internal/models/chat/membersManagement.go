@@ -185,6 +185,7 @@ func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMembe
 // adding new member to chat
 func (chat *Chat) addNewMemberToChat(tx *sql.Tx, user *user.User, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	newMember := &chatMember.ChatMember{
+		ChatID: chat.ID,
 		User:    shortUser.CreateShortUserFromUser(user),
 		AddedBy: addingMember.User.ID,
 		Role:    chatMember.Roles.Member,

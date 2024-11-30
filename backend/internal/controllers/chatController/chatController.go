@@ -258,7 +258,7 @@ func DeleteChat(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "chat has been deleted",
+		"message":      "chat has been deleted",
 		"deleted_chat": chat,
 	})
 }

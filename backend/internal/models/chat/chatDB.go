@@ -45,7 +45,7 @@ func getPrivateChatFromDB(member1, member2 uint64) (*Chat, error) {
 	var chat Chat
 	db := pgDB.GetDB()
 	err := db.QueryRow(`
-		SELECT c.* FROM chats c
+		SELECT c.id, c.name, c.is_deleted FROM chats c
 		JOIN chat_members cm ON cm.chat_id = c.id
 		WHERE c.name IS NULL 
 		AND ((added_by = $1 AND cm.user_id = $2) OR (added_by = $2 AND cm.user_id = $1))
