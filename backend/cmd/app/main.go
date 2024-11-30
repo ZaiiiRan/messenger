@@ -23,8 +23,9 @@ func main() {
 		logger.Fatal("Error loading .env file", "App starting")
 	}
 
-	pgDB.Connect(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"),
+	pgDB.SetConnectionData(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"),
 		os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_PORT"))
+	pgDB.GetDB()
 
 	port := os.Getenv("PORT")
 	if port == "" {
