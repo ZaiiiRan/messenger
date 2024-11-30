@@ -107,7 +107,7 @@ func (u *User) Save() error {
 // Deletion user from DataBase (soft delete)
 func (u *User) Delete() error {
 	if u.ID == 0 {
-		return appErr.BadRequest("user not found")
+		return appErr.NotFound("user not found")
 	}
 	u.IsDeleted = true
 	return u.Save()
@@ -124,7 +124,7 @@ func GetUserByID(ID uint64) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE id = $1`, ID)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, appErr.BadRequest("user not found")
+		return nil, appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get user by id", ID, err)
 		return nil, appErr.InternalServerError("internal server error")
@@ -138,7 +138,7 @@ func GetUserByUsername(username string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE username = $1`, username)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, appErr.BadRequest("user not found")
+		return nil, appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get user by username", username, err)
 		return nil, appErr.InternalServerError("internal server error")
@@ -152,7 +152,7 @@ func GetUserByEmail(email string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE email = $1`, email)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, appErr.BadRequest("user not found")
+		return nil, appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get user by email", email, err)
 		return nil, appErr.InternalServerError("internal server error")
@@ -166,7 +166,7 @@ func GetUserByPhone(phone string) (*User, error) {
 	row := db.QueryRow(`SELECT * FROM users WHERE phone = $1`, phone)
 	user, err := createUserFromSQLRow(row)
 	if err == sql.ErrNoRows {
-		return nil, appErr.BadRequest("user not found")
+		return nil, appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get user by phone", phone, err)
 		return nil, appErr.InternalServerError("internal server error")

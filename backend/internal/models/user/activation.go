@@ -80,7 +80,7 @@ func (c *ActivationCode) Save() error {
 func (c *ActivationCode) Delete() error {
 	db := pgDB.GetDB()
 	if c.ID == 0 {
-		return appErr.BadRequest("activation code not found")
+		return appErr.NotFound("activation code not found")
 	}
 	_, err := db.Exec(`DELETE FROM activation_codes WHERE id = $1`, c.ID)
 	if err != nil {
@@ -102,7 +102,7 @@ func (c *ActivationCode) SendToEmail() error {
 	var email string
 	err := db.QueryRow(`SELECT email FROM users WHERE id = $1 AND is_activated = FALSE`, c.UserID).Scan(&email)
 	if err == sql.ErrNoRows {
-		return appErr.BadRequest("user not found")
+		return appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get email bu user id", c, err)
 		return appErr.InternalServerError("internal server error")
@@ -137,7 +137,7 @@ func ActivateAccount(userID uint64, code string) error {
 		return err
 	}
 	if activationCode == nil {
-		return appErr.BadRequest("activation code not found")
+		return appErr.NotFound("activation code not found")
 	}
 
 	if time.Now().After(activationCode.ExpiresAt) {
@@ -163,7 +163,7 @@ func IsUserActivated(userID uint64) (bool, error) {
 	var isActivated bool
 	err := db.QueryRow("SELECT is_activated FROM users WHERE id = $1", userID).Scan(&isActivated)
 	if err == sql.ErrNoRows {
-		return false, appErr.BadRequest("user not found")
+		return false, appErr.NotFound("user not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "account activation checking by userID", userID, err)
 		return false, appErr.InternalServerError("internal server error")

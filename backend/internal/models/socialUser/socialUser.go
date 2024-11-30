@@ -28,7 +28,7 @@ func AddFriend(userID, friendID uint64) (*SocialUser, error) {
 		return nil, err
 	}
 	if !friend.User.IsActivated || friend.User.IsDeleted {
-		return nil, appErr.BadRequest("user not found")
+		return nil, appErr.NotFound("user not found")
 	}
 	if friend.User.IsBanned {
 		return nil, appErr.BadRequest("user is banned")

@@ -32,7 +32,7 @@ func FindToken(refreshToken string) (*Token, error) {
 	err := db.QueryRow(`SELECT * FROM tokens WHERE refresh_token = $1`, refreshToken).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
 	if err == sql.ErrNoRows {
-		return nil, appErr.BadRequest("token not found")
+		return nil, appErr.NotFound("token not found")
 	}
 	if err != nil {
 		logger.GetInstance().Error(err.Error(), "find token by string", refreshToken, err)
