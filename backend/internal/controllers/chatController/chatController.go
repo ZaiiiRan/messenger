@@ -4,6 +4,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chatMember"
+	"backend/internal/models/chatMember/chatMemberDTO"
 	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
@@ -67,10 +68,15 @@ func AddMembers(c *fiber.Ctx) error {
 		return err
 	}
 
+	newMembersDTO := make([]*chatMemberDTO.ChatMemberDTO, len(newMembers))
+	for index, member := range newMembers {
+		newMembersDTO[index] = chatMemberDTO.CreateChatMemberDTO(&member)
+	}
+
 	return c.JSON(fiber.Map{
 		"message":     "members added",
 		"chat":        chat,
-		"new_members": newMembers,
+		"new_members": newMembersDTO,
 	})
 }
 
