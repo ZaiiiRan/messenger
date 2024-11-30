@@ -24,6 +24,7 @@ type db struct {
 	db       *sql.DB
 }
 
+// Set Connection data for PostgreSQL
 func SetConnectionData(user, password, database, host, port string) {
 	once.Do(func() {
 		instance = &db{
@@ -36,6 +37,7 @@ func SetConnectionData(user, password, database, host, port string) {
 	})
 }
 
+// Get instance of PostgreSQL client
 func GetDB() *sql.DB {
 	if instance == nil {
 		logger.GetInstance().Error("database connection is not set", "get PostgreSQL client", nil, nil)
