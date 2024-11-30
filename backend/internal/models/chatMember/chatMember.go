@@ -65,9 +65,7 @@ func GetChatMemberByID(targetID, chatID uint64) (*ChatMember, error) {
 }
 
 // Save chat member
-func (member *ChatMember) Save(tx *sql.Tx) error {
-	isInserting := member.ChatID == 0
-
+func (member *ChatMember) Save(tx *sql.Tx, isInserting bool) error {
 	roleString := GetRoleString(member.Role)
 	if roleString == "" {
 		return appErr.InternalServerError("internal server error")

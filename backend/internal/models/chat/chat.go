@@ -79,11 +79,11 @@ func (chat *Chat) SaveWithMembers(newMembers []chatMember.ChatMember) ([]chatMem
 	var members []chatMember.ChatMember
 	for _, member := range newMembers {
 		member.ChatID = chat.ID
-		if err := chat.saveMemberToDB(tx, &member); err != nil {
+		err := member.Save(tx, true)
+		if err != nil {
 			tx.Rollback()
 			return nil, err
 		}
-		member.ChatID = chat.ID
 		members = append(members, member)
 	}
 

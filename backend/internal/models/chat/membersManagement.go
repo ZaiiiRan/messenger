@@ -45,7 +45,7 @@ func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.Chat
 		}
 	}()
 
-	err = chat.saveMemberToDB(tx, member)
+	err = member.Save(tx, false)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -86,7 +86,7 @@ func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatM
 		}
 	}()
 
-	err = chat.saveMemberToDB(tx, member)
+	err = member.Save(tx, false)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -175,7 +175,7 @@ func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMembe
 	target.Role = chatMember.Roles.Member
 	target.AddedBy = addingMember.User.ID
 
-	err := chat.saveMemberToDB(tx, target)
+	err := target.Save(tx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (chat *Chat) addNewMemberToChat(tx *sql.Tx, user *user.User, addingMember *
 		AddedBy: addingMember.User.ID,
 		Role:    chatMember.Roles.Member,
 	}
-	err := chat.saveMemberToDB(tx, newMember)
+	err := newMember.Save(tx, true)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chat
 	}
 	member.RemovedBy = &removingMember.User.ID
 
-	err = chat.saveMemberToDB(tx, member)
+	err = member.Save(tx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *c
 		}
 	}()
 
-	err = chat.saveMemberToDB(tx, member)
+	err = member.Save(tx, false)
 
 	if err != nil {
 		tx.Rollback()
@@ -328,13 +328,4 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *c
 	}
 
 	return member, nil
-}
-
-// save chat member in db
-func (chat *Chat) saveMemberToDB(tx *sql.Tx, member *chatMember.ChatMember) error {
-	err := member.Save(tx)
-	if err != nil {
-		return err
-	}
-	return nil
 }
