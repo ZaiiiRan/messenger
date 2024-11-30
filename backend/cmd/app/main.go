@@ -6,6 +6,7 @@ import (
 	"backend/internal/routes/authRoutes"
 	"backend/internal/routes/socialRoutes"
 	"backend/internal/routes/chatRoutes"
+	"backend/internal/logger"
 	"log"
 	"os"
 
@@ -15,9 +16,11 @@ import (
 )
 
 func main() {
+	logger := logger.GetInstance()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logger.Fatal("Error loading .env file", "App starting")
 	}
 
 	pgDB.Connect(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"),

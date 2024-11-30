@@ -3,6 +3,7 @@ package shortUser
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/user"
 	"database/sql"
 )
@@ -156,6 +157,7 @@ func createUsersFromSQLRows(rows *sql.Rows) ([]ShortUser, error) {
 		err := rows.Scan(&user.ID, &user.Username, &user.Firstname, &user.Lastname,
 			&user.IsDeleted, &user.IsBanned, &user.IsActivated)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "creating short user from sql rows", rows, err)
 			return nil, appErr.InternalServerError("internal server error")
 		}
 
@@ -163,6 +165,7 @@ func createUsersFromSQLRows(rows *sql.Rows) ([]ShortUser, error) {
 	}
 
 	if err := rows.Err(); err != nil {
+		logger.GetInstance().Error(err.Error(), "creating short user from sql rows", rows, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -177,6 +180,7 @@ func queryUsers(query string, params ...interface{}) ([]ShortUser, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.NotFound("users not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "query users", query, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer rows.Close()

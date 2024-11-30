@@ -14,7 +14,7 @@ func validateUsername(username string) error {
 
 	candidate, err := GetUserByUsername(username)
 	if err != nil && err.Error() != "user not found" {
-		return appErr.InternalServerError("internal server error")
+		return err
 	}
 	if candidate != nil {
 		return appErr.BadRequest("user with the same username already exists")
@@ -32,7 +32,7 @@ func validateEmail(email string) error {
 
 	candidate, err := GetUserByEmail(email)
 	if err != nil && err.Error() != "user not found" {
-		return appErr.InternalServerError("internal server error")
+		return err
 	}
 	if candidate != nil {
 		return appErr.BadRequest("user with the same email already exists")
@@ -53,7 +53,7 @@ func validatePhone(phone string) error {
 
 	candidate, err := GetUserByPhone(phone)
 	if err != nil && err.Error() != "user not found" {
-		return appErr.InternalServerError("internal server error")
+		return err
 	}
 	if candidate != nil {
 		return appErr.BadRequest("user with the same phone number already exists")

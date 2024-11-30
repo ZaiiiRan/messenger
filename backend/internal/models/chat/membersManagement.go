@@ -3,6 +3,7 @@ package chat
 import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/chatMember"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
@@ -37,6 +38,7 @@ func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.Chat
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "leave from chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -52,6 +54,7 @@ func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.Chat
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "leave from chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -78,6 +81,7 @@ func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatM
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "return to chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -93,6 +97,7 @@ func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatM
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "return to chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -107,6 +112,7 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, addingMember *chatMember.Ch
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "add members to chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -131,6 +137,7 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, addingMember *chatMember.Ch
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "add members to chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -185,7 +192,7 @@ func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMembe
 // adding new member to chat
 func (chat *Chat) addNewMemberToChat(tx *sql.Tx, user *user.User, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
 	newMember := &chatMember.ChatMember{
-		ChatID: chat.ID,
+		ChatID:  chat.ID,
 		User:    shortUser.CreateShortUserFromUser(user),
 		AddedBy: addingMember.User.ID,
 		Role:    chatMember.Roles.Member,
@@ -206,6 +213,7 @@ func (chat *Chat) RemoveMembers(membersIDs []uint64, removingMember *chatMember.
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "remove members from chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -229,6 +237,7 @@ func (chat *Chat) RemoveMembers(membersIDs []uint64, removingMember *chatMember.
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "remove members from chat", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -249,6 +258,7 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chat
 
 	if member.AddedBy != removingMember.User.ID {
 		if removingMember.Role == chatMember.Roles.NotMember {
+			logger.GetInstance().Error(fmt.Sprintf("user with id %d in chat with id %d is not member", memberID, member.ChatID), "remove member from chat", nil, err)
 			return nil, appErr.InternalServerError("internal server error")
 		}
 
@@ -308,6 +318,7 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *c
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "chat member role changing", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -324,6 +335,7 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *c
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "chat member role changing", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 

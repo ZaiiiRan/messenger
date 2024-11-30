@@ -3,6 +3,7 @@ package user
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"database/sql"
 	"time"
 
@@ -86,6 +87,7 @@ func (u *User) Save() error {
 		err := db.QueryRow(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
 			u.IsDeleted, u.IsBanned, u.IsActivated, u.CreatedAt).Scan(&u.ID, &u.CreatedAt)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "user inserting", u, err)
 			return appErr.InternalServerError("internal server error")
 		}
 	} else {
@@ -95,6 +97,7 @@ func (u *User) Save() error {
 		_, err := db.Exec(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
 			u.IsDeleted, u.IsBanned, u.IsActivated, u.ID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "user updating", u, err)
 			return appErr.InternalServerError("internal server error")
 		}
 	}
@@ -123,6 +126,7 @@ func GetUserByID(ID uint64) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get user by id", ID, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
@@ -136,6 +140,7 @@ func GetUserByUsername(username string) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get user by username", username, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
@@ -149,6 +154,7 @@ func GetUserByEmail(email string) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get user by email", email, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
@@ -162,6 +168,7 @@ func GetUserByPhone(phone string) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get user by phone", phone, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return user, nil
@@ -180,6 +187,7 @@ func createUserFromSQLRow(row *sql.Row) (*User, error) {
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 6)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "password hashing", "", err)
 		return "", appErr.InternalServerError("internal server error")
 	}
 	return string(hash), nil

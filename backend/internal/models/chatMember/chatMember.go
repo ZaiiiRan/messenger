@@ -4,6 +4,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
+	"backend/internal/logger"
 	"database/sql"
 	"fmt"
 )
@@ -11,9 +12,9 @@ import (
 type ChatMember struct {
 	User      *shortUser.ShortUser `json:"user"`
 	Role      int                  `json:"role"`
+	ChatID    uint64               `json:"chat_id"`
 	RemovedBy *uint64
 	AddedBy   uint64
-	ChatID    uint64 `json:"chat_id"`
 }
 
 // Removed checking
@@ -68,6 +69,7 @@ func GetChatMemberByID(targetID, chatID uint64) (*ChatMember, error) {
 func (member *ChatMember) Save(tx *sql.Tx, isInserting bool) error {
 	roleString := GetRoleString(member.Role)
 	if roleString == "" {
+		logger.GetInstance().Error("role string is empty", "save chat member", nil, nil)
 		return appErr.InternalServerError("internal server error")
 	}
 	roleID, err := getRoleIDFromDB(roleString)

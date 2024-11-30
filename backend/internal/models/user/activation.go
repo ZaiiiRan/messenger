@@ -3,6 +3,7 @@ package user
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/services/mailService"
 	"database/sql"
 	"fmt"
@@ -46,6 +47,7 @@ func GetActivationCode(userID uint64) (*ActivationCode, error) {
 	if err == sql.ErrNoRows {
 		activationCode = *CreateActivationCode(userID)
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get activation code by userID", userID, err)
 		return nil, appErr.InternalServerError("failed to retrieve activation code")
 	}
 	return &activationCode, nil
@@ -59,6 +61,7 @@ func (c *ActivationCode) Save() error {
 		query := `INSERT INTO activation_codes (user_id, code, expires_at) VALUES ($1, $2, $3) RETURNING id`
 		err := db.QueryRow(query, c.UserID, c.Code, c.ExpiresAt.UTC()).Scan(&c.ID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "activation code inserting", c, err)
 			return appErr.InternalServerError("internal server error")
 		}
 	} else {
@@ -66,6 +69,7 @@ func (c *ActivationCode) Save() error {
 		query := `UPDATE activation_codes SET code = $1, expires_at = $2 WHERE id = $3`
 		_, err := db.Exec(query, c.Code, c.ExpiresAt.UTC(), c.ID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "activation code updating", c, err)
 			return appErr.InternalServerError("internal server error")
 		}
 	}
@@ -80,6 +84,7 @@ func (c *ActivationCode) Delete() error {
 	}
 	_, err := db.Exec(`DELETE FROM activation_codes WHERE id = $1`, c.ID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "activation code deleting", c, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
@@ -99,6 +104,7 @@ func (c *ActivationCode) SendToEmail() error {
 	if err == sql.ErrNoRows {
 		return appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get email bu user id", c, err)
 		return appErr.InternalServerError("internal server error")
 	}
 
@@ -118,6 +124,7 @@ func (c *ActivationCode) SendToEmail() error {
 
 	err = mailService.SendMail(email, "Account Activation", htmlContent)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "sending activation code to email", c, err)
 		return appErr.InternalServerError("there was an error sending the account activation code")
 	}
 	return nil
@@ -143,6 +150,7 @@ func ActivateAccount(userID uint64, code string) error {
 	db := pgDB.GetDB()
 	_, err = db.Exec(`UPDATE users SET is_activated = TRUE WHERE id = $1`, userID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "account activation", map[string]interface{}{"userID": userID, "code": code}, err)
 		return appErr.InternalServerError("failed to activate user account")
 	}
 	activationCode.Delete()
@@ -157,6 +165,7 @@ func IsUserActivated(userID uint64) (bool, error) {
 	if err == sql.ErrNoRows {
 		return false, appErr.BadRequest("user not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "account activation checking by userID", userID, err)
 		return false, appErr.InternalServerError("internal server error")
 	}
 	return isActivated, nil

@@ -3,6 +3,7 @@ package socialUser
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/user"
 	"database/sql"
 )
@@ -54,6 +55,7 @@ func AddFriend(userID, friendID uint64) (*SocialUser, error) {
 		newStatus = "outgoing request"
 	}
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "add friend", map[string]interface{}{"userID": userID, "friendID": friendID}, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	friend.FriendStatus = &newStatus
@@ -72,6 +74,7 @@ func RemoveFriend(userID, friendID uint64) (*SocialUser, error) {
 		_, err = db.Exec(`DELETE FROM friends WHERE (friend_1_id = $1 AND friend_2_id = $2)
 		OR (friend_1_id = $2 AND friend_2_id = $1)`, userID, friendID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "remove friend", map[string]interface{}{"userID": userID, "friendID": friendID}, err)
 			return nil, appErr.InternalServerError("internal server error")
 		}
 		friend.FriendStatus = nil
@@ -95,6 +98,7 @@ func BlockUser(userID, targetID uint64) (*SocialUser, error) {
 		_, err = db.Exec(`DELETE FROM friends WHERE (friend_1_id = $1 AND friend_2_id = $2)
 		OR (friend_1_id = $2 AND friend_2_id = $1)`, userID, targetID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "block user (deleting)", map[string]interface{}{"userID": userID, "targetID": targetID}, err)
 			return nil, appErr.InternalServerError("inernal server error")
 		}
 	}
@@ -102,6 +106,7 @@ func BlockUser(userID, targetID uint64) (*SocialUser, error) {
 	_, err = db.Exec(`INSERT INTO friends (friend_1_id, friend_2_id, status_id)
     VALUES ($1, $2, (SELECT id FROM friend_statuses WHERE name = 'blocked'))`, userID, targetID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "block user (blocking)", map[string]interface{}{"userID": userID, "targetID": targetID}, err)
 		return nil, appErr.InternalServerError("inernal server error")
 	}
 	newStatus = "blocked"
@@ -121,6 +126,7 @@ func UnblockUser(userID, targetID uint64) (*SocialUser, error) {
 		_, err = db.Exec(`DELETE FROM friends WHERE friend_1_id = $1 AND friend_2_id = $2 
         AND status_id = (SELECT id FROM friend_statuses WHERE name = 'blocked')`, userID, targetID)
 		if err != nil {
+			logger.GetInstance().Error(err.Error(), "unblock user", map[string]interface{}{"userID": userID, "targetID": targetID}, err)
 			return nil, appErr.InternalServerError("inernal server error")
 		}
 	}
@@ -171,6 +177,7 @@ func GetRelations(userID, targetID uint64) (*string, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get relations between users", map[string]interface{}{"userID": userID, "targetID": targetID}, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 

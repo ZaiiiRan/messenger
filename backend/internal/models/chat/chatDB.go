@@ -3,6 +3,7 @@ package chat
 import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"database/sql"
 )
 
@@ -10,6 +11,7 @@ import (
 func insertChatToDB(tx *sql.Tx, chat *Chat) error {
 	err := tx.QueryRow(`INSERT INTO chats (name) VALUES ($1) RETURNING id`, chat.Name).Scan(&chat.ID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "inserting chat to db", chat, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
@@ -19,6 +21,7 @@ func insertChatToDB(tx *sql.Tx, chat *Chat) error {
 func updateChatInDB(tx *sql.Tx, chat *Chat) error {
 	_, err := tx.Exec(`UPDATE chats SET name = $1, is_deleted = $2 WHERE id = $3`, chat.Name, chat.IsDeleted, chat.ID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "updating chat in db", chat, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
@@ -34,6 +37,7 @@ func getChatFromDB(id uint64) (*Chat, error) {
 	if err == sql.ErrNoRows {
 		return nil, appErr.NotFound("chat not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat from db by id", id, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -53,6 +57,7 @@ func getPrivateChatFromDB(member1, member2 uint64) (*Chat, error) {
 	if err != nil && err == sql.ErrNoRows {
 		return nil, appErr.NotFound("private chat not found")
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get private chat from db by members ids", map[string]interface{}{"member1": member1, "member2": member2}, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	chat.IsGroupChat = false

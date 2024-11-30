@@ -3,6 +3,7 @@ package chat
 import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/chatMember"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
@@ -63,6 +64,7 @@ func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.User
 func (chat *Chat) SaveWithMembers(newMembers []chatMember.ChatMember) ([]chatMember.ChatMember, error) {
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "save chat with members", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -88,6 +90,7 @@ func (chat *Chat) SaveWithMembers(newMembers []chatMember.ChatMember) ([]chatMem
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "save chat with members", nil, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 
@@ -117,6 +120,7 @@ func (chat *Chat) Rename(newName string, actor *chatMember.ChatMember) error {
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "rename chat", nil, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -132,6 +136,7 @@ func (chat *Chat) Rename(newName string, actor *chatMember.ChatMember) error {
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "rename chat", nil, err)
 		return appErr.InternalServerError("internal server error")
 	}
 
@@ -151,6 +156,7 @@ func (chat *Chat) Delete(actor *chatMember.ChatMember) error {
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "delete chat", nil, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	defer func() {
@@ -166,6 +172,7 @@ func (chat *Chat) Delete(actor *chatMember.ChatMember) error {
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.GetInstance().Error(err.Error(), "delete chat", nil, err)
 		return appErr.InternalServerError("internal server error")
 	}
 

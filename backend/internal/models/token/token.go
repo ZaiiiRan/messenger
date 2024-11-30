@@ -3,6 +3,7 @@ package token
 import (
 	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/user"
 	"backend/internal/utils"
 	"database/sql"
@@ -34,6 +35,7 @@ func FindToken(refreshToken string) (*Token, error) {
 		return nil, appErr.BadRequest("token not found")
 	}
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "find token by string", refreshToken, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return &token, nil
@@ -46,6 +48,7 @@ func InsertToken(userID uint64, refreshToken string) (*Token, error) {
 	err := db.QueryRow(`INSERT INTO tokens (user_id, refresh_token) VALUES ($1, $2) RETURNING *`, userID, refreshToken).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "token inserting", map[string]interface{}{"userID": userID, "token": refreshToken}, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return &token, nil
@@ -58,6 +61,7 @@ func UpdateToken(oldRefreshToken, newRefreshToken string, userID uint64) (*Token
 	err := db.QueryRow(`UPDATE tokens SET refresh_token = $1 WHERE refresh_token = $2 AND user_id = $3 RETURNING *`, newRefreshToken, oldRefreshToken, userID).Scan(
 		&token.ID, &token.UserID, &token.RefreshToken)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "token updating", map[string]interface{}{"userID": userID, "newToken": newRefreshToken, "oldToken": oldRefreshToken}, err)
 		return nil, appErr.InternalServerError("internal server error")
 	}
 	return &token, nil
@@ -68,6 +72,7 @@ func RemoveToken(refreshToken string) error {
 	db := pgDB.GetDB()
 	_, err := db.Exec(`DELETE FROM tokens WHERE refresh_token = $1`, refreshToken)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "token deleting by string", refreshToken, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
@@ -99,7 +104,7 @@ func ValidateAccessToken(tokenString string) (*user.UserDTO, error) {
 // Validating refresh token
 func ValidateRefreshToken(tokenString string) (*user.UserDTO, error) {
 	_, err := FindToken(tokenString)
-	if err != nil && err.Error() ==  "token not found" {
+	if err != nil && err.Error() == "token not found" {
 		return nil, appErr.Unauthorized("unauthorized")
 	} else if err != nil {
 		return nil, err
@@ -133,6 +138,7 @@ func createToken(payload *user.UserDTO, expMinutes uint, key string) (string, er
 	})
 	tokenString, err := token.SignedString([]byte(key))
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "token creating", map[string]interface{}{"payload": payload}, err)
 		return "", appErr.InternalServerError("internal server error")
 	}
 	return tokenString, nil

@@ -3,6 +3,7 @@ package chatMember
 import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"database/sql"
 	"fmt"
 )
@@ -19,6 +20,7 @@ func getChatMemberRoleFromDB(memberID uint64, chatID uint64) (string, error) {
 	if err != nil && err == sql.ErrNoRows {
 		role = "not member"
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat member role from db", map[string]interface{}{"memberID": memberID, "chatID": chatID}, err)
 		return "not member", appErr.InternalServerError("internal server error")
 	}
 	return role, nil
@@ -34,6 +36,7 @@ func getChatMemberRemoveAndAddInfo(memberID uint64, chatID uint64) (*uint64, uin
 	if err != nil && err == sql.ErrNoRows {
 		return nil, 0, appErr.NotFound(fmt.Sprintf("user with id %d in chat with id %d not found", memberID, chatID))
 	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat member remove and add info", map[string]interface{}{"memberID": memberID, "chatID": chatID}, err)
 		return nil, 0, appErr.InternalServerError("internal server error")
 	}
 
@@ -46,6 +49,7 @@ func getRoleIDFromDB(roleString string) (int, error) {
 	var roleID int
 	err := db.QueryRow(`SELECT id FROM chat_roles WHERE role = $1`, roleString).Scan(&roleID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat role id by role string", map[string]interface{}{"roleString": roleString}, err)
 		return 0, appErr.InternalServerError("internal server error")
 	}
 	return roleID, nil
@@ -55,6 +59,7 @@ func getRoleIDFromDB(roleString string) (int, error) {
 func insertChatMemberToDB(tx *sql.Tx, member *ChatMember, roleID int) error {
 	_, err := tx.Exec(`INSERT INTO chat_members (chat_id, user_id, role_id, added_by) VALUES ($1, $2, $3, $4)`, member.ChatID, member.User.ID, roleID, member.AddedBy)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "insert chat member to db", member, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
@@ -65,6 +70,7 @@ func updateChatMemberInDB(tx *sql.Tx, member *ChatMember, roleID int) error {
 	_, err := tx.Exec(`UPDATE chat_members SET role_id = $1, removed_by = $2, added_by = $3 WHERE chat_id = $4 AND user_id = $5`,
 		roleID, member.RemovedBy, member.AddedBy, member.ChatID, member.User.ID)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "update chat member in db", member, err)
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
