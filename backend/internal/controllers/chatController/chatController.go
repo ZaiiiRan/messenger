@@ -5,6 +5,7 @@ import (
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chatMember"
 	"backend/internal/models/chatMember/chatMemberDTO"
+	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
@@ -323,6 +324,38 @@ func GetChatMembers(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"members": membersDTOs,
+	})
+}
+
+func GetFriendsAreNotChatting(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	var req GetChatMembersRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	req.trimSpaces()
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, _, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	friends, err := shortUser.SearchFriendsAreNotChatting(user.ID, chat.ID, req.Search, req.Limit, req.Offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"friends": friends,
 	})
 }
 

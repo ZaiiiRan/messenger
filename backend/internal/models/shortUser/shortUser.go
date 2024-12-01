@@ -82,6 +82,31 @@ func SearchFriends(userID uint64, search string, limit, offset int) ([]ShortUser
 	return queryUsers(query, userID, search, limit, offset)
 }
 
+// Finding friends who are not in chat
+func SearchFriendsAreNotChatting(userID, chatID uint64, search string, limit, offset int) ([]ShortUser, error) {
+	query := `
+		SELECT u.id, u.username, u.firstname, u.lastname,
+			u.is_deleted, u.is_banned, u.is_activated
+		FROM users u
+		JOIN friends f ON (f.friend_1_id = u.id OR f.friend_2_id = u.id)
+		LEFT JOIN chat_members cm ON cm.user_id = u.id AND cm.chat_id = $1
+		WHERE
+
+			u.id != $2
+			AND (f.friend_1_id = $2 OR f.friend_2_id = $2)
+			AND f.status_id = (SELECT id FROM friend_statuses WHERE name = 'accepted')
+			AND u.is_deleted = FALSE
+			AND u.is_banned = FALSE
+			AND u.is_activated = TRUE
+			AND (cm.user_id IS NULL OR cm.removed_by != cm.user_id)
+			AND ($3 = '' OR u.username ILIKE '%' || $3 || '%' OR u.email ILIKE '%' || $3 || '%')
+		ORDER BY (u.username = $3 OR u.email = $3) DESC, u.username
+		LIMIT $4 OFFSET $5
+	`
+
+	return queryUsers(query, chatID, userID, search, limit, offset)
+}
+
 // Incoming friend requests searching by username or email
 func SearchIncomingFriendRequests(userID uint64, search string, limit, offset int) ([]ShortUser, error) {
 	query := `
