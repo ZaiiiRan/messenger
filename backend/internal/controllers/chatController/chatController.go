@@ -4,6 +4,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chatMember"
+	"backend/internal/models/chatMember/chatMemberDTO"
 	"backend/internal/models/user"
 
 	"github.com/gofiber/fiber/v2"
@@ -67,10 +68,12 @@ func AddMembers(c *fiber.Ctx) error {
 		return err
 	}
 
+	newMembersDTOs := getChatMembersDTOs(newMembers)
+
 	return c.JSON(fiber.Map{
 		"message":     "members added",
 		"chat":        chat,
-		"new_members": newMembers,
+		"new_members": newMembersDTOs,
 	})
 }
 
@@ -158,10 +161,12 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return err
 	}
 
+	removedDTOs := getChatMembersDTOs(removed)
+
 	return c.JSON(fiber.Map{
 		"message":         "members removed",
 		"chat":            chat,
-		"removed_members": removed,
+		"removed_members": removedDTOs,
 	})
 }
 
@@ -232,7 +237,7 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "role changed",
 		"chat":    chat,
-		"member":  member,
+		"member":  chatMemberDTO.CreateChatMemberDTO(member),
 	})
 }
 
@@ -273,4 +278,13 @@ func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember
 		return nil, nil, appErr.Forbidden("you cannot access this chat")
 	}
 	return chat, member, nil
+}
+
+// converting chat member array to chat member dto array
+func getChatMembersDTOs(members []chatMember.ChatMember) []*chatMemberDTO.ChatMemberDTO {
+	chatMembersDTOs := make([]*chatMemberDTO.ChatMemberDTO, len(members))
+	for index, member := range members {
+		chatMembersDTOs[index] = chatMemberDTO.CreateChatMemberDTO(&member)
+	}
+	return chatMembersDTOs
 }
