@@ -81,7 +81,7 @@ func updateChatMemberInDB(tx *sql.Tx, member *ChatMember, roleID int) error {
 }
 
 // Get chat members from db by search string
-func getChatMembersFromDB(actorID, chatID uint64, search string, limit, offset int) ([]ChatMember, error) {
+func getChatMembersFromDB(actorID, chatID uint64) ([]ChatMember, error) {
 	query := `
 		SELECT u.id, u.username, u.firstname, u.lastname,
 			u.is_deleted, u.is_banned, u.is_activated,
@@ -93,12 +93,10 @@ func getChatMembersFromDB(actorID, chatID uint64, search string, limit, offset i
 			cm.chat_id = $1
 			AND cm.user_id != $2
 			AND removed_by IS NULL
-			AND ($3 = '' OR u.username ILIKE '%' || $3 || '%' OR u.email ILIKE '%' || $3 || '%')
-		ORDER BY (u.username = $3 OR u.email = $3) DESC, added_at
-		LIMIT $4 OFFSET $5
+		ORDER BY added_at
 	`
 
-	return queryMembers(query, chatID, actorID, search, limit, offset)
+	return queryMembers(query, chatID, actorID)
 }
 
 // search members query executing

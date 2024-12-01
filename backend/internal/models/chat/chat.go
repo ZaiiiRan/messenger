@@ -180,8 +180,8 @@ func (chat *Chat) Delete(actor *chatMember.ChatMember) error {
 }
 
 // Get chat members
-func (chat *Chat) GetChatMembers(actor *chatMember.ChatMember, search string, limit, offset int) ([]chatMember.ChatMember, error) {
-	members, err := chatMember.GetChatMembers(actor.User.ID, chat.ID, search, limit, offset)
+func (chat *Chat) GetChatMembers(actor *chatMember.ChatMember) ([]chatMember.ChatMember, error) {
+	members, err := chatMember.GetChatMembers(actor.User.ID, chat.ID)
 	if err != nil {
 		return nil, err
 	}

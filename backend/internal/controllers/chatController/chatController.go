@@ -287,42 +287,18 @@ func GetChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"chat": chat,
-		"you":  chatMemberDTO.CreateChatMemberDTO(member),
-	})
-}
-
-func GetChatMembers(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	var members []chatMember.ChatMember
+	if !member.IsRemoved() && !member.IsLeft() {
+		members, err = chat.GetChatMembers(member)
+		if err != nil {
+			return err
+		}
 	}
-
-	var req GetChatMembersRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
-	}
-	req.trimSpaces()
-
-	chatID, err := parseChatID(c)
-	if err != nil {
-		return err
-	}
-
-	chat, member, err := getChatAndVerifyAccess(chatID, user.ID)
-	if err != nil {
-		return err
-	}
-
-	members, err := chat.GetChatMembers(member, req.Search, req.Limit, req.Offset)
-	if err != nil {
-		return err
-	}
-
 	membersDTOs := getChatMembersDTOs(members)
 
 	return c.JSON(fiber.Map{
+		"chat":    chat,
+		"you":     chatMemberDTO.CreateChatMemberDTO(member),
 		"members": membersDTOs,
 	})
 }

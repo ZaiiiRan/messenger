@@ -99,6 +99,6 @@ func (member *ChatMember) Save(tx *sql.Tx, isInserting bool) error {
 }
 
 // Get chat members by search string
-func GetChatMembers(actorID, chatID uint64, search string, limit, offset int) ([]ChatMember, error) {
-	return getChatMembersFromDB(actorID, chatID, search, limit, offset)
+func GetChatMembers(actorID, chatID uint64) ([]ChatMember, error) {
+	return getChatMembersFromDB(actorID, chatID)
 }

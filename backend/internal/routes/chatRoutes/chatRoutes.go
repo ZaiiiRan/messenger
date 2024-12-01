@@ -43,10 +43,6 @@ func getChat(c *fiber.Ctx) error {
 	return controller.GetChat(c)
 }
 
-func getMembers(c *fiber.Ctx) error {
-	return controller.GetChatMembers(c)
-}
-
 func getFriendsAreNotChatting(c *fiber.Ctx) error {
 	return controller.GetFriendsAreNotChatting(c)
 }
@@ -62,7 +58,6 @@ func SetupRoutes(app *fiber.App) {
 
 	// Members management
 	chat.Post("/:chat_id/members/friends-are-not-chatting", authMiddleware.AuthMiddleware, getFriendsAreNotChatting)
-	chat.Post("/:chat_id/members/list", authMiddleware.AuthMiddleware, getMembers)
 	chat.Post("/:chat_id/members", authMiddleware.AuthMiddleware, addMembers)
 	chat.Delete("/:chat_id/members", authMiddleware.AuthMiddleware, removeMembers)
 	chat.Patch("/:chat_id/members/:member_id/role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
