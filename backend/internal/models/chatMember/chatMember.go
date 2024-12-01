@@ -2,9 +2,9 @@ package chatMember
 
 import (
 	appErr "backend/internal/errors/appError"
+	"backend/internal/logger"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
-	"backend/internal/logger"
 	"database/sql"
 	"fmt"
 )
@@ -18,8 +18,12 @@ type ChatMember struct {
 }
 
 // Removed checking
-func (member *ChatMember) Removed() bool {
-	return member.RemovedBy != nil
+func (member *ChatMember) IsRemoved() bool {
+	return member.RemovedBy != nil && *member.RemovedBy != member.User.ID
+}
+
+func (member *ChatMember) IsLeft() bool {
+	return member.RemovedBy != nil && *member.RemovedBy == member.User.ID
 }
 
 // Get chat member role by member id and chat id

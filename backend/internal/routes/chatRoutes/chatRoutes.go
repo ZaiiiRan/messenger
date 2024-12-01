@@ -39,11 +39,16 @@ func deleteChat(c *fiber.Ctx) error {
 	return controller.DeleteChat(c)
 }
 
+func getChat(c *fiber.Ctx) error {
+	return controller.GetChat(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chats")
 
 	// Chat
 	chat.Post("/", authMiddleware.AuthMiddleware, createChat)
+	chat.Get("/:chat_id", authMiddleware.AuthMiddleware, getChat)
 	chat.Patch("/:chat_id", authMiddleware.AuthMiddleware, renameChat)
 	chat.Delete("/:chat_id", authMiddleware.AuthMiddleware, deleteChat)
 

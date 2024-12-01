@@ -268,13 +268,43 @@ func DeleteChat(c *fiber.Ctx) error {
 	})
 }
 
+func GetChat(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, member, err := getChatAndMember(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"chat": chat,
+		"you": chatMemberDTO.CreateChatMemberDTO(member),
+	})
+}
+
 // get chat object and verify user access
-func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
+func getChatAndMember(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
 	chat, member, err := chatModel.GetChatAndMember(chatID, userID)
 	if err != nil {
 		return nil, nil, err
 	}
-	if member.Removed() {
+	return chat, member, nil
+}
+
+func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
+	chat, member, err := getChatAndMember(chatID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if member.IsRemoved() || member.IsLeft() {
 		return nil, nil, appErr.Forbidden("you cannot access this chat")
 	}
 	return chat, member, nil

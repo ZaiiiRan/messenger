@@ -27,7 +27,7 @@ func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.Chat
 		return nil, appErr.BadRequest("chat is not a group chat")
 	}
 
-	if member.RemovedBy != nil && *member.RemovedBy != member.User.ID {
+	if member.IsRemoved() {
 		return nil, appErr.Forbidden("you have been removed from the chat")
 	}
 
@@ -70,7 +70,7 @@ func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatM
 	if member.RemovedBy == nil {
 		return nil, appErr.BadRequest("you are already in chat")
 	}
-	if *member.RemovedBy != member.User.ID {
+	if member.IsRemoved() {
 		return nil, appErr.Forbidden("you have been removed from the chat")
 	}
 
@@ -157,7 +157,11 @@ func (chat *Chat) addMember(tx *sql.Tx, targetID uint64, addingMember *chatMembe
 		return nil, err
 	}
 
-	if target != nil && target.Removed() {
+	if target != nil && target.IsLeft() {
+		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d left the chat", targetID))
+	}
+
+	if target != nil && target.IsRemoved() {
 		target, err = chat.addOldMemberToChat(tx, target, addingMember)
 		if err != nil {
 			return nil, err
@@ -165,7 +169,7 @@ func (chat *Chat) addMember(tx *sql.Tx, targetID uint64, addingMember *chatMembe
 		return target, nil
 	}
 
-	if target != nil && !target.Removed() {
+	if target != nil && !target.IsRemoved() {
 		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d is already a chat member", targetID))
 	}
 
@@ -250,9 +254,9 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chat
 	if err != nil {
 		return nil, err
 	}
-	if member.RemovedBy != nil && member.User.ID != *member.RemovedBy {
+	if member.IsRemoved() {
 		return nil, appErr.BadRequest(fmt.Sprintf("the member with id %d has already been deleted", memberID))
-	} else if member.RemovedBy != nil && member.User.ID == *member.RemovedBy {
+	} else if member.IsLeft() {
 		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d has left the chat", memberID))
 	}
 
@@ -295,7 +299,7 @@ func (chat *Chat) ChatMemberRoleChange(memberID uint64, newRole string, actor *c
 	if err != nil {
 		return nil, err
 	}
-	if member.Removed() {
+	if member.IsRemoved() || member.IsLeft() {
 		return nil, appErr.BadRequest("you cannot assign a role to an excluded member")
 	}
 
