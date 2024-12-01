@@ -179,6 +179,15 @@ func (chat *Chat) Delete(actor *chatMember.ChatMember) error {
 	return nil
 }
 
+// Get chat members
+func (chat *Chat) GetChatMembers(actor *chatMember.ChatMember, search string, limit, offset int) ([]chatMember.ChatMember, error) {
+	members, err := chatMember.GetChatMembers(actor.User.ID, chat.ID, search, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
 // Get chat by id from db
 func GetChatByID(id uint64) (*Chat, error) {
 	chat, err := getChatFromDB(id)

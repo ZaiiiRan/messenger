@@ -57,7 +57,9 @@ CREATE TABLE chat_members (
     role_id SMALLINT NOT NULL,
 
     removed_by BIGINT REFERENCES users(id),
-    added_by BIGINT REFERENCES users(id)
+    added_by BIGINT REFERENCES users(id),
+    removed_at TIMESTAMP WITH TIME ZONE,
+    added_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE messages (

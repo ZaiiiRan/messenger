@@ -30,6 +30,18 @@ func (r *ChangeRoleRequest) trimSpaces() {
 	r.Role = strings.TrimSpace(r.Role)
 }
 
+// Get chat members request format
+type GetChatMembersRequest struct {
+	Search string `json:"search"`
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
+}
+
+// trim spaces for get chat members request
+func (r *GetChatMembersRequest) trimSpaces() {
+	r.Search = strings.TrimSpace(r.Search)
+}
+
 // parse chat id from params
 func parseChatID(c *fiber.Ctx) (uint64, error) {
 	chatIDParam := c.Params("chat_id")

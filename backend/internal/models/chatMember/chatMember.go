@@ -7,6 +7,7 @@ import (
 	"backend/internal/models/user"
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 type ChatMember struct {
@@ -15,6 +16,7 @@ type ChatMember struct {
 	ChatID    uint64               `json:"chat_id"`
 	RemovedBy *uint64
 	AddedBy   uint64
+	AddedAt   time.Time
 }
 
 // Removed checking
@@ -58,13 +60,14 @@ func GetChatMemberByID(targetID, chatID uint64) (*ChatMember, error) {
 	member.User = shortUser
 	member.ChatID = chatID
 
-	removedBy, addedBy, err := getChatMemberRemoveAndAddInfo(targetID, chatID)
+	removedBy, addedBy, addedAt, err := getChatMemberRemoveAndAddInfo(targetID, chatID)
 	if err != nil {
 		return nil, err
 	}
 
 	member.AddedBy = addedBy
 	member.RemovedBy = removedBy
+	member.AddedAt = *addedAt
 
 	return &member, nil
 }
@@ -93,4 +96,9 @@ func (member *ChatMember) Save(tx *sql.Tx, isInserting bool) error {
 		}
 	}
 	return nil
+}
+
+// Get chat members by search string
+func GetChatMembers(actorID, chatID uint64, search string, limit, offset int) ([]ChatMember, error) {
+	return getChatMembersFromDB(actorID, chatID, search, limit, offset)
 }

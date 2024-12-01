@@ -101,6 +101,7 @@ func Leave(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "you have left the chat",
 		"chat":    chat,
+		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
 	})
 }
 
@@ -128,6 +129,7 @@ func ReturnToChat(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "you have returned to chat",
 		"chat":    chat,
+		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
 	})
 }
 
@@ -286,7 +288,41 @@ func GetChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"chat": chat,
-		"you": chatMemberDTO.CreateChatMemberDTO(member),
+		"you":  chatMemberDTO.CreateChatMemberDTO(member),
+	})
+}
+
+func GetChatMembers(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	var req GetChatMembersRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	req.trimSpaces()
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, member, err := getChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	members, err := chat.GetChatMembers(member, req.Search, req.Limit, req.Offset)
+	if err != nil {
+		return err
+	}
+
+	membersDTOs := getChatMembersDTOs(members)
+
+	return c.JSON(fiber.Map{
+		"members": membersDTOs,
 	})
 }
 

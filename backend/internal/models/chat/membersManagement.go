@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Get chat member by id from db
@@ -185,6 +186,7 @@ func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMembe
 	target.RemovedBy = nil
 	target.Role = chatMember.Roles.Member
 	target.AddedBy = addingMember.User.ID
+	target.AddedAt = time.Now()
 
 	err := target.Save(tx, false)
 	if err != nil {
@@ -200,6 +202,7 @@ func (chat *Chat) addNewMemberToChat(tx *sql.Tx, user *user.User, addingMember *
 		User:    shortUser.CreateShortUserFromUser(user),
 		AddedBy: addingMember.User.ID,
 		Role:    chatMember.Roles.Member,
+		AddedAt: time.Now(),
 	}
 	err := newMember.Save(tx, true)
 	if err != nil {
