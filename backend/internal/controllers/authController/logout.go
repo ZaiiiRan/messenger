@@ -14,7 +14,10 @@ func Logout(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	token.RemoveToken(refreshToken)
+	refreshTokenObj, _ := token.FindRefreshToken(refreshToken)
+	if refreshTokenObj != nil {
+		refreshTokenObj.RemoveRefreshToken()
+	}
 
 	clearTokenFromCookie(c)
 	return c.JSON(fiber.Map{"message": "logout"})

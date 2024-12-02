@@ -16,8 +16,13 @@ func Refresh(c *fiber.Ctx) error {
 	}
 
 	clearTokenFromCookie(c)
+	refreshTokenObj, err := token.FindRefreshToken(refreshToken)
+	if err != nil {
+		return err
+	}
+
 	var userDTO *user.UserDTO
-	userDTO, err := token.ValidateRefreshToken(refreshToken)
+	userDTO, err = refreshTokenObj.ValidateRefreshToken()
 	if err != nil {
 		return err
 	}
@@ -32,14 +37,18 @@ func Refresh(c *fiber.Ctx) error {
 
 	newUserDTO := user.CreateUserDTOFromUserObj(userObj)
 
-	newAccessToken, newRefreshToken, err := token.GenerateTokens(newUserDTO)
+	err = refreshTokenObj.RegenerateRefreshToken(newUserDTO)
 	if err != nil {
 		return err
 	}
-	_, err = token.UpdateToken(refreshToken, newRefreshToken, userDTO.ID)
+	err = refreshTokenObj.SaveRefreshToken()
+	if err != nil {
+		return err
+	}
+	newAccessToken, err := token.GenerateAccessToken(newUserDTO)
 	if err != nil {
 		return err
 	}
 
-	return sendTokenAndJSON(newUserDTO, newAccessToken, newRefreshToken, c)
+	return sendTokenAndJSON(newUserDTO, newAccessToken, refreshTokenObj.RefreshToken, c)
 }

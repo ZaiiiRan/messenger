@@ -11,16 +11,21 @@ import (
 // creating user dto and tokens for response
 func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
 	userDTO := user.CreateUserDTOFromUserObj(userObject)
-	accessToken, refreshToken, err := token.GenerateTokens(userDTO)
+
+	refreshToken, err := token.GenerateRefreshToken(userDTO)
 	if err != nil {
 		return err
 	}
-	_, err = token.InsertToken(userDTO.ID, refreshToken)
+	err = refreshToken.SaveRefreshToken()
+	if err != nil {
+		return err
+	}
+	accessToken, err := token.GenerateAccessToken(userDTO)
 	if err != nil {
 		return err
 	}
 
-	return sendTokenAndJSON(userDTO, accessToken, refreshToken, c)
+	return sendTokenAndJSON(userDTO, accessToken, refreshToken.RefreshToken, c)
 }
 
 // sending tokens and user dto to client

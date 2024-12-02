@@ -28,14 +28,28 @@ func ActivateAccount(c *fiber.Ctx) error {
 
 	userDTO.IsActivated = true
 
-	newAccessToken, newRefreshToken, err := token.GenerateTokens(userDTO)
-	if err != nil {
-		return err
+	refreshTokenObj, _ := token.FindRefreshToken(refreshToken)
+	if refreshTokenObj == nil {
+		refreshTokenObj.RemoveOtherTokens()
+		refreshTokenObj, err = token.GenerateRefreshToken(userDTO)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = refreshTokenObj.RegenerateRefreshToken(userDTO)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = token.UpdateToken(refreshToken, newRefreshToken, userDTO.ID)
+	err = refreshTokenObj.SaveRefreshToken()
 	if err != nil {
 		return err
 	}
 
-	return sendTokenAndJSON(userDTO, newAccessToken, newRefreshToken, c)
+	newAccessToken, err := token.GenerateAccessToken(userDTO)
+	if err != nil {
+		return err
+	}
+
+	return sendTokenAndJSON(userDTO, newAccessToken, refreshTokenObj.RefreshToken, c)
 }
