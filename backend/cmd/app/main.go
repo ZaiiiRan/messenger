@@ -2,11 +2,13 @@ package main
 
 import (
 	"backend/internal/dbs/pgDB"
+	"backend/internal/logger"
 	"backend/internal/middleware/errorHandler"
 	"backend/internal/routes/authRoutes"
-	"backend/internal/routes/socialRoutes"
 	"backend/internal/routes/chatRoutes"
-	"backend/internal/logger"
+	"backend/internal/routes/socialRoutes"
+	"backend/internal/routes/wsRoutes"
+	"backend/internal/webSocketManager"
 	"log"
 	"os"
 
@@ -33,6 +35,8 @@ func main() {
 	}
 	clientUrl := os.Getenv("CLIENT_URL")
 
+	webSocketManager.GetInstance()
+
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
 		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin,Authorization",
@@ -45,6 +49,7 @@ func main() {
 	authRoutes.SetupRoutes(app)
 	socialRoutes.SetupRoutes(app)
 	chatRoutes.SetupRoutes(app)
+	wsRoutes.SetupRoutes(app)
 
 	log.Fatal(app.Listen(":" + port))
 }
