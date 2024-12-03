@@ -38,7 +38,7 @@ func insertTokenToDB(token *Token) error {
 // update token in db
 func updateTokenInDB(token *Token) error {
 	db := pgDB.GetDB()
-	_, err := db.Exec(`UPDATE tokens SET refresh_token = $1 WHERE id = 2 AND user_id = $3 RETURNING *`, token.RefreshToken, token.ID, token.UserID)
+	_, err := db.Exec(`UPDATE tokens SET refresh_token = $1 WHERE id = $2 AND user_id = $3 RETURNING *`, token.RefreshToken, token.ID, token.UserID)
 	if err != nil {
 		logger.GetInstance().Error(err.Error(), "token updating", map[string]interface{}{"tokenID": token.ID, "userID": token.UserID, "token": token.RefreshToken}, err)
 		return appErr.InternalServerError("internal server error")
