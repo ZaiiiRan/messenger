@@ -3,18 +3,25 @@ package authController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
+	"backend/internal/models/user/userActivation"
+	"backend/internal/models/user/userDTO"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // Resend Activation Code
 func ResendActivationCode(c *fiber.Ctx) error {
-	userDTO, ok := c.Locals("userDTO").(*user.UserDTO)
-	if !ok || userDTO == nil {
+	userDto, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || userDto == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	activationCode, err := user.GetActivationCode(userDTO.ID)
+	userObj, err := user.GetUserByID(userDto.ID)
+	if err != nil {
+		return err
+	}
+
+	activationCode, err := userActivation.GetActivationCode(userObj)
 	if err != nil {
 		return err
 	}

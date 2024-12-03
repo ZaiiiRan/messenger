@@ -2,6 +2,7 @@ package shortUser
 
 import (
 	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 )
 
 type ShortUser struct {
@@ -15,7 +16,7 @@ type ShortUser struct {
 }
 
 // Creating Short user object from user dto object
-func CreateShortUserFromUserDTO(dto *user.UserDTO) *ShortUser {
+func CreateShortUserFromUserDTO(dto *userDTO.UserDTO) *ShortUser {
 	return &ShortUser{
 		ID:          dto.ID,
 		Username:    dto.Username,

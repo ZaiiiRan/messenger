@@ -6,13 +6,13 @@ import (
 	"backend/internal/models/chatMember"
 	"backend/internal/models/chatMember/chatMemberDTO"
 	"backend/internal/models/shortUser"
-	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func CreateChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -40,7 +40,7 @@ func CreateChat(c *fiber.Ctx) error {
 }
 
 func AddMembers(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -79,7 +79,7 @@ func AddMembers(c *fiber.Ctx) error {
 }
 
 func Leave(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -107,7 +107,7 @@ func Leave(c *fiber.Ctx) error {
 }
 
 func ReturnToChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -135,7 +135,7 @@ func ReturnToChat(c *fiber.Ctx) error {
 }
 
 func RemoveMembers(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -174,7 +174,7 @@ func RemoveMembers(c *fiber.Ctx) error {
 }
 
 func RenameChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -207,7 +207,7 @@ func RenameChat(c *fiber.Ctx) error {
 }
 
 func ChatMemberRoleChange(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -245,7 +245,7 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 }
 
 func DeleteChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -272,7 +272,7 @@ func DeleteChat(c *fiber.Ctx) error {
 }
 
 func GetChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
@@ -304,7 +304,7 @@ func GetChat(c *fiber.Ctx) error {
 }
 
 func GetFriendsAreNotChatting(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*user.UserDTO)
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}

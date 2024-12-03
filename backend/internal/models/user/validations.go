@@ -3,8 +3,8 @@ package user
 import (
 	appErr "backend/internal/errors/appError"
 	"regexp"
+	"time"
 )
-
 
 // validate username
 func validateUsername(username string) error {
@@ -109,6 +109,14 @@ func validatePassword(password string) error {
 	}
 	if !hasSpecialChar {
 		return appErr.BadRequest("password must contain at least one special character")
+	}
+	return nil
+}
+
+// validate birthdate
+func validateBirthdate(birthdate *time.Time) error {
+	if birthdate.After(time.Now()) {
+		return appErr.BadRequest("birthdate cannot be in the future")
 	}
 	return nil
 }

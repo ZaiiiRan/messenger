@@ -4,6 +4,8 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/token"
 	"backend/internal/models/user"
+	"backend/internal/models/user/userActivation"
+	"backend/internal/models/user/userDTO"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,8 +13,8 @@ import (
 // Account Activation
 func ActivateAccount(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refreshToken")
-	userDTO, ok := c.Locals("userDTO").(*user.UserDTO)
-	if !ok || userDTO == nil {
+	userDto, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || userDto == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 	var req ActivateRequest
@@ -21,22 +23,26 @@ func ActivateAccount(c *fiber.Ctx) error {
 	}
 	req.trimSpaces()
 
-	err := user.ActivateAccount(userDTO.ID, req.Code)
+	userObj, err := user.GetUserByID(userDto.ID)
 	if err != nil {
 		return err
 	}
 
-	userDTO.IsActivated = true
+	err = userActivation.ActivateAccount(userObj, req.Code)
+	if err != nil {
+		return err
+	}
 
+	userDto = userDTO.CreateUserDTOFromUserObj(userObj)
 	refreshTokenObj, _ := token.FindRefreshToken(refreshToken)
 	if refreshTokenObj == nil {
 		refreshTokenObj.RemoveOtherTokens()
-		refreshTokenObj, err = token.GenerateRefreshToken(userDTO)
+		refreshTokenObj, err = token.GenerateRefreshToken(userDto)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = refreshTokenObj.RegenerateRefreshToken(userDTO)
+		err = refreshTokenObj.RegenerateRefreshToken(userDto)
 		if err != nil {
 			return err
 		}
@@ -45,11 +51,10 @@ func ActivateAccount(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
-	newAccessToken, err := token.GenerateAccessToken(userDTO)
+	newAccessToken, err := token.GenerateAccessToken(userDto)
 	if err != nil {
 		return err
 	}
 
-	return sendTokenAndJSON(userDTO, newAccessToken, refreshTokenObj.RefreshToken, c)
+	return sendTokenAndJSON(userDto, newAccessToken, refreshTokenObj.RefreshToken, c)
 }

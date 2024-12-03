@@ -1,7 +1,8 @@
-package user
+package userDTO
 
 import (
 	"time"
+	"backend/internal/models/user"
 )
 
 type UserDTO struct {
@@ -18,7 +19,7 @@ type UserDTO struct {
 }
 
 // Converting user object to user dto
-func CreateUserDTOFromUserObj(user *User) *UserDTO {
+func CreateUserDTOFromUserObj(user *user.User) *UserDTO {
 	dto := &UserDTO{
 		ID:          user.ID,
 		Username:    user.Username,
@@ -35,7 +36,7 @@ func CreateUserDTOFromUserObj(user *User) *UserDTO {
 }
 
 // Converting user objects to user dtos
-func CreateUserDTOsFromUserObjects(users []User) []UserDTO {
+func CreateUserDTOsFromUserObjects(users []user.User) []UserDTO {
 	dtos := make([]UserDTO, len(users))
 	for i, user := range users {
 		dtos[i] = *CreateUserDTOFromUserObj(&user)

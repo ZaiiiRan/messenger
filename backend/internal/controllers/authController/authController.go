@@ -3,6 +3,7 @@ package authController
 import (
 	"backend/internal/models/token"
 	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,7 +11,7 @@ import (
 
 // creating user dto and tokens for response
 func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
-	userDTO := user.CreateUserDTOFromUserObj(userObject)
+	userDTO := userDTO.CreateUserDTOFromUserObj(userObject)
 
 	refreshToken, err := token.GenerateRefreshToken(userDTO)
 	if err != nil {
@@ -29,7 +30,7 @@ func createUserDTOAndTokensResponse(userObject *user.User, c *fiber.Ctx) error {
 }
 
 // sending tokens and user dto to client
-func sendTokenAndJSON(userDTO *user.UserDTO, accessToken, refreshToken string, c *fiber.Ctx) error {
+func sendTokenAndJSON(userDTO *userDTO.UserDTO, accessToken, refreshToken string, c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     "refreshToken",
 		Value:    refreshToken,

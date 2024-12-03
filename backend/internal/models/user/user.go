@@ -1,10 +1,8 @@
 package user
 
 import (
-	pgDB "backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
-	"database/sql"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -27,34 +25,8 @@ type User struct {
 
 // Creating user object
 func CreateUser(username, email, password, firstname, lastname string, phone *string, birthdate *time.Time) (*User, error) {
-	if err := validateUsername(username); err != nil {
+	if err := validateAllFields(username, email, password, firstname, lastname, phone, birthdate); err != nil {
 		return nil, err
-	}
-	if err := validateEmail(email); err != nil {
-		return nil, err
-	}
-	if err := validatePassword(password); err != nil {
-		return nil, err
-	}
-	if err := validateName(firstname); err != nil {
-		if err.Error() != "inernal server error" {
-			return nil, appErr.BadRequest("first" + err.Error())
-		}
-		return nil, err
-	}
-	if err := validateName(lastname); err != nil {
-		if err.Error() != "inernal server error" {
-			return nil, appErr.BadRequest("last" + err.Error())
-		}
-		return nil, err
-	}
-	if phone != nil {
-		if err := validatePhone(*phone); err != nil {
-			return nil, err
-		}
-		if *phone == "" {
-			phone = nil
-		}
 	}
 
 	hashedPassword, err := hashPassword(password)
@@ -77,28 +49,58 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 	return user, nil
 }
 
+// validate all fields
+func validateAllFields(username, email, password, firstname, lastname string, phone *string, birthdate *time.Time) error {
+	if err := validateUsername(username); err != nil {
+		return err
+	}
+	if err := validateEmail(email); err != nil {
+		return err
+	}
+	if err := validatePassword(password); err != nil {
+		return err
+	}
+	if err := validateName(firstname); err != nil {
+		if err.Error() != "inernal server error" {
+			return appErr.BadRequest("first" + err.Error())
+		}
+		return err
+	}
+	if err := validateName(lastname); err != nil {
+		if err.Error() != "inernal server error" {
+			return appErr.BadRequest("last" + err.Error())
+		}
+		return err
+	}
+	if phone != nil {
+		if err := validatePhone(*phone); err != nil {
+			return err
+		}
+		if *phone == "" {
+			phone = nil
+		}
+	}
+	if birthdate != nil {
+		if err := validateBirthdate(birthdate); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Saving user in DataBase
 func (u *User) Save() error {
-	db := pgDB.GetDB()
 	if u.ID == 0 {
 		// new user
-		query := `INSERT INTO users (username, email, password, phone, firstname, lastname, birthdate, is_deleted, is_banned, is_activated, created_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, created_at`
-		err := db.QueryRow(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
-			u.IsDeleted, u.IsBanned, u.IsActivated, u.CreatedAt).Scan(&u.ID, &u.CreatedAt)
+		err := insertUserToDB(u)
 		if err != nil {
-			logger.GetInstance().Error(err.Error(), "user inserting", u, err)
-			return appErr.InternalServerError("internal server error")
+			return err
 		}
 	} else {
 		// existing user
-		query := `UPDATE users SET username=$1, email=$2, password=$3, phone=$4, firstname=$5, lastname=$6, 
-					birthdate=$7, is_deleted=$8, is_banned=$9, is_activated=$10 WHERE id=$11`
-		_, err := db.Exec(query, u.Username, u.Email, u.Password, u.Phone, u.Firstname, u.Lastname, u.Birthdate,
-			u.IsDeleted, u.IsBanned, u.IsActivated, u.ID)
+		err := updateUserInDB(u)
 		if err != nil {
-			logger.GetInstance().Error(err.Error(), "user updating", u, err)
-			return appErr.InternalServerError("internal server error")
+			return err
 		}
 	}
 	return nil
@@ -120,67 +122,22 @@ func (u *User) CheckPassword(password string) bool {
 
 // Get user by id
 func GetUserByID(ID uint64) (*User, error) {
-	db := pgDB.GetDB()
-	row := db.QueryRow(`SELECT * FROM users WHERE id = $1`, ID)
-	user, err := createUserFromSQLRow(row)
-	if err == sql.ErrNoRows {
-		return nil, appErr.NotFound("user not found")
-	} else if err != nil {
-		logger.GetInstance().Error(err.Error(), "get user by id", ID, err)
-		return nil, appErr.InternalServerError("internal server error")
-	}
-	return user, nil
+	return getUserByIDFromDB(ID)
 }
 
 // Get user by username
 func GetUserByUsername(username string) (*User, error) {
-	db := pgDB.GetDB()
-	row := db.QueryRow(`SELECT * FROM users WHERE username = $1`, username)
-	user, err := createUserFromSQLRow(row)
-	if err == sql.ErrNoRows {
-		return nil, appErr.NotFound("user not found")
-	} else if err != nil {
-		logger.GetInstance().Error(err.Error(), "get user by username", username, err)
-		return nil, appErr.InternalServerError("internal server error")
-	}
-	return user, nil
+	return getUserByUsernameFromDB(username)
 }
 
 // Get user by email
 func GetUserByEmail(email string) (*User, error) {
-	db := pgDB.GetDB()
-	row := db.QueryRow(`SELECT * FROM users WHERE email = $1`, email)
-	user, err := createUserFromSQLRow(row)
-	if err == sql.ErrNoRows {
-		return nil, appErr.NotFound("user not found")
-	} else if err != nil {
-		logger.GetInstance().Error(err.Error(), "get user by email", email, err)
-		return nil, appErr.InternalServerError("internal server error")
-	}
-	return user, nil
+	return getUserByEmailFromDB(email)
 }
 
 // Get user by phone
 func GetUserByPhone(phone string) (*User, error) {
-	db := pgDB.GetDB()
-	row := db.QueryRow(`SELECT * FROM users WHERE phone = $1`, phone)
-	user, err := createUserFromSQLRow(row)
-	if err == sql.ErrNoRows {
-		return nil, appErr.NotFound("user not found")
-	} else if err != nil {
-		logger.GetInstance().Error(err.Error(), "get user by phone", phone, err)
-		return nil, appErr.InternalServerError("internal server error")
-	}
-	return user, nil
-}
-
-// parsing user from sql row
-func createUserFromSQLRow(row *sql.Row) (*User, error) {
-	var user User
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Phone,
-		&user.Firstname, &user.Lastname, &user.Birthdate,
-		&user.IsDeleted, &user.IsBanned, &user.IsActivated, &user.CreatedAt)
-	return &user, err
+	return getUserByPhoneFromDB(phone)
 }
 
 // hashing password

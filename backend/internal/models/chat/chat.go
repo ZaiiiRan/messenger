@@ -6,7 +6,7 @@ import (
 	"backend/internal/logger"
 	"backend/internal/models/chatMember"
 	"backend/internal/models/shortUser"
-	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 	"database/sql"
 	"errors"
 )
@@ -19,7 +19,7 @@ type Chat struct {
 }
 
 // Creating chat object with validations (for inserting)
-func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *user.UserDTO) (*Chat, []chatMember.ChatMember, error) {
+func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *userDTO.UserDTO) (*Chat, []chatMember.ChatMember, error) {
 	err := validateBeforeCreatingChat(name, members, isGroup, ownerDTO)
 	if err != nil {
 		return nil, nil, err

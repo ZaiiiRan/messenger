@@ -3,6 +3,7 @@ package authController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
+	"backend/internal/models/user/userActivation"
 	"backend/internal/utils"
 	"time"
 
@@ -31,7 +32,7 @@ func RegisterUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	activationCode := user.CreateActivationCode(userObject.ID)
+	activationCode := userActivation.CreateActivationCode(userObject)
 	err = activationCode.Save()
 	if err != nil {
 		return appErr.InternalServerError("error occured while sending activation code")

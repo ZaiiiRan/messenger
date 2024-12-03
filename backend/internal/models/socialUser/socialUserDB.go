@@ -13,6 +13,7 @@ func getFriendStatusIDFromDB(status string) (int, error) {
 	var id int
 	err := db.QueryRow(`SELECT id FROM friend_statuses WHERE name = $1`, status).Scan(&id)
 	if err != nil {
+		logger.GetInstance().Error(err.Error(), "get friend status id from db", status, err)
 		return 0, appErr.InternalServerError("internal server error")
 	}
 	return id, nil

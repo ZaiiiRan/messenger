@@ -2,15 +2,16 @@ package socialUser
 
 import (
 	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 )
 
 type SocialUser struct {
-	User         *user.UserDTO `json:"user"`
+	User         *userDTO.UserDTO `json:"user"`
 	FriendStatus *string       `json:"friend_status"`
 }
 
 // Creating SocialUser object
-func CreateSocialUser(dto *user.UserDTO, friendStatus *string) *SocialUser {
+func CreateSocialUser(dto *userDTO.UserDTO, friendStatus *string) *SocialUser {
 	return &SocialUser{
 		User:         dto,
 		FriendStatus: friendStatus,
@@ -28,7 +29,7 @@ func GetTargetByID(userID, targetID uint64) (*SocialUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	targetDTO := user.CreateUserDTOFromUserObj(target)
+	targetDTO := userDTO.CreateUserDTOFromUserObj(target)
 	status, err := GetRelations(userID, targetID)
 	if err != nil {
 		return nil, err

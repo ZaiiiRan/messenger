@@ -3,7 +3,7 @@ package token
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
-	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 	"backend/internal/utils"
 	"errors"
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 // creating token
-func createToken(payload *user.UserDTO, expMinutes uint, key string) (string, error) {
+func createToken(payload *userDTO.UserDTO, expMinutes uint, key string) (string, error) {
 	birthdate := ""
 	if payload.Birthdate != nil {
 		birthdate = payload.Birthdate.Format("02.01.2006")
@@ -40,7 +40,7 @@ func createToken(payload *user.UserDTO, expMinutes uint, key string) (string, er
 }
 
 // validating token
-func validateToken(tokenString, key string) (*user.UserDTO, bool, error) {
+func validateToken(tokenString, key string) (*userDTO.UserDTO, bool, error) {
 	token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
@@ -53,7 +53,7 @@ func validateToken(tokenString, key string) (*user.UserDTO, bool, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userDTO := user.UserDTO{
+		userDTO := userDTO.UserDTO{
 			ID:          uint64(claims["user_id"].(float64)),
 			Username:    claims["username"].(string),
 			Email:       claims["email"].(string),

@@ -4,6 +4,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/token"
 	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,21 +22,21 @@ func Refresh(c *fiber.Ctx) error {
 		return err
 	}
 
-	var userDTO *user.UserDTO
-	userDTO, err = refreshTokenObj.ValidateRefreshToken()
+	var userDto *userDTO.UserDTO
+	userDto, err = refreshTokenObj.ValidateRefreshToken()
 	if err != nil {
 		return err
 	}
-	if userDTO == nil {
+	if userDto == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	userObj, err := user.GetUserByID(userDTO.ID)
+	userObj, err := user.GetUserByID(userDto.ID)
 	if err != nil {
 		return err
 	}
 
-	newUserDTO := user.CreateUserDTOFromUserObj(userObj)
+	newUserDTO := userDTO.CreateUserDTOFromUserObj(userObj)
 
 	err = refreshTokenObj.RegenerateRefreshToken(newUserDTO)
 	if err != nil {

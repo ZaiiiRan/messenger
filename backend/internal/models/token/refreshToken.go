@@ -2,7 +2,7 @@ package token
 
 import (
 	appErr "backend/internal/errors/appError"
-	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 	"os"
 )
 
@@ -52,7 +52,7 @@ func (t *Token) SaveRefreshToken() error {
 }
 
 // Generate refresh token
-func GenerateRefreshToken(payload *user.UserDTO) (*Token, error) {
+func GenerateRefreshToken(payload *userDTO.UserDTO) (*Token, error) {
 	refreshToken, err := generateRefreshTokenString(payload)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func GenerateRefreshToken(payload *user.UserDTO) (*Token, error) {
 }
 
 // Regenerate refresh token
-func (t *Token) RegenerateRefreshToken(payload *user.UserDTO) error {
+func (t *Token) RegenerateRefreshToken(payload *userDTO.UserDTO) error {
 	refreshToken, err := generateRefreshTokenString(payload)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (t *Token) RegenerateRefreshToken(payload *user.UserDTO) error {
 }
 
 // Validating refresh token
-func (t *Token) ValidateRefreshToken() (*user.UserDTO, error) {
+func (t *Token) ValidateRefreshToken() (*userDTO.UserDTO, error) {
 	userDTO, expired, err := validateToken(t.RefreshToken, refreshKey)
 	if expired {
 		t.RemoveRefreshToken()
@@ -86,7 +86,7 @@ func (t *Token) ValidateRefreshToken() (*user.UserDTO, error) {
 }
 
 // generate refresh token string
-func generateRefreshTokenString(payload *user.UserDTO) (string, error) {
+func generateRefreshTokenString(payload *userDTO.UserDTO) (string, error) {
 	// 30 days
 	refreshToken, err := createToken(payload, 43200, refreshKey)
 	if err != nil {

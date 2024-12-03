@@ -2,7 +2,7 @@ package chat
 
 import (
 	appErr "backend/internal/errors/appError"
-	"backend/internal/models/user"
+	"backend/internal/models/user/userDTO"
 	"errors"
 	"fmt"
 )
@@ -19,7 +19,7 @@ func validateName(name string) error {
 }
 
 // validate chat name and members count
-func validateBeforeCreatingChat(name string, members []uint64, isGroup bool, ownerDTO *user.UserDTO) error {
+func validateBeforeCreatingChat(name string, members []uint64, isGroup bool, ownerDTO *userDTO.UserDTO) error {
 	if isGroup {
 		if err := validateName(name); err != nil {
 			return err
