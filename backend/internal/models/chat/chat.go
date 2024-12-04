@@ -4,7 +4,7 @@ import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
-	"backend/internal/models/chatMember"
+	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user/userDTO"
 	"database/sql"
@@ -237,4 +237,16 @@ func (chat *Chat) Save(tx *sql.Tx) error {
 		}
 	}
 	return nil
+}
+
+// Get chat and verify access
+func GetChatAndVerifyAccess(chatID, userID uint64) (*Chat, *chatMember.ChatMember, error) {
+	chat, member, err := GetChatAndMember(chatID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if member.IsRemoved() || member.IsLeft() {
+		return nil, nil, appErr.Forbidden("you cannot access this chat")
+	}
+	return chat, member, nil
 }

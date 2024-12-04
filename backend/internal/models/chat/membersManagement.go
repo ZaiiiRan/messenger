@@ -4,7 +4,7 @@ import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
-	"backend/internal/models/chatMember"
+	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
 	"database/sql"

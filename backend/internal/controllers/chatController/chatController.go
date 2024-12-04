@@ -3,8 +3,8 @@ package chatController
 import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
-	"backend/internal/models/chatMember"
-	"backend/internal/models/chatMember/chatMemberDTO"
+	"backend/internal/models/chat/chatMember"
+	"backend/internal/models/chat/chatMember/chatMemberDTO"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user/userDTO"
 
@@ -59,7 +59,7 @@ func AddMembers(c *fiber.Ctx) error {
 		return appErr.BadRequest("empty user list")
 	}
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func AddMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	newMembersDTOs := getChatMembersDTOs(newMembers)
+	newMembersDTOs := chatMemberDTO.GetChatMembersDTOs(newMembers)
 
 	return c.JSON(fiber.Map{
 		"message":     "members added",
@@ -89,7 +89,7 @@ func Leave(c *fiber.Ctx) error {
 		return err
 	}
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return appErr.BadRequest("empty user list")
 	}
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	removedDTOs := getChatMembersDTOs(removed)
+	removedDTOs := chatMemberDTO.GetChatMembersDTOs(removed)
 
 	return c.JSON(fiber.Map{
 		"message":         "members removed",
@@ -190,7 +190,7 @@ func RenameChat(c *fiber.Ctx) error {
 	}
 	req.trimSpaces()
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	}
 	req.trimSpaces()
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,7 @@ func DeleteChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	chat, requestSendingMember, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func GetChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	chat, member, err := getChatAndMember(chatID, user.ID)
+	chat, member, err := chatModel.GetChatAndMember(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func GetChat(c *fiber.Ctx) error {
 			return err
 		}
 	}
-	membersDTOs := getChatMembersDTOs(members)
+	membersDTOs := chatMemberDTO.GetChatMembersDTOs(members)
 
 	return c.JSON(fiber.Map{
 		"chat":    chat,
@@ -320,7 +320,7 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 		return err
 	}
 
-	chat, _, err := getChatAndVerifyAccess(chatID, user.ID)
+	chat, _, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -333,33 +333,4 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"friends": friends,
 	})
-}
-
-// get chat object and verify user access
-func getChatAndMember(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
-	chat, member, err := chatModel.GetChatAndMember(chatID, userID)
-	if err != nil {
-		return nil, nil, err
-	}
-	return chat, member, nil
-}
-
-func getChatAndVerifyAccess(chatID, userID uint64) (*chatModel.Chat, *chatMember.ChatMember, error) {
-	chat, member, err := getChatAndMember(chatID, userID)
-	if err != nil {
-		return nil, nil, err
-	}
-	if member.IsRemoved() || member.IsLeft() {
-		return nil, nil, appErr.Forbidden("you cannot access this chat")
-	}
-	return chat, member, nil
-}
-
-// converting chat member array to chat member dto array
-func getChatMembersDTOs(members []chatMember.ChatMember) []*chatMemberDTO.ChatMemberDTO {
-	chatMembersDTOs := make([]*chatMemberDTO.ChatMemberDTO, len(members))
-	for index, member := range members {
-		chatMembersDTOs[index] = chatMemberDTO.CreateChatMemberDTO(&member)
-	}
-	return chatMembersDTOs
 }

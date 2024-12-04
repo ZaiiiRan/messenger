@@ -1,7 +1,7 @@
 package chatMemberDTO
 
 import (
-	"backend/internal/models/chatMember"
+	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/shortUser"
 )
 
@@ -24,4 +24,13 @@ func CreateChatMemberDTO(member *chatMember.ChatMember) *ChatMemberDTO {
 		IsLeft:    member.IsLeft(),
 		AddedBy:   member.AddedBy,
 	}
+}
+
+// Converting chat member array to chat member dto array
+func GetChatMembersDTOs(members []chatMember.ChatMember) []*ChatMemberDTO {
+	chatMembersDTOs := make([]*ChatMemberDTO, len(members))
+	for index, member := range members {
+		chatMembersDTOs[index] = CreateChatMemberDTO(&member)
+	}
+	return chatMembersDTOs
 }

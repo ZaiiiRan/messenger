@@ -65,11 +65,11 @@ CREATE TABLE chat_members (
 CREATE TABLE messages (
     id BIGSERIAL PRIMARY KEY,
     chat_id BIGINT NOT NULL REFERENCES chats(id),
-    user_id BIGINT NOT NULL REFERENCES users(id),
+    user_id BIGINT REFERENCES users(id),
     content TEXT,
-    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_edited TIMESTAMP,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    is_deleted BOOLEAN WITH TIME ZONE NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE messages_read_status (
