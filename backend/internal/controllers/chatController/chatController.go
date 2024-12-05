@@ -5,6 +5,8 @@ import (
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/chat/chatMember/chatMemberDTO"
+	"backend/internal/models/chat/message"
+	"backend/internal/models/chat/message/messageDTO"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user/userDTO"
 
@@ -332,5 +334,38 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"friends": friends,
+	})
+}
+
+func GetMessages(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	var req GetMessagesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	messages, err := message.GetMessages(chat, requestSendingMember, req.Limit, req.Offset)
+	if err != nil {
+		return err
+	}
+
+	messagesDTOs := messageDTO.GetMessagesDTOs(messages)
+
+	return c.JSON(fiber.Map{
+		"messages": messagesDTOs,
 	})
 }

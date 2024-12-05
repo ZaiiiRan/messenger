@@ -47,6 +47,10 @@ func getFriendsAreNotChatting(c *fiber.Ctx) error {
 	return controller.GetFriendsAreNotChatting(c)
 }
 
+func getMessages(c *fiber.Ctx) error {
+	return controller.GetMessages(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chats")
 
@@ -65,4 +69,7 @@ func SetupRoutes(app *fiber.App) {
 	// Leave/Return
 	chat.Patch("/:chat_id/leave", authMiddleware.AuthMiddleware, leave)
 	chat.Patch("/:chat_id/return", authMiddleware.AuthMiddleware, returnToChat)
+
+	// Messages
+	chat.Post("/:chat_id/messages-list", authMiddleware.AuthMiddleware, getMessages)
 }

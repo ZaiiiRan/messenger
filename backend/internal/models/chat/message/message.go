@@ -47,3 +47,8 @@ func (m *Message) Save() error {
 	}
 	return nil
 }
+
+// Get messages
+func GetMessages(chat *chat.Chat, actor *chatMember.ChatMember, limit, offset int) ([]Message, error) {
+	return getMessagesFromDB(chat, actor, limit, offset)
+}

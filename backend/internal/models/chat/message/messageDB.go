@@ -4,6 +4,12 @@ import (
 	"backend/internal/dbs/pgDB"
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
+	"backend/internal/models/chat"
+	"backend/internal/models/chat/chatMember"
+	"backend/internal/models/shortUser"
+	"backend/internal/models/user"
+	"database/sql"
+	"errors"
 )
 
 // insert message to db
@@ -39,4 +45,87 @@ func updateMessageInDB(message *Message) error {
 		return appErr.InternalServerError("internal server error")
 	}
 	return nil
+}
+
+// get messages from db
+func getMessagesFromDB(chat *chat.Chat, actor *chatMember.ChatMember, limit, offset int) ([]Message, error) {
+	query := `
+		SELECT m.id, m.user_id, m.content, m.sent_at, m.last_edited 
+		FROM messages m
+		WHERE
+			m.chat_id = $1
+			AND m.sent_at >= (SELECT cm.added_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1)
+		ORDER BY m.sent_at DESC
+		LIMIT $3 OFFSET $4
+	`
+
+	return queryMessages(chat, query, chat.ID, actor.User.ID, limit, offset)
+}
+
+// query messages
+func queryMessages(chat *chat.Chat, query string, params ...interface{}) ([]Message, error) {
+	db := pgDB.GetDB()
+
+	rows, err := db.Query(query, params...)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, appErr.NotFound("messages not found")
+	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "query messages", query, err)
+		return nil, appErr.InternalServerError("internal server error")
+	}
+	defer rows.Close()
+
+	messages, err := createMessagesFromSQLRows(chat, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(messages) == 0 {
+		return nil, appErr.NotFound("messages not found")
+	}
+
+	return messages, nil
+}
+
+// parsing messages from sql rows
+func createMessagesFromSQLRows(chat *chat.Chat, rows *sql.Rows) ([]Message, error) {
+	var messages []Message
+
+	for rows.Next() {
+		var message Message
+		var memberID uint64
+		err := rows.Scan(&message.ID, &memberID, &message.Content,
+			&message.SentAt, &message.LastEdited)
+		if err != nil {
+			logger.GetInstance().Error(err.Error(), "creating messages from sql rows", rows, err)
+			return nil, appErr.InternalServerError("internal server error")
+		}
+		message.Chat = chat
+
+		var appError *appErr.AppError
+		member, err := chat.GetChatMemberByID(memberID)
+		if err != nil && (errors.As(err, &appError) && appError.StatusCode == 404) {
+			member = &chatMember.ChatMember{}
+			member.Role = chatMember.Roles.NotMember
+			user, err := user.GetUserByID(memberID)
+			if err != nil {
+				return nil, err
+			}
+			memberShortUser := shortUser.CreateShortUserFromUser(user)
+			member.User = memberShortUser
+		} else if err != nil {
+			return nil, err
+		}
+
+		message.ChatMember = member
+
+		messages = append(messages, message)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.GetInstance().Error(err.Error(), "creating messages from sql rows", rows, err)
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	return messages, nil
 }

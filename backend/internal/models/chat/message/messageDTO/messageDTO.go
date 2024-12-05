@@ -24,3 +24,11 @@ func NewMessageDTO(message *message.Message) *MessageDTO {
 		LastEdited: message.LastEdited,
 	}
 }
+
+func GetMessagesDTOs(messages []message.Message) []*MessageDTO {
+	messagessDTOs := make([]*MessageDTO, len(messages))
+	for index, message := range messages {
+		messagessDTOs[index] = NewMessageDTO(&message)
+	}
+	return messagessDTOs
+}
