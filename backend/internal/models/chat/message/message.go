@@ -63,7 +63,11 @@ func (m *Message) RemoveForAll(actor *chatMember.ChatMember) error {
 		return appErr.BadRequest("the message has already been deleted")
 	}
 	
-	if actor.Role > m.ChatMember.Role {
+	if !m.Chat.IsGroupChat {
+		if m.ChatMember.User.ID != actor.User.ID {
+			return appErr.BadRequest("you cannot access this message")
+		}
+	} else if actor.Role > m.ChatMember.Role {
 		m.IsDeleted = true
 	} else if m.ChatMember.User.ID != actor.User.ID {
 		return appErr.Forbidden("you cannot access this message")
