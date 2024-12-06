@@ -31,14 +31,18 @@ func CreateChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	_, err = chat.SaveWithMembers(members)
+	members, err = chat.SaveWithMembers(members)
 	if err != nil {
 		return err
 	}
 
+	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
+
 	return c.JSON(fiber.Map{
 		"message": "chat created",
 		"chat":    chat,
+		"members": membersDTOs[1:],
+		"you":     membersDTOs[0],
 	})
 }
 

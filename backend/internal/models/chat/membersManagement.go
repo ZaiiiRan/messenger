@@ -262,8 +262,6 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chat
 	}
 	if member.IsRemoved() {
 		return nil, appErr.BadRequest(fmt.Sprintf("the member with id %d has already been deleted", memberID))
-	} else if member.IsLeft() {
-		return nil, appErr.BadRequest(fmt.Sprintf("user with id %d has left the chat", memberID))
 	}
 
 	if member.AddedBy != removingMember.User.ID {
