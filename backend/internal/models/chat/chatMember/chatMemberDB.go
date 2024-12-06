@@ -60,7 +60,7 @@ func getRoleIDFromDB(roleString string) (int, error) {
 
 // insert chat member to db
 func insertChatMemberToDB(tx *sql.Tx, member *ChatMember, roleID int) error {
-	_, err := tx.Exec(`INSERT INTO chat_members (chat_id, user_id, role_id, added_by, added_at) VALUES ($1, $2, $3, $4, $5)`, 
+	_, err := tx.Exec(`INSERT INTO chat_members (chat_id, user_id, role_id, added_by, added_at) VALUES ($1, $2, $3, $4, $5)`,
 		member.ChatID, member.User.ID, roleID, member.AddedBy, member.AddedAt)
 	if err != nil {
 		logger.GetInstance().Error(err.Error(), "insert chat member to db", member, err)
@@ -80,6 +80,18 @@ func updateChatMemberInDB(tx *sql.Tx, member *ChatMember, roleID int) error {
 	return nil
 }
 
+// get chat members count from db
+func getChatMembersCountFromDB(chatID uint64) (int, error) {
+	db := pgDB.GetDB()
+	var count int
+	err := db.QueryRow(`SELECT COUNT(*) as count FROM chat_members WHERE chat_id = $1 AND (removed_by IS NULL OR removed_by = user_id)`, chatID).Scan(&count)
+	if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat members count from db", chatID, err)
+		return 0, appErr.InternalServerError("internal server error")
+	}
+	return count, err
+}
+
 // Get chat members from db by search string
 func getChatMembersFromDB(actorID, chatID uint64) ([]ChatMember, error) {
 	query := `
@@ -92,8 +104,11 @@ func getChatMembersFromDB(actorID, chatID uint64) ([]ChatMember, error) {
 		WHERE 
 			cm.chat_id = $1
 			AND cm.user_id != $2
-			AND removed_by IS NULL
-		ORDER BY added_at
+			AND (cm.removed_by IS NULL OR cm.removed_by = cm.user_id)
+		ORDER BY CASE 
+			WHEN cm.removed_by = cm.user_id THEN 1
+			ELSE 0
+		END, added_at
 	`
 
 	return queryMembers(query, chatID, actorID)

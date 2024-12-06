@@ -102,3 +102,8 @@ func (member *ChatMember) Save(tx *sql.Tx, isInserting bool) error {
 func GetChatMembers(actorID, chatID uint64) ([]ChatMember, error) {
 	return getChatMembersFromDB(actorID, chatID)
 }
+
+// Get chat members count in chat
+func GetChatMembersCount(chatID uint64) (int, error) {
+	return getChatMembersCountFromDB(chatID)
+}

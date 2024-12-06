@@ -110,6 +110,9 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, addingMember *chatMember.Ch
 	if !chat.IsGroupChat {
 		return nil, appErr.BadRequest("chat is not a group chat")
 	}
+	if err := chat.validateBeforeAddingMembers(len(newMembersIDs)); err != nil {
+		return nil, err
+	}
 
 	tx, err := pgDB.GetDB().Begin()
 	if err != nil {

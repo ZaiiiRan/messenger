@@ -27,6 +27,9 @@ func validateBeforeCreatingChat(name string, members []uint64, isGroup bool, own
 		if len(members) < 2 {
 			return appErr.BadRequest("need at least 2 members for group chat")
 		}
+		if len(members) > 1000 {
+			return appErr.BadRequest("maximum number of chat members: 1000")
+		}
 	} else {
 		if len(members) < 1 {
 			return appErr.BadRequest("need at least 1 member for private chat")
@@ -43,6 +46,18 @@ func validateBeforeCreatingChat(name string, members []uint64, isGroup bool, own
 		}
 	}
 
+	return nil
+}
+
+// validate chat members count before adding
+func (chat *Chat) validateBeforeAddingMembers(addingCount int) error {
+	count, err := chat.GetChatMembersCount()
+	if err != nil {
+		return err
+	}
+	if (count + addingCount) > 1000 {
+		return appErr.BadRequest("maximum number of chat members: 1000")
+	}
 	return nil
 }
 

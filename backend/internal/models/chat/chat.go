@@ -188,6 +188,11 @@ func (chat *Chat) GetChatMembers(actor *chatMember.ChatMember) ([]chatMember.Cha
 	return members, nil
 }
 
+// Get chat members count
+func (chat *Chat) GetChatMembersCount() (int, error) {
+	return chatMember.GetChatMembersCount(chat.ID)
+}
+
 // Get chat by id from db
 func GetChatByID(id uint64) (*Chat, error) {
 	chat, err := getChatFromDB(id)
