@@ -47,6 +47,20 @@ func updateMessageInDB(message *Message) error {
 	return nil
 }
 
+// get message by id from db
+func getMessageByIDFromDB(id uint64) (*Message, error) {
+	db := pgDB.GetDB()
+	query := `
+		SELECT m.id, chat_id, m.user_id, m.content, m.sent_at, m.last_edited, m.is_deleted
+		FROM messages m
+		WHERE m.id = $1 AND m.is_deleted = FALSE
+	`
+
+	row := db.QueryRow(query, id)
+
+	return createMessageFromSQLRow(row)
+}
+
 // get messages from db
 func getMessagesFromDB(chat *chat.Chat, actor *chatMember.ChatMember, limit, offset int) ([]Message, error) {
 	query := `
@@ -54,6 +68,7 @@ func getMessagesFromDB(chat *chat.Chat, actor *chatMember.ChatMember, limit, off
 		FROM messages m
 		WHERE
 			m.chat_id = $1
+			AND m.is_deleted = FALSE
 			AND m.sent_at >= (SELECT cm.added_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1)
 		ORDER BY m.sent_at DESC
 		LIMIT $3 OFFSET $4
@@ -128,4 +143,33 @@ func createMessagesFromSQLRows(chat *chat.Chat, rows *sql.Rows) ([]Message, erro
 	}
 
 	return messages, nil
+}
+
+// create message from sql row
+func createMessageFromSQLRow(row *sql.Row) (*Message, error) {
+	var message Message
+	var chatID uint64
+	var memberID uint64
+	err := row.Scan(&message.ID, &chatID, &memberID, &message.Content,
+		&message.SentAt, &message.LastEdited, &message.IsDeleted)
+	if err != nil && err == sql.ErrNoRows {
+		return nil, appErr.NotFound("message not found")
+	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "creating message from sql row", row, err)
+		return nil, appErr.InternalServerError("internal server error")
+	}
+
+	chat, err := chat.GetChatByID(chatID)
+	if err != nil {
+		return nil, err
+	}
+	message.Chat = chat
+
+	member, err := chat.GetChatMemberByID(memberID)
+	if err != nil {
+		return nil, err
+	}
+	message.ChatMember = member
+
+	return &message, nil
 }

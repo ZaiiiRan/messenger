@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"time"
 	"errors"
+	"time"
 )
 
 // Parsing date from string
@@ -12,6 +12,11 @@ func ParseDate(date string) (*time.Time, error) {
 		return nil, errors.New("invalid date format (use DD.MM.YYYY)")
 	}
 	return &parsedDate, nil
+}
+
+// Pointer in time
+func TimePtr(t time.Time) *time.Time {
+	return &t
 }
 
 // Pointer on string

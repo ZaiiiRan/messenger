@@ -2,6 +2,7 @@ package wsController
 
 import "strings"
 
+// WebSocket message format
 type WebSocketMessage struct {
 	Type    string      `json:"type"`
 	Content interface{} `json:"content"`

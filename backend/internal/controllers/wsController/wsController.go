@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 )
 
+// Init WebSocket connection
 func InitConnection(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -24,6 +25,7 @@ func InitConnection(c *fiber.Ctx) error {
 	return fiber.ErrUpgradeRequired
 }
 
+// Handle WebSocket
 func HandleWebSocket(conn *websocket.Conn, userDTO *userDTO.UserDTO) {
 	manager := webSocketManager.GetInstance()
 	manager.AddConnection(userDTO.ID, conn)
@@ -49,10 +51,15 @@ func HandleWebSocket(conn *websocket.Conn, userDTO *userDTO.UserDTO) {
 	}
 }
 
+// requests processing
 func processRequest(conn *websocket.Conn, manager *webSocketManager.WebSocketManager, userDTO *userDTO.UserDTO, wsMessage *WebSocketMessage) error {
 	switch wsMessage.Type {
 	case "send_message":
 		return handleSendMessage(manager, userDTO, wsMessage.Content)
+	case "edit_message":
+		return handleEditMessage(manager, userDTO, wsMessage.Content)
+	case "remove_message_for_all":
+		return handleRemoveMessageForAll(manager, userDTO, wsMessage.Content)
 	case "ping":
 		return sendPong(conn)
 	default:
@@ -60,6 +67,7 @@ func processRequest(conn *websocket.Conn, manager *webSocketManager.WebSocketMan
 	}
 }
 
+// handle send message
 func handleSendMessage(manager *webSocketManager.WebSocketManager, userDTO *userDTO.UserDTO, content interface{}) error {
 	req, ok := validateSendMessageRequest(content)
 	if !ok {
@@ -87,6 +95,63 @@ func handleSendMessage(manager *webSocketManager.WebSocketManager, userDTO *user
 	return nil
 }
 
+// handle edit message
+func handleEditMessage(manager *webSocketManager.WebSocketManager, userDTO *userDTO.UserDTO, content interface{}) error {
+	req, ok := validateEditMessageRequest(content)
+	if !ok {
+		return appErr.BadRequest("invalid edit_message payload")
+	}
+
+	message, members, err := messageController.EditMessage(userDTO, req)
+	if err != nil {
+		return err
+	}
+
+	wsMsg := WebSocketMessage{
+		Type:    "edit_message_notification",
+		Content: message,
+	}
+	wsMsgJSON, err := json.Marshal(wsMsg)
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+
+	for _, member := range members {
+		manager.BroadcastToClient(member.User.ID, wsMsgJSON)
+	}
+	manager.BroadcastToClient(userDTO.ID, wsMsgJSON)
+	return nil
+}
+
+// handle remove message for all members
+func handleRemoveMessageForAll(manager *webSocketManager.WebSocketManager, userDTO *userDTO.UserDTO, content interface{}) error {
+	req, ok := validateRemoveMessageRequest(content)
+	if !ok {
+		return appErr.BadRequest("invalid remove_message payload")
+	}
+
+	message, members, err := messageController.RemoveMessageForAll(userDTO, req)
+	if err != nil {
+		return err
+	}
+
+	wsMsg := WebSocketMessage{
+		Type:    "remove_message_notification",
+		Content: message,
+	}
+	wsMsgJSON, err := json.Marshal(wsMsg)
+	if err != nil {
+		return appErr.InternalServerError("internal server error")
+	}
+
+	for _, member := range members {
+		manager.BroadcastToClient(member.User.ID, wsMsgJSON)
+	}
+	manager.BroadcastToClient(userDTO.ID, wsMsgJSON)
+	return nil
+}
+
+// send pong to self websocket
 func sendPong(conn *websocket.Conn) error {
 	response := WebSocketMessage{
 		Type:    "pong",
@@ -95,6 +160,7 @@ func sendPong(conn *websocket.Conn) error {
 	return sendResponse(conn, response)
 }
 
+// send error to self websocket
 func sendError(conn *websocket.Conn, err error) {
 	response := WebSocketMessage{
 		Type:    "error",
@@ -103,28 +169,11 @@ func sendError(conn *websocket.Conn, err error) {
 	sendResponse(conn, response)
 }
 
+// send response to self websocket
 func sendResponse(conn *websocket.Conn, response WebSocketMessage) error {
 	respJSON, err := json.Marshal(response)
 	if err != nil {
 		return err
 	}
 	return conn.WriteMessage(websocket.TextMessage, respJSON)
-}
-
-func validateSendMessageRequest(content interface{}) (*messageController.SendMessageReq, bool) {
-	data, err := json.Marshal(content)
-	if err != nil {
-		return nil, false
-	}
-
-	var req messageController.SendMessageReq
-	if err := json.Unmarshal(data, &req); err != nil {
-		return nil, false
-	}
-
-	if req.ChatID == 0 || req.MessageContent == "" {
-		return nil, false
-	}
-
-	return &req, true
 }
