@@ -35,13 +35,13 @@ func verifyAccessAndGetMessage(chatID, actorID, messageID uint64) (*chatModel.Ch
 
 // create response
 func createResponse(chat *chatModel.Chat, requestSendingMember *chatMember.ChatMember, message *message.Message) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
-	messageDto := messageDTO.NewMessageDTO(message)
+	messageDto := messageDTO.CreateMessageDTO(message)
 
 	members, err := chat.GetChatMembers(requestSendingMember)
 	if err != nil {
 		return nil, nil, err
 	}
-	membersDTOs := chatMemberDTO.GetChatMembersDTOs(members)
+	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
 
 	return messageDto, membersDTOs, nil
 }

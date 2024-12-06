@@ -7,6 +7,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+// Send mail
 func SendMail(to, subject, body string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("SMTP_USER"))

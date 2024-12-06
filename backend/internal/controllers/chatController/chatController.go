@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Create chat
 func CreateChat(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -41,6 +42,7 @@ func CreateChat(c *fiber.Ctx) error {
 	})
 }
 
+// Add members to chat
 func AddMembers(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -71,7 +73,7 @@ func AddMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	newMembersDTOs := chatMemberDTO.GetChatMembersDTOs(newMembers)
+	newMembersDTOs := chatMemberDTO.CreateChatMembersDTOs(newMembers)
 
 	return c.JSON(fiber.Map{
 		"message":     "members added",
@@ -80,62 +82,7 @@ func AddMembers(c *fiber.Ctx) error {
 	})
 }
 
-func Leave(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
-	}
-
-	chatID, err := parseChatID(c)
-	if err != nil {
-		return err
-	}
-
-	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = chat.LeaveFromChat(requestSendingMember)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "you have left the chat",
-		"chat":    chat,
-		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
-	})
-}
-
-func ReturnToChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
-	}
-
-	chatID, err := parseChatID(c)
-	if err != nil {
-		return err
-	}
-
-	chat, requestSendingMember, err := chatModel.GetChatAndMember(chatID, user.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = chat.ReturnToChat(requestSendingMember)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "you have returned to chat",
-		"chat":    chat,
-		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
-	})
-}
-
+// Remove members from chat
 func RemoveMembers(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -166,7 +113,7 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	removedDTOs := chatMemberDTO.GetChatMembersDTOs(removed)
+	removedDTOs := chatMemberDTO.CreateChatMembersDTOs(removed)
 
 	return c.JSON(fiber.Map{
 		"message":         "members removed",
@@ -175,7 +122,8 @@ func RemoveMembers(c *fiber.Ctx) error {
 	})
 }
 
-func RenameChat(c *fiber.Ctx) error {
+// Leave from chat
+func Leave(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
@@ -186,28 +134,24 @@ func RenameChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req ChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
-	}
-	req.trimSpaces()
-
 	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
 		return err
 	}
 
-	err = chat.Rename(req.Name, requestSendingMember)
+	_, err = chat.LeaveFromChat(requestSendingMember)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "chat renamed",
+		"message": "you have left the chat",
 		"chat":    chat,
+		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
 	})
 }
 
+// Change member role in chat
 func ChatMemberRoleChange(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -246,6 +190,70 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 	})
 }
 
+// Return to chat
+func ReturnToChat(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	chat, requestSendingMember, err := chatModel.GetChatAndMember(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = chat.ReturnToChat(requestSendingMember)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "you have returned to chat",
+		"chat":    chat,
+		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
+	})
+}
+
+// Rename chat
+func RenameChat(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	chatID, err := parseChatID(c)
+	if err != nil {
+		return err
+	}
+
+	var req ChatRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+	req.trimSpaces()
+
+	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	err = chat.Rename(req.Name, requestSendingMember)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "chat renamed",
+		"chat":    chat,
+	})
+}
+
+// Delete chat
 func DeleteChat(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -273,6 +281,7 @@ func DeleteChat(c *fiber.Ctx) error {
 	})
 }
 
+// Get chat
 func GetChat(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -296,7 +305,7 @@ func GetChat(c *fiber.Ctx) error {
 			return err
 		}
 	}
-	membersDTOs := chatMemberDTO.GetChatMembersDTOs(members)
+	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
 
 	return c.JSON(fiber.Map{
 		"chat":    chat,
@@ -305,6 +314,7 @@ func GetChat(c *fiber.Ctx) error {
 	})
 }
 
+// Get friends are not chatting
 func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -337,6 +347,7 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 	})
 }
 
+// Get messages from chat (with limit and offset)
 func GetMessages(c *fiber.Ctx) error {
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
@@ -363,7 +374,7 @@ func GetMessages(c *fiber.Ctx) error {
 		return err
 	}
 
-	messagesDTOs := messageDTO.GetMessagesDTOs(messages)
+	messagesDTOs := messageDTO.CreateMessagesDTOs(messages)
 
 	return c.JSON(fiber.Map{
 		"messages": messagesDTOs,

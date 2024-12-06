@@ -14,7 +14,8 @@ type MessageDTO struct {
 	LastEdited *time.Time `json:"last_edited"`
 }
 
-func NewMessageDTO(message *message.Message) *MessageDTO {
+// Convert message object to message DTO
+func CreateMessageDTO(message *message.Message) *MessageDTO {
 	return &MessageDTO{
 		ID:         message.ID,
 		ChatID:     message.Chat.ID,
@@ -25,10 +26,11 @@ func NewMessageDTO(message *message.Message) *MessageDTO {
 	}
 }
 
-func GetMessagesDTOs(messages []message.Message) []*MessageDTO {
+// Convert message objects to message DTOs
+func CreateMessagesDTOs(messages []message.Message) []*MessageDTO {
 	messagessDTOs := make([]*MessageDTO, len(messages))
 	for index, message := range messages {
-		messagessDTOs[index] = NewMessageDTO(&message)
+		messagessDTOs[index] = CreateMessageDTO(&message)
 	}
 	return messagessDTOs
 }

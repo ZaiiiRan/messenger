@@ -14,6 +14,7 @@ type ChatMemberDTO struct {
 	AddedBy   uint64               `json:"added_by"`
 }
 
+// Converting chat member object to chat member DTO
 func CreateChatMemberDTO(member *chatMember.ChatMember) *ChatMemberDTO {
 	role := chatMember.GetRoleString(member.Role)
 	return &ChatMemberDTO{
@@ -27,7 +28,7 @@ func CreateChatMemberDTO(member *chatMember.ChatMember) *ChatMemberDTO {
 }
 
 // Converting chat member array to chat member dto array
-func GetChatMembersDTOs(members []chatMember.ChatMember) []*ChatMemberDTO {
+func CreateChatMembersDTOs(members []chatMember.ChatMember) []*ChatMemberDTO {
 	chatMembersDTOs := make([]*ChatMemberDTO, len(members))
 	for index, member := range members {
 		chatMembersDTOs[index] = CreateChatMemberDTO(&member)
