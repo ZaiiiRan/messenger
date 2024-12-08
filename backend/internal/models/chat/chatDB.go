@@ -66,7 +66,7 @@ func getPrivateChatFromDB(member1, member2 uint64) (*Chat, error) {
 }
 
 // get chat list from db
-func getChatListFromDB(userID uint64, isGroup bool) ([]Chat, []*uint64, error) {
+func getChatListFromDB(userID uint64, isGroup bool, limit, offset int) ([]Chat, []*uint64, error) {
 	db := pgDB.GetDB()
 
 	query := `
@@ -101,9 +101,9 @@ func getChatListFromDB(userID uint64, isGroup bool) ([]Chat, []*uint64, error) {
 		query += ` AND c.name IS NULL`
 	}
 
-	query += ` ORDER BY lm.last_message_time DESC NULLS LAST`
+	query += ` ORDER BY lm.last_message_time DESC NULLS LAST LIMIT $2 OFFSET $3`
 
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(query, userID, limit, offset)
 	if err != nil && err == sql.ErrNoRows {
 		return nil, nil, appErr.NotFound("chats not found")
 	} else if err != nil {

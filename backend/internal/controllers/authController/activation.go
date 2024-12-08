@@ -1,11 +1,12 @@
 package authController
 
 import (
-	appErr "backend/internal/errors/appError"
 	"backend/internal/models/token"
 	"backend/internal/models/user"
 	"backend/internal/models/user/userActivation"
 	"backend/internal/models/user/userDTO"
+	"backend/internal/requests"
+	"backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,15 +14,15 @@ import (
 // Account Activation
 func ActivateAccount(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refreshToken")
-	userDto, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || userDto == nil {
-		return appErr.Unauthorized("unauthorized")
+	userDto, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
-	var req ActivateRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+
+	req, err := requests.ParseActivateRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	userObj, err := user.GetUserByID(userDto.ID)
 	if err != nil {

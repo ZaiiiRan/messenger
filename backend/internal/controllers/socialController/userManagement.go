@@ -3,6 +3,7 @@ package socialController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/socialUser"
+	"backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,7 +17,7 @@ func checkSelfID(selfID, targetID uint64) error {
 
 // Add friend
 func AddFriend(c *fiber.Ctx) error {
-	user, err := getUserDTOFromLocals(c)
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
@@ -42,7 +43,7 @@ func AddFriend(c *fiber.Ctx) error {
 
 // Remove friend
 func RemoveFriend(c *fiber.Ctx) error {
-	user, err := getUserDTOFromLocals(c)
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func RemoveFriend(c *fiber.Ctx) error {
 
 // Block user
 func BlockUser(c *fiber.Ctx) error {
-	user, err := getUserDTOFromLocals(c)
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func BlockUser(c *fiber.Ctx) error {
 
 // Unblock user
 func UnblockUser(c *fiber.Ctx) error {
-	user, err := getUserDTOFromLocals(c)
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func UnblockUser(c *fiber.Ctx) error {
 
 // Get User dto with friend status
 func GetUser(c *fiber.Ctx) error {
-	user, err := getUserDTOFromLocals(c)
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}

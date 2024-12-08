@@ -3,10 +3,14 @@ package chatController
 import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
+	"backend/internal/models/chat/chatDTO"
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/chat/chatMember/chatMemberDTO"
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
 
 	"errors"
 )
@@ -33,7 +37,7 @@ func createReponseForChatList(chats []chatModel.Chat, you []*chatMember.ChatMemb
 		}
 
 		responsePart := ChatResponse{
-			Chat:        &chat,
+			Chat:        chatDTO.CreateChatDTO(&chat),
 			Members:     membersDTOs,
 			You:         chatMemberDTO.CreateChatMemberDTO(you[index]),
 			LastMessage: msgDTO,
@@ -65,4 +69,24 @@ func getMessagesByID(messageIDs []*uint64) ([]*message.Message, error) {
 	}
 
 	return messages, nil
+}
+
+// parse chat id from params
+func parseChatID(c *fiber.Ctx) (uint64, error) {
+	chatIDParam := c.Params("chat_id")
+	chatID, err := strconv.ParseUint(chatIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return chatID, nil
+}
+
+// parse member id from params
+func parseMemberID(c *fiber.Ctx) (uint64, error) {
+	memberIDParam := c.Params("member_id")
+	memberID, err := strconv.ParseUint(memberIDParam, 0, 64)
+	if err != nil {
+		return 0, appErr.BadRequest("invalid request format")
+	}
+	return memberID, nil
 }

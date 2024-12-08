@@ -12,10 +12,10 @@ import (
 )
 
 type Chat struct {
-	ID          uint64  `json:"id"`
-	Name        *string `json:"name"`
-	IsGroupChat bool    `json:"is_group_chat"`
-	IsDeleted   bool    `json:"is_deleted"`
+	ID          uint64
+	Name        *string
+	IsGroupChat bool
+	IsDeleted   bool
 }
 
 // Creating chat object with validations (for inserting)
@@ -257,8 +257,8 @@ func GetChatAndVerifyAccess(chatID, userID uint64) (*Chat, *chatMember.ChatMembe
 }
 
 // Get chat list
-func GetChatList(userID uint64, isGroup bool) ([]Chat, []*chatMember.ChatMember, []*uint64, error) {
-	chats, messageIDs, err := getChatListFromDB(userID, isGroup)
+func GetChatList(userID uint64, isGroup bool, limit, offset int) ([]Chat, []*chatMember.ChatMember, []*uint64, error) {
+	chats, messageIDs, err := getChatListFromDB(userID, isGroup, limit, offset)
 	if err != nil {
 		return nil, nil, nil, err
 	}

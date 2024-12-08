@@ -11,9 +11,9 @@ import (
 )
 
 type ChatMember struct {
-	User      *shortUser.ShortUser `json:"user"`
-	Role      int                  `json:"role"`
-	ChatID    uint64               `json:"chat_id"`
+	User      *shortUser.ShortUser
+	Role      int
+	ChatID    uint64
 	RemovedBy *uint64
 	AddedBy   uint64
 	RemovedAt *time.Time

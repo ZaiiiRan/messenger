@@ -4,6 +4,7 @@ import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
 	"backend/internal/models/user/userActivation"
+	"backend/internal/requests"
 	"backend/internal/utils"
 	"time"
 
@@ -12,11 +13,10 @@ import (
 
 // Register user
 func RegisterUser(c *fiber.Ctx) error {
-	var req RegisterRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseRegisterRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	birthdate, err := parseBirthdate(req.Birthdate)
 	if err != nil {

@@ -3,17 +3,17 @@ package authController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/user"
+	"backend/internal/requests"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // Login
 func Login(c *fiber.Ctx) error {
-	var req LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid login or password")
+	req, err := requests.ParseLoginRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	if req.Login == "" {
 		return appErr.BadRequest("login is empty")

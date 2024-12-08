@@ -1,7 +1,9 @@
-package authController
+package requests
 
 import (
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // Register request format
@@ -16,7 +18,7 @@ type RegisterRequest struct {
 }
 
 // trim spaces in register request
-func (r *RegisterRequest) trimSpaces() {
+func (r *RegisterRequest) TrimSpaces() {
 	r.Username = strings.TrimSpace(r.Username)
 	r.Email = strings.TrimSpace(r.Email)
 	r.Password = strings.TrimSpace(r.Password)
@@ -32,24 +34,7 @@ func (r *RegisterRequest) trimSpaces() {
 	}
 }
 
-// Login request format
-type LoginRequest struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}
-
-// trim spaces in login request
-func (r *LoginRequest) trimSpaces() {
-	r.Login = strings.TrimSpace(r.Login)
-	r.Password = strings.TrimSpace(r.Password)
-}
-
-// Activate Register request format
-type ActivateRequest struct {
-	Code string `json:"code"`
-}
-
-// trim spaces in activation request
-func (r *ActivateRequest) trimSpaces() {
-	r.Code = strings.TrimSpace(r.Code)
+// parse register request
+func ParseRegisterRequest(c *fiber.Ctx) (*RegisterRequest, error) {
+	return ParseRequest[RegisterRequest](c)
 }

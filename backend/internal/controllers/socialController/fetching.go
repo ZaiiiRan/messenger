@@ -3,23 +3,15 @@ package socialController
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/models/shortUser"
+	"backend/internal/requests"
+	"backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// parsing request body for fetching user requests
-func readFetchUsersRequest(c *fiber.Ctx) (*FetchUsersRequest, error) {
-	var req FetchUsersRequest
-	if err := c.BodyParser(&req); err != nil {
-		return &req, appErr.BadRequest("invalid request format")
-	}
-	req.trimSpaces()
-	return &req, nil
-}
-
 // fetch user list
-func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID uint64, search string, limit, offset int) ([]shortUser.ShortUser, error)) error {
-	user, err := getUserDTOFromLocals(c)
+func fetchUserList(c *fiber.Ctx, req *requests.SearchRequest, fetchFunc func(userID uint64, search string, limit, offset int) ([]shortUser.ShortUser, error)) error {
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
@@ -36,7 +28,7 @@ func fetchUserList(c *fiber.Ctx, req *FetchUsersRequest, fetchFunc func(userID u
 
 // Get Users (id, username, firstname and lastname)
 func GetUsers(c *fiber.Ctx) error {
-	req, err := readFetchUsersRequest(c)
+	req, err := requests.ParseSearchRequest(c)
 	if err != nil {
 		return err
 	}
@@ -51,7 +43,7 @@ func GetUsers(c *fiber.Ctx) error {
 
 // Get friends
 func GetFriends(c *fiber.Ctx) error {
-	req, err := readFetchUsersRequest(c)
+	req, err := requests.ParseSearchRequest(c)
 	if err != nil {
 		return err
 	}
@@ -60,7 +52,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 // Get incoming friend requests
 func GetIncomingFriendRequests(c *fiber.Ctx) error {
-	req, err := readFetchUsersRequest(c)
+	req, err := requests.ParseSearchRequest(c)
 	if err != nil {
 		return err
 	}
@@ -69,7 +61,7 @@ func GetIncomingFriendRequests(c *fiber.Ctx) error {
 
 // Get outgoing friend requests
 func GetOutgoingFriendRequests(c *fiber.Ctx) error {
-	req, err := readFetchUsersRequest(c)
+	req, err := requests.ParseSearchRequest(c)
 	if err != nil {
 		return err
 	}
@@ -78,7 +70,7 @@ func GetOutgoingFriendRequests(c *fiber.Ctx) error {
 
 // Get blocked users
 func GetBlockedUsers(c *fiber.Ctx) error {
-	req, err := readFetchUsersRequest(c)
+	req, err := requests.ParseSearchRequest(c)
 	if err != nil {
 		return err
 	}

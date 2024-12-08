@@ -1,8 +1,12 @@
 package utils
 
 import (
+	appErr "backend/internal/errors/appError"
+	"backend/internal/models/user/userDTO"
 	"errors"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // Parsing date from string
@@ -22,4 +26,13 @@ func TimePtr(t time.Time) *time.Time {
 // Pointer on string
 func StringPtr(s string) *string {
 	return &s
+}
+
+// Get user dto from locals
+func GetUserDTOFromLocals(c *fiber.Ctx) (*userDTO.UserDTO, error) {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return nil, appErr.Unauthorized("unauthorized")
+	}
+	return user, nil
 }

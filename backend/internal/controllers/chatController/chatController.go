@@ -3,28 +3,29 @@ package chatController
 import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
+	"backend/internal/models/chat/chatDTO"
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/chat/chatMember/chatMemberDTO"
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
 	"backend/internal/models/shortUser"
-	"backend/internal/models/user/userDTO"
+	"backend/internal/requests"
+	"backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // Create chat
 func CreateChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
-	var req ChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseChatRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	chat, members, err := chatModel.CreateChat(req.Name, req.Members, req.IsGroup, user)
 	if err != nil {
@@ -40,7 +41,7 @@ func CreateChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "chat created",
-		"chat":    chat,
+		"chat":    chatDTO.CreateChatDTO(chat),
 		"members": membersDTOs[1:],
 		"you":     membersDTOs[0],
 	})
@@ -48,9 +49,9 @@ func CreateChat(c *fiber.Ctx) error {
 
 // Add members to chat
 func AddMembers(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -58,9 +59,9 @@ func AddMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req ChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseChatRequest(c)
+	if err != nil {
+		return err
 	}
 
 	if len(req.Members) == 0 {
@@ -81,16 +82,16 @@ func AddMembers(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message":     "members added",
-		"chat":        chat,
+		"chat":        chatDTO.CreateChatDTO(chat),
 		"new_members": newMembersDTOs,
 	})
 }
 
 // Remove members from chat
 func RemoveMembers(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -98,9 +99,9 @@ func RemoveMembers(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req ChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseChatRequest(c)
+	if err != nil {
+		return err
 	}
 
 	if len(req.Members) == 0 {
@@ -121,16 +122,16 @@ func RemoveMembers(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message":         "members removed",
-		"chat":            chat,
+		"chat":            chatDTO.CreateChatDTO(chat),
 		"removed_members": removedDTOs,
 	})
 }
 
 // Leave from chat
 func Leave(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -150,16 +151,16 @@ func Leave(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "you have left the chat",
-		"chat":    chat,
+		"chat":    chatDTO.CreateChatDTO(chat),
 		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
 	})
 }
 
 // Change member role in chat
 func ChatMemberRoleChange(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -171,11 +172,10 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req ChangeRoleRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseMemberRoleRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
@@ -189,16 +189,16 @@ func ChatMemberRoleChange(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "role changed",
-		"chat":    chat,
+		"chat":    chatDTO.CreateChatDTO(chat),
 		"member":  chatMemberDTO.CreateChatMemberDTO(member),
 	})
 }
 
 // Return to chat
 func ReturnToChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -218,16 +218,16 @@ func ReturnToChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "you have returned to chat",
-		"chat":    chat,
+		"chat":    chatDTO.CreateChatDTO(chat),
 		"you":     chatMemberDTO.CreateChatMemberDTO(requestSendingMember),
 	})
 }
 
 // Rename chat
 func RenameChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -235,11 +235,10 @@ func RenameChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req ChatRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseChatRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
 	if err != nil {
@@ -253,15 +252,15 @@ func RenameChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "chat renamed",
-		"chat":    chat,
+		"chat":    chatDTO.CreateChatDTO(chat),
 	})
 }
 
 // Delete chat
 func DeleteChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -281,15 +280,15 @@ func DeleteChat(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message":      "chat has been deleted",
-		"deleted_chat": chat,
+		"deleted_chat": chatDTO.CreateChatDTO(chat),
 	})
 }
 
 // Get chat
 func GetChat(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -318,7 +317,7 @@ func GetChat(c *fiber.Ctx) error {
 	lastMessageDTO := messageDTO.CreateMessageDTO(&lastMessage[0])
 
 	return c.JSON(fiber.Map{
-		"chat":         chat,
+		"chat":         chatDTO.CreateChatDTO(chat),
 		"you":          chatMemberDTO.CreateChatMemberDTO(member),
 		"members":      membersDTOs,
 		"last_message": lastMessageDTO,
@@ -327,16 +326,15 @@ func GetChat(c *fiber.Ctx) error {
 
 // Get friends are not chatting
 func GetFriendsAreNotChatting(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
-	var req GetChatMembersRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParseSearchRequest(c)
+	if err != nil {
+		return err
 	}
-	req.trimSpaces()
 
 	chatID, err := parseChatID(c)
 	if err != nil {
@@ -360,14 +358,14 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 
 // Get messages from chat (with limit and offset)
 func GetMessages(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
-	var req GetListRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParsePaginationRequest(c)
+	if err != nil {
+		return err
 	}
 
 	chatID, err := parseChatID(c)
@@ -394,49 +392,27 @@ func GetMessages(c *fiber.Ctx) error {
 
 // Get Group chats
 func GetGroupChats(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
-	}
-
-	var req GetListRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
-	}
-
-	chats, you, messageIDs, err := chatModel.GetChatList(user.ID, true)
-	if err != nil {
-		return err
-	}
-
-	messages, err := getMessagesByID(messageIDs)
-	if err != nil {
-		return err
-	}
-
-	response, err := createReponseForChatList(chats, you, messages)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(fiber.Map{
-		"chats": response,
-	})
+	return getChatList(c, true)
 }
 
 // Get private chats
 func GetPrivateChats(c *fiber.Ctx) error {
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
+	return getChatList(c, false)
+}
+
+// get chat list (with limit and offset)
+func getChatList(c *fiber.Ctx, isGroup bool) error {
+	user, err := utils.GetUserDTOFromLocals(c)
+	if err != nil {
+		return err
 	}
 
-	var req GetListRequest
-	if err := c.BodyParser(&req); err != nil {
-		return appErr.BadRequest("invalid request format")
+	req, err := requests.ParsePaginationRequest(c)
+	if err != nil {
+		return err
 	}
 
-	chats, you, messageIDs, err := chatModel.GetChatList(user.ID, false)
+	chats, you, messageIDs, err := chatModel.GetChatList(user.ID, isGroup, req.Limit, req.Offset)
 	if err != nil {
 		return err
 	}

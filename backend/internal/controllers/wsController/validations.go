@@ -1,18 +1,18 @@
 package wsController
 
 import (
-	"backend/internal/controllers/messageController"
+	"backend/internal/requests"
 	"encoding/json"
 )
 
 // send message request validation
-func validateSendMessageRequest(content interface{}) (*messageController.SendMessageReq, bool) {
+func validateSendMessageRequest(content interface{}) (*requests.SendMessageRequest, bool) {
 	data, err := json.Marshal(content)
 	if err != nil {
 		return nil, false
 	}
 
-	var req messageController.SendMessageReq
+	var req requests.SendMessageRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, false
 	}
@@ -25,13 +25,13 @@ func validateSendMessageRequest(content interface{}) (*messageController.SendMes
 }
 
 // edit message request validation
-func validateEditMessageRequest(content interface{}) (*messageController.EditMessageReq, bool) {
+func validateEditMessageRequest(content interface{}) (*requests.EditMessageRequest, bool) {
 	data, err := json.Marshal(content)
 	if err != nil {
 		return nil, false
 	}
 
-	var req messageController.EditMessageReq
+	var req requests.EditMessageRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, false
 	}
@@ -44,13 +44,13 @@ func validateEditMessageRequest(content interface{}) (*messageController.EditMes
 }
 
 // remove message request validation
-func validateRemoveMessageRequest(content interface{}) (*messageController.RemoveMessageReq, bool) {
+func validateRemoveMessageRequest(content interface{}) (*requests.RemoveMessageRequest, bool) {
 	data, err := json.Marshal(content)
 	if err != nil {
 		return nil, false
 	}
 
-	var req messageController.RemoveMessageReq
+	var req requests.RemoveMessageRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, false
 	}

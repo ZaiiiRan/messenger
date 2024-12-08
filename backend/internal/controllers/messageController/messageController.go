@@ -7,15 +7,15 @@ import (
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
 	"backend/internal/models/user/userDTO"
+	"backend/internal/requests"
 )
 
 // Send message
 func SendMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
-	req, err := parseRequest[SendMessageReq](request)
+	req, err := requests.ParseSendMessageRequest(request)
 	if err != nil {
 		return nil, nil, err
 	}
-	req.TrimSpaces()
 	if req.MessageContent == "" {
 		return nil, nil, appErr.BadRequest("message content is empty")
 	}
@@ -35,11 +35,10 @@ func SendMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.Mes
 
 // Edit message
 func EditMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
-	req, err := parseRequest[EditMessageReq](request)
+	req, err := requests.ParseEditMessageReq(request)
 	if err != nil {
 		return nil, nil, err
 	}
-	req.TrimSpaces()
 	if req.MessageContent == "" {
 		return nil, nil, appErr.BadRequest("message content is empty")
 	}
@@ -63,7 +62,7 @@ func EditMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.Mes
 
 // Remove message for all
 func RemoveMessageForAll(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
-	req, err := parseRequest[RemoveMessageReq](request)
+	req, err := requests.ParseRemoveMessageReq(request)
 	if err != nil {
 		return nil, nil, err
 	}
