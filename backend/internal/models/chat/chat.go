@@ -255,3 +255,22 @@ func GetChatAndVerifyAccess(chatID, userID uint64) (*Chat, *chatMember.ChatMembe
 	}
 	return chat, member, nil
 }
+
+// Get chat list
+func GetChatList(userID uint64, isGroup bool) ([]Chat, []*chatMember.ChatMember, []*uint64, error) {
+	chats, messageIDs, err := getChatListFromDB(userID, isGroup)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var members []*chatMember.ChatMember
+	for _, chat := range chats {
+		member, err := chat.GetChatMemberByID(userID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		members = append(members, member)
+	}
+
+	return chats, members, messageIDs, nil
+}

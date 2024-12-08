@@ -311,10 +311,17 @@ func GetChat(c *fiber.Ctx) error {
 	}
 	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
 
+	lastMessage, err := message.GetMessages(chat, member, 1, 0)
+	if err != nil {
+		return err
+	}
+	lastMessageDTO := messageDTO.CreateMessageDTO(&lastMessage[0])
+
 	return c.JSON(fiber.Map{
-		"chat":    chat,
-		"you":     chatMemberDTO.CreateChatMemberDTO(member),
-		"members": membersDTOs,
+		"chat":         chat,
+		"you":          chatMemberDTO.CreateChatMemberDTO(member),
+		"members":      membersDTOs,
+		"last_message": lastMessageDTO,
 	})
 }
 
@@ -358,7 +365,7 @@ func GetMessages(c *fiber.Ctx) error {
 		return appErr.Unauthorized("unauthorized")
 	}
 
-	var req GetMessagesRequest
+	var req GetListRequest
 	if err := c.BodyParser(&req); err != nil {
 		return appErr.BadRequest("invalid request format")
 	}
@@ -382,5 +389,69 @@ func GetMessages(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"messages": messagesDTOs,
+	})
+}
+
+// Get Group chats
+func GetGroupChats(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	var req GetListRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	chats, you, messageIDs, err := chatModel.GetChatList(user.ID, true)
+	if err != nil {
+		return err
+	}
+
+	messages, err := getMessagesByID(messageIDs)
+	if err != nil {
+		return err
+	}
+
+	response, err := createReponseForChatList(chats, you, messages)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"chats": response,
+	})
+}
+
+// Get private chats
+func GetPrivateChats(c *fiber.Ctx) error {
+	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
+	if !ok || user == nil {
+		return appErr.Unauthorized("unauthorized")
+	}
+
+	var req GetListRequest
+	if err := c.BodyParser(&req); err != nil {
+		return appErr.BadRequest("invalid request format")
+	}
+
+	chats, you, messageIDs, err := chatModel.GetChatList(user.ID, false)
+	if err != nil {
+		return err
+	}
+
+	messages, err := getMessagesByID(messageIDs)
+	if err != nil {
+		return err
+	}
+
+	response, err := createReponseForChatList(chats, you, messages)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"chats": response,
 	})
 }

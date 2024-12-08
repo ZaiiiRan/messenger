@@ -64,16 +64,22 @@ func getMessageByIDFromDB(id uint64) (*Message, error) {
 // get messages from db
 func getMessagesFromDB(chat *chat.Chat, actor *chatMember.ChatMember, limit, offset int) ([]Message, error) {
 	query := `
-		SELECT m.id, m.user_id, m.content, m.sent_at, m.last_edited 
+		WITH membership_period AS (
+			SELECT 
+				cm.added_at, 
+				COALESCE(cm.removed_at, NOW()) AS removed_at
+			FROM chat_members cm
+			WHERE 
+				cm.user_id = $2 
+				AND cm.chat_id = $1
+		)
+		SELECT 
+			m.id, m.user_id, m.content, m.sent_at, m.last_edited 
 		FROM messages m
+		JOIN membership_period mp ON m.sent_at BETWEEN mp.added_at AND mp.removed_at
 		WHERE
 			m.chat_id = $1
 			AND m.is_deleted = FALSE
-			AND m.sent_at >= (SELECT cm.added_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1)
-			AND m.sent_at <= COALESCE(
-				(SELECT cm.removed_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1), 
-				NOW()
-			)
 		ORDER BY m.sent_at DESC
 		LIMIT $3 OFFSET $4
 	`
@@ -86,7 +92,7 @@ func queryMessages(chat *chat.Chat, query string, params ...interface{}) ([]Mess
 	db := pgDB.GetDB()
 
 	rows, err := db.Query(query, params...)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && err == sql.ErrNoRows {
 		return nil, appErr.NotFound("messages not found")
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "query messages", query, err)

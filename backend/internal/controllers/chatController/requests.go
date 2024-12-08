@@ -62,8 +62,8 @@ func parseMemberID(c *fiber.Ctx) (uint64, error) {
 	return memberID, nil
 }
 
-// Get chat members request format
-type GetMessagesRequest struct {
+// Get chat members or chat request format
+type GetListRequest struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }

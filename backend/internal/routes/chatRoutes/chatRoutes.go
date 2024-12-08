@@ -51,8 +51,20 @@ func getMessages(c *fiber.Ctx) error {
 	return controller.GetMessages(c)
 }
 
+func getGroupChatList(c *fiber.Ctx) error {
+	return controller.GetGroupChats(c)
+}
+
+func getPrivateChatList(c *fiber.Ctx) error {
+	return controller.GetPrivateChats(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chats")
+
+	// Chat list
+	chat.Post("/group-list", authMiddleware.AuthMiddleware, getGroupChatList)
+	chat.Post("/private-list", authMiddleware.AuthMiddleware, getPrivateChatList)
 
 	// Chat
 	chat.Post("/", authMiddleware.AuthMiddleware, createChat)

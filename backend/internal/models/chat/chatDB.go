@@ -64,3 +64,86 @@ func getPrivateChatFromDB(member1, member2 uint64) (*Chat, error) {
 
 	return &chat, nil
 }
+
+// get chat list from db
+func getChatListFromDB(userID uint64, isGroup bool) ([]Chat, []*uint64, error) {
+	db := pgDB.GetDB()
+
+	query := `
+		WITH user_chats AS (
+			SELECT cm.chat_id, cm.added_at, COALESCE(cm.removed_at, NOW()) AS removed_at
+			FROM chat_members cm
+			WHERE cm.user_id = $1
+		),
+		last_messages AS (
+			SELECT
+				m.chat_id,
+				MAX(m.sent_at) AS last_message_time,
+				MAX(m.id) AS last_message_id
+			FROM messages m
+			JOIN user_chats uc ON m.chat_id = uc.chat_id
+			WHERE 
+				m.is_deleted = FALSE
+				AND m.sent_at BETWEEN uc.added_at AND uc.removed_at
+			GROUP BY m.chat_id
+		)
+		SELECT
+			c.id, c.name, c.is_deleted, lm.last_message_id
+		FROM chats c
+		JOIN user_chats uc ON c.id = uc.chat_id
+		LEFT JOIN last_messages lm ON c.id = lm.chat_id
+		WHERE c.is_deleted = FALSE
+	`
+
+	if isGroup {
+		query += ` AND c.name IS NOT NULL`
+	} else {
+		query += ` AND c.name IS NULL`
+	}
+
+	query += ` ORDER BY lm.last_message_time DESC NULLS LAST`
+
+	rows, err := db.Query(query, userID)
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil, appErr.NotFound("chats not found")
+	} else if err != nil {
+		logger.GetInstance().Error(err.Error(), "get chat list from sql rows", rows, err)
+		return nil, nil, appErr.InternalServerError("internal server error")
+	}
+
+	return parseChatListFromSQLRows(rows)
+}
+
+// parse chats and message ids from sql rows
+func parseChatListFromSQLRows(rows *sql.Rows) ([]Chat, []*uint64, error) {
+	var chats []Chat
+	var messageIDs []*uint64
+
+	for rows.Next() {
+		var chat Chat
+		var messageID *uint64
+		err := rows.Scan(&chat.ID, &chat.Name, &chat.IsDeleted, &messageID)
+		if err != nil {
+			logger.GetInstance().Error(err.Error(), "creating chats from sql rows", rows, err)
+			return nil, nil, appErr.InternalServerError("internal server error")
+		}
+
+		if chat.Name != nil {
+			chat.IsGroupChat = true
+		}
+
+		chats = append(chats, chat)
+		messageIDs = append(messageIDs, messageID)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.GetInstance().Error(err.Error(), "creating chats from sql rows", rows, err)
+		return nil, nil, appErr.InternalServerError("internal server error")
+	}
+
+	if len(chats) == 0 {
+		return nil, nil, appErr.NotFound("chats not found")
+	}
+
+	return chats, messageIDs, nil
+}
