@@ -3,6 +3,7 @@ package token
 import (
 	appErr "backend/internal/errors/appError"
 	"backend/internal/logger"
+	"backend/internal/models/user"
 	"backend/internal/models/user/userDTO"
 	"backend/internal/utils"
 	"errors"
@@ -54,14 +55,16 @@ func validateToken(tokenString, key string) (*userDTO.UserDTO, bool, error) {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userDTO := userDTO.UserDTO{
-			ID:          uint64(claims["user_id"].(float64)),
-			Username:    claims["username"].(string),
+			BaseUser: user.BaseUser{
+				ID:          uint64(claims["user_id"].(float64)),
+				Username:    claims["username"].(string),
+				Firstname:   claims["firstname"].(string),
+				Lastname:    claims["lastname"].(string),
+				IsBanned:    claims["is_banned"].(bool),
+				IsActivated: claims["is_activated"].(bool),
+				IsDeleted:   claims["is_deleted"].(bool),
+			},
 			Email:       claims["email"].(string),
-			Firstname:   claims["firstname"].(string),
-			Lastname:    claims["lastname"].(string),
-			IsBanned:    claims["is_banned"].(bool),
-			IsActivated: claims["is_activated"].(bool),
-			IsDeleted:   claims["is_deleted"].(bool),
 		}
 		if phone, ok := claims["phone"].(string); ok {
 			userDTO.Phone = utils.StringPtr(phone)

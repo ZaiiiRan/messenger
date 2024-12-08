@@ -1,43 +1,41 @@
 package shortUser
 
 import (
-	"backend/internal/models/user"
+	userModel "backend/internal/models/user"
 	"backend/internal/models/user/userDTO"
 )
 
 type ShortUser struct {
-	ID          uint64 `json:"user_id"`
-	Username    string `json:"username"`
-	Firstname   string `json:"firstname"`
-	Lastname    string `json:"lastname"`
-	IsDeleted   bool   `json:"is_deleted"`
-	IsBanned    bool   `json:"is_banned"`
-	IsActivated bool   `json:"is_activated"`
+	userModel.BaseUser
 }
 
 // Creating Short user object from user dto object
 func CreateShortUserFromUserDTO(dto *userDTO.UserDTO) *ShortUser {
 	return &ShortUser{
-		ID:          dto.ID,
-		Username:    dto.Username,
-		Firstname:   dto.Firstname,
-		Lastname:    dto.Lastname,
-		IsDeleted:   dto.IsDeleted,
-		IsBanned:    dto.IsBanned,
-		IsActivated: dto.IsActivated,
+		BaseUser: userModel.BaseUser{
+			ID:          dto.ID,
+			Username:    dto.Username,
+			Firstname:   dto.Firstname,
+			Lastname:    dto.Lastname,
+			IsDeleted:   dto.IsDeleted,
+			IsBanned:    dto.IsBanned,
+			IsActivated: dto.IsActivated,
+		},
 	}
 }
 
 // Creating Short user object from user object
-func CreateShortUserFromUser(user *user.User) *ShortUser {
+func CreateShortUserFromUser(user *userModel.User) *ShortUser {
 	return &ShortUser{
-		ID:          user.ID,
-		Username:    user.Username,
-		Firstname:   user.Firstname,
-		Lastname:    user.Lastname,
-		IsDeleted:   user.IsDeleted,
-		IsBanned:    user.IsBanned,
-		IsActivated: user.IsActivated,
+		BaseUser: userModel.BaseUser{
+			ID:          user.ID,
+			Username:    user.Username,
+			Firstname:   user.Firstname,
+			Lastname:    user.Lastname,
+			IsDeleted:   user.IsDeleted,
+			IsBanned:    user.IsBanned,
+			IsActivated: user.IsActivated,
+		},
 	}
 }
 

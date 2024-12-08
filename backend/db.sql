@@ -69,7 +69,7 @@ CREATE TABLE messages (
     content TEXT,
     sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_edited TIMESTAMP,
-    is_deleted BOOLEAN WITH TIME ZONE NOT NULL DEFAULT FALSE
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE messages_read_status (

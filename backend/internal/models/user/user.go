@@ -9,17 +9,11 @@ import (
 )
 
 type User struct {
-	ID          uint64     `json:"id"`
-	Username    string     `json:"username"`
+	BaseUser
 	Email       string     `json:"email"`
 	Password    string     `json:"password"`
 	Phone       *string    `json:"phone"`
-	Firstname   string     `json:"firstname"`
-	Lastname    string     `json:"lastname"`
 	Birthdate   *time.Time `json:"birthdate"`
-	IsDeleted   bool       `json:"is_deleted"`
-	IsBanned    bool       `json:"is_banned"`
-	IsActivated bool       `json:"is_activated"`
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
@@ -35,16 +29,11 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 	}
 
 	user := &User{
-		Username:    username,
+		BaseUser: NewBaseUser(username, firstname, lastname),
 		Email:       email,
 		Password:    hashedPassword,
 		Phone:       phone,
-		Firstname:   firstname,
-		Lastname:    lastname,
 		Birthdate:   birthdate,
-		IsDeleted:   false,
-		IsBanned:    false,
-		IsActivated: false,
 	}
 	return user, nil
 }
