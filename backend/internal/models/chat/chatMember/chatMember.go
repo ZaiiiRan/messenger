@@ -16,6 +16,7 @@ type ChatMember struct {
 	ChatID    uint64               `json:"chat_id"`
 	RemovedBy *uint64
 	AddedBy   uint64
+	RemovedAt *time.Time
 	AddedAt   time.Time
 }
 
@@ -60,7 +61,7 @@ func GetChatMemberByID(targetID, chatID uint64) (*ChatMember, error) {
 	member.User = shortUser
 	member.ChatID = chatID
 
-	removedBy, addedBy, addedAt, err := getChatMemberRemoveAndAddInfo(targetID, chatID)
+	removedBy, removedAt, addedBy, addedAt, err := getChatMemberRemoveAndAddInfo(targetID, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +69,7 @@ func GetChatMemberByID(targetID, chatID uint64) (*ChatMember, error) {
 	member.AddedBy = addedBy
 	member.RemovedBy = removedBy
 	member.AddedAt = *addedAt
+	member.RemovedAt = removedAt
 
 	return &member, nil
 }

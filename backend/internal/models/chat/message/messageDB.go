@@ -70,6 +70,10 @@ func getMessagesFromDB(chat *chat.Chat, actor *chatMember.ChatMember, limit, off
 			m.chat_id = $1
 			AND m.is_deleted = FALSE
 			AND m.sent_at >= (SELECT cm.added_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1)
+			AND m.sent_at <= COALESCE(
+				(SELECT cm.removed_at FROM chat_members cm WHERE cm.user_id = $2 AND cm.chat_id = $1), 
+				NOW()
+			)
 		ORDER BY m.sent_at DESC
 		LIMIT $3 OFFSET $4
 	`

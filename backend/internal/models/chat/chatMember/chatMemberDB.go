@@ -28,22 +28,24 @@ func getChatMemberRoleFromDB(memberID uint64, chatID uint64) (string, error) {
 	return role, nil
 }
 
-// get chat member fields: removed_by and added_by
-func getChatMemberRemoveAndAddInfo(memberID uint64, chatID uint64) (*uint64, uint64, *time.Time, error) {
+// get chat member fields: removed_by, removed_at, added_by and removed_at
+func getChatMemberRemoveAndAddInfo(memberID uint64, chatID uint64) (*uint64, *time.Time, uint64, *time.Time, error) {
 	db := pgDB.GetDB()
 	var removedBy *uint64
 	var addedBy uint64
 	var addedAt time.Time
+	var removedAt *time.Time
 
-	err := db.QueryRow(`SELECT removed_by, added_by, added_at FROM chat_members WHERE chat_id = $1 AND user_id = $2`, chatID, memberID).Scan(&removedBy, &addedBy, &addedAt)
+	err := db.QueryRow(`SELECT removed_by, added_by, added_at, removed_at FROM chat_members WHERE chat_id = $1 AND user_id = $2`, chatID, memberID).Scan(&removedBy,
+		&addedBy, &addedAt, &removedAt)
 	if err != nil && err == sql.ErrNoRows {
-		return nil, 0, nil, appErr.NotFound(fmt.Sprintf("user with id %d in chat with id %d not found", memberID, chatID))
+		return nil, nil, 0, nil, appErr.NotFound(fmt.Sprintf("user with id %d in chat with id %d not found", memberID, chatID))
 	} else if err != nil {
 		logger.GetInstance().Error(err.Error(), "get chat member remove and add info", map[string]interface{}{"memberID": memberID, "chatID": chatID}, err)
-		return nil, 0, nil, appErr.InternalServerError("internal server error")
+		return nil, nil, 0, nil, appErr.InternalServerError("internal server error")
 	}
 
-	return removedBy, addedBy, &addedAt, nil
+	return removedBy, removedAt, addedBy, &addedAt, nil
 }
 
 // get role id from db
@@ -71,8 +73,8 @@ func insertChatMemberToDB(tx *sql.Tx, member *ChatMember, roleID int) error {
 
 // update chat member in db
 func updateChatMemberInDB(tx *sql.Tx, member *ChatMember, roleID int) error {
-	_, err := tx.Exec(`UPDATE chat_members SET role_id = $1, removed_by = $2, added_by = $3, added_at = $4 WHERE chat_id = $5 AND user_id = $6`,
-		roleID, member.RemovedBy, member.AddedBy, member.AddedAt, member.ChatID, member.User.ID)
+	_, err := tx.Exec(`UPDATE chat_members SET role_id = $1, removed_by = $2, added_by = $3, added_at = $4, removed_at = $5 WHERE chat_id = $6 AND user_id = $7`,
+		roleID, member.RemovedBy, member.AddedBy, member.AddedAt, member.RemovedAt, member.ChatID, member.User.ID)
 	if err != nil {
 		logger.GetInstance().Error(err.Error(), "update chat member in db", member, err)
 		return appErr.InternalServerError("internal server error")
@@ -97,7 +99,7 @@ func getChatMembersFromDB(actorID, chatID uint64) ([]ChatMember, error) {
 	query := `
 		SELECT u.id, u.username, u.firstname, u.lastname,
 			u.is_deleted, u.is_banned, u.is_activated,
-			cm.chat_id, cr.role, cm.removed_by, cm.added_by
+			cm.chat_id, cr.role, cm.removed_by, cm.added_by, cm.removed_at
 		FROM chat_members cm
 		JOIN users u ON u.id = cm.user_id
 		JOIN chat_roles cr ON cr.id = cm.role_id
@@ -149,7 +151,7 @@ func createMembersFromSQLRows(rows *sql.Rows) ([]ChatMember, error) {
 		var roleString *string
 		err := rows.Scan(&shortUser.ID, &shortUser.Username, &shortUser.Firstname, &shortUser.Lastname,
 			&shortUser.IsDeleted, &shortUser.IsBanned, &shortUser.IsActivated,
-			&member.ChatID, &roleString, &member.RemovedBy, &member.AddedBy)
+			&member.ChatID, &roleString, &member.RemovedBy, &member.AddedBy, &member.RemovedAt)
 		if err != nil {
 			logger.GetInstance().Error(err.Error(), "creating chat members from sql rows", rows, err)
 			return nil, appErr.InternalServerError("internal server error")

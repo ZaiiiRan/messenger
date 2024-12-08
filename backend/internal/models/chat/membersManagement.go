@@ -7,6 +7,7 @@ import (
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/shortUser"
 	"backend/internal/models/user"
+	"backend/internal/utils"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -33,6 +34,7 @@ func (chat *Chat) LeaveFromChat(member *chatMember.ChatMember) (*chatMember.Chat
 	}
 
 	member.RemovedBy = &member.User.ID
+	member.RemovedAt = utils.TimePtr(time.Now())
 	if member.Role != chatMember.Roles.Owner {
 		member.Role = chatMember.Roles.Member
 	}
@@ -76,6 +78,7 @@ func (chat *Chat) ReturnToChat(member *chatMember.ChatMember) (*chatMember.ChatM
 	}
 
 	member.RemovedBy = nil
+	member.RemovedAt = nil
 	if member.Role != chatMember.Roles.Owner {
 		member.Role = chatMember.Roles.Member
 	}
@@ -190,6 +193,7 @@ func (chat *Chat) addOldMemberToChat(tx *sql.Tx, target, addingMember *chatMembe
 	target.Role = chatMember.Roles.Member
 	target.AddedBy = addingMember.User.ID
 	target.AddedAt = time.Now()
+	target.RemovedAt = nil
 
 	err := target.Save(tx, false)
 	if err != nil {
@@ -277,6 +281,10 @@ func (chat *Chat) removeMember(tx *sql.Tx, memberID uint64, removingMember *chat
 		return nil, appErr.BadRequest("trying to delete a member with a higher role")
 	}
 	member.RemovedBy = &removingMember.User.ID
+
+	if member.IsLeft() {
+		member.RemovedAt = utils.TimePtr(time.Now())
+	}
 
 	err = member.Save(tx, false)
 	if err != nil {

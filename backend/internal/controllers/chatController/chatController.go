@@ -368,7 +368,7 @@ func GetMessages(c *fiber.Ctx) error {
 		return err
 	}
 
-	chat, requestSendingMember, err := chatModel.GetChatAndVerifyAccess(chatID, user.ID)
+	chat, requestSendingMember, err := chatModel.GetChatAndMember(chatID, user.ID)
 	if err != nil {
 		return err
 	}
