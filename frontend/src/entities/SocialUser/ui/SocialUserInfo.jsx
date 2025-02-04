@@ -16,7 +16,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
     const addFriend = async (action) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.addFriend(data.user.id)
+            const response = await socialUserAPI.addFriend(data.user.user_id)
             setModalTitle(t('Success'))
             if (action === 'request') {
                 setModalText(t('Friend request sent'))
@@ -43,7 +43,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
     const removeFriend = async (action) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.removeFriend(data.user.id)
+            const response = await socialUserAPI.removeFriend(data.user.user_id)
             setModalTitle(t('Success'))
             if (action === 'decline') {
                 if (data.user.username.length > 15) setModalText(t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
@@ -72,7 +72,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
     const blockUser = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.blockUser(data.user.id)
+            const response = await socialUserAPI.blockUser(data.user.user_id)
             
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been blocked'))
@@ -95,7 +95,7 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
     const unblockUser = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.unblockUser(data.user.id)
+            const response = await socialUserAPI.unblockUser(data.user.user_id)
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been unblocked'))
             else setModalText(`${data.user.username} ${t('has been unblocked')}`)

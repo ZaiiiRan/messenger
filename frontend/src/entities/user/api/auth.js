@@ -10,7 +10,7 @@ export default class Auth {
     }
 
     static async logout() {
-        return api.get('/auth/logout')
+        return api.delete('/auth/logout')
     }
 
     static async refresh() {

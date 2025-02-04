@@ -28,7 +28,7 @@
     "Unauthorized": "Неавторизован",
     "Internal server error": "Призошла ошибка при загрузке данных о пользователе",
     "User not found": "Пользователь не найден",
-    "An unexpected error occurred": "Произошла непредвидеенная ошибка",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
     "User is banned from the service": "Пользователь заблокирован на сервисе",
     "You are blocked by this user": "Этот пользователь вас заблокировал",
     "You blocked this user": "Вы заблокировали пользователя",
