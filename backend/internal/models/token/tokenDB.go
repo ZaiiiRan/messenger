@@ -67,3 +67,14 @@ func removeOtherTokensFromDB(token *Token) error {
 	}
 	return nil
 }
+
+// remove all tokens from db
+func removeAllTokensFromDB(userID uint64) error {
+	db := pgDB.GetDB()
+	_, err := db.Exec(`DELETE FROM tokens WHERE user_id = $1`, userID)
+	if err != nil {
+		logger.GetInstance().Error(err.Error(), "all tokens deleting by userID", userID, err)
+		return appErr.InternalServerError("internal server error")
+	}
+	return nil
+}

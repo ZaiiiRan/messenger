@@ -10,15 +10,19 @@ import (
 
 type User struct {
 	BaseUser
-	Email       string     `json:"email"`
-	Password    string     `json:"password"`
-	Phone       *string    `json:"phone"`
-	Birthdate   *time.Time `json:"birthdate"`
-	CreatedAt   time.Time  `json:"created_at"`
+	Email     string     `json:"email"`
+	Password  string     `json:"password"`
+	Phone     *string    `json:"phone"`
+	Birthdate *time.Time `json:"birthdate"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 // Creating user object
 func CreateUser(username, email, password, firstname, lastname string, phone *string, birthdate *time.Time) (*User, error) {
+	if phone != nil && *phone == "" {
+		phone = nil
+	}
+
 	if err := validateAllFields(username, email, password, firstname, lastname, phone, birthdate); err != nil {
 		return nil, err
 	}
@@ -29,11 +33,11 @@ func CreateUser(username, email, password, firstname, lastname string, phone *st
 	}
 
 	user := &User{
-		BaseUser: NewBaseUser(username, firstname, lastname),
-		Email:       email,
-		Password:    hashedPassword,
-		Phone:       phone,
-		Birthdate:   birthdate,
+		BaseUser:  NewBaseUser(username, firstname, lastname),
+		Email:     email,
+		Password:  hashedPassword,
+		Phone:     phone,
+		Birthdate: birthdate,
 	}
 	return user, nil
 }
@@ -64,9 +68,6 @@ func validateAllFields(username, email, password, firstname, lastname string, ph
 	if phone != nil {
 		if err := validatePhone(*phone); err != nil {
 			return err
-		}
-		if *phone == "" {
-			phone = nil
 		}
 	}
 	if birthdate != nil {

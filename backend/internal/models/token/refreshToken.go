@@ -95,3 +95,8 @@ func generateRefreshTokenString(payload *userDTO.UserDTO) (string, error) {
 
 	return refreshToken, nil
 }
+
+// Remove all user's refresh tokens
+func RemoveAllRefreshTokens(userID uint64) error {
+	return removeAllTokensFromDB(userID)
+}

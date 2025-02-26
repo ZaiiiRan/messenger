@@ -37,12 +37,13 @@ func ActivateAccount(c *fiber.Ctx) error {
 	userDto = userDTO.CreateUserDTOFromUserObj(userObj)
 	refreshTokenObj, _ := token.FindRefreshToken(refreshToken)
 	if refreshTokenObj == nil {
-		refreshTokenObj.RemoveOtherTokens()
+		token.RemoveAllRefreshTokens(userObj.ID)
 		refreshTokenObj, err = token.GenerateRefreshToken(userDto)
 		if err != nil {
 			return err
 		}
 	} else {
+		refreshTokenObj.RemoveOtherTokens()
 		err = refreshTokenObj.RegenerateRefreshToken(userDto)
 		if err != nil {
 			return err
