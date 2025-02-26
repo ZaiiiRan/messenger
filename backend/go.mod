@@ -9,14 +9,16 @@ require (
 
 require github.com/golang-jwt/jwt/v5 v5.2.1
 
-require golang.org/x/crypto v0.28.0
+require (
+	github.com/gofiber/websocket/v2 v2.2.1
+	github.com/pkg/errors v0.9.1
+	github.com/sirupsen/logrus v1.9.3
+	golang.org/x/crypto v0.31.0
+)
 
 require (
 	github.com/fasthttp/websocket v1.5.3 // indirect
-	github.com/gofiber/websocket/v2 v2.2.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 )
 
 require (
@@ -36,5 +38,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 )
