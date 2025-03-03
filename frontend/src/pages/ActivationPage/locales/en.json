@@ -4,7 +4,7 @@
     "The code is not completely filled out": "The code is not completely filled out",
     "Internal server error": "Internal server error",
 
-    "Unauthorized": "Unauthorized",
+    "Unauthorized": "There was a problem checking authorization",
     "An unexpected error occurred": "An unexpected error occurred",
     "Error occured while sending activation code": "Error occured while sending activation code",
     "User already activated": "Your account already activated",

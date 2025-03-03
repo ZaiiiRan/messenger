@@ -6,6 +6,6 @@
     "Search parameter is very short": "Search parameter is very short",
     "Users not found": "Users not found",
     "An unexpected error occurred": "An unexpected error occurred",
-    "Unauthorized": "Unauthorized",
+    "Unauthorized": "There was a problem checking authorization",
     "Internal server error": "Internal server error"
 }

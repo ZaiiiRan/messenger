@@ -25,7 +25,7 @@
     "has been unblocked": "разблокирован",
 
     "Error": "Ошибка",
-    "Unauthorized": "Неавторизован",
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
     "Internal server error": "Призошла ошибка при загрузке данных о пользователе",
     "User not found": "Пользователь не найден",
     "An unexpected error occurred": "Произошла непредвиденная ошибка",

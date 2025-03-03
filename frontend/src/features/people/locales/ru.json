@@ -2,7 +2,7 @@
     "We couldn't find anyone": "Мы не смогли никого найти",
     "Error": "Ошибка",
 
-    "Unauthorized": "Не авторизован",
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
     "An unexpected error occurred": "Произошла непредвиденная ошибка",
     "Search parameter is empty": "Поисковой параметр пуст",
     "Search parameter is very short": "Поисковой параметр слишком короткий",

@@ -33,7 +33,7 @@ const PeopleList = ({ search, fetchFunction, setSelectedUser, minSearchLength = 
                 setEnd(true)
             } else {
                 setModalTitle(t('Error'))
-                setModalText(apiErrors[e.response?.data?.error] || t('Internal server error'))
+                setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
                 openModal()
             }
         } finally {

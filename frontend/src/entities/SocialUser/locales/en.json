@@ -25,7 +25,7 @@
     "has been unblocked": "has been unblocked",
 
     "Error": "Error",
-    "Unauthorized": "Unauthorized",
+    "Unauthorized": "There was a problem checking authorization",
     "Internal server error": "An error occurred while loading user data",
     "An unexpected error occurred": "An unexpected error occurred",
     "User not found": "User not found",
