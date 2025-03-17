@@ -2,7 +2,7 @@ package wsRoutes
 
 import (
 	"backend/internal/controllers/wsController"
-	"backend/internal/middleware/authMiddleware"
+	"backend/internal/middleware/wsUpgradeMiddleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,7 +12,8 @@ func initConnection(c *fiber.Ctx) error {
 }
 
 func SetupRoutes(app fiber.Router) {
-	ws := app.Group("/ws", authMiddleware.AuthMiddleware)
+	ws := app.Group("/ws")
+	ws.Use(wsUpgradeMiddleware.WSUpgradeMiddleware)
 
 	ws.Get("/", initConnection)
 }

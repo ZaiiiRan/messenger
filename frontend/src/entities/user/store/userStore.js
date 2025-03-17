@@ -1,6 +1,7 @@
 import { makeAutoObservable } from 'mobx'
 import Auth from '../api/auth'
 import Activation from '../api/activation'
+import { webSocketService } from '../../../shared/api'
 
 class UserStore {
     user = {}
@@ -61,6 +62,7 @@ class UserStore {
         const response = await Auth.refresh()
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
+        await webSocketService.connect()
         this.setUser(response.data.user)
         return response.data
     }

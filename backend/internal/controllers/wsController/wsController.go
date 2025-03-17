@@ -13,16 +13,18 @@ import (
 
 // Init WebSocket connection
 func InitConnection(c *fiber.Ctx) error {
+	if allowed, ok := c.Locals("allowed").(bool); !ok || !allowed {
+		return fiber.ErrUpgradeRequired
+	}
+
 	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
 	if !ok || user == nil {
 		return appErr.Unauthorized("unauthorized")
 	}
-	if websocket.IsWebSocketUpgrade(c) {
-		return websocket.New(func(conn *websocket.Conn) {
-			HandleWebSocket(conn, user)
-		})(c)
-	}
-	return fiber.ErrUpgradeRequired
+
+	return websocket.New(func(conn *websocket.Conn) {
+		HandleWebSocket(conn, user)
+	})(c)
 }
 
 // Handle WebSocket
