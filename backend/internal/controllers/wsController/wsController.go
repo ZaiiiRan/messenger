@@ -3,6 +3,7 @@ package wsController
 import (
 	"backend/internal/controllers/messageController"
 	appErr "backend/internal/errors/appError"
+	"backend/internal/models/token"
 	"backend/internal/models/user/userDTO"
 	"backend/internal/webSocketManager"
 	"encoding/json"
@@ -17,13 +18,15 @@ func InitConnection(c *fiber.Ctx) error {
 		return fiber.ErrUpgradeRequired
 	}
 
-	user, ok := c.Locals("userDTO").(*userDTO.UserDTO)
-	if !ok || user == nil {
-		return appErr.Unauthorized("unauthorized")
-	}
-
 	return websocket.New(func(conn *websocket.Conn) {
-		HandleWebSocket(conn, user)
+		defer conn.Close()
+
+		user, err := authWebSocket(conn)
+		if err != nil {
+			sendError(conn, err)
+		} else if user != nil {
+			HandleWebSocket(conn, user)
+		}
 	})(c)
 }
 
@@ -51,6 +54,27 @@ func HandleWebSocket(conn *websocket.Conn, userDTO *userDTO.UserDTO) {
 			sendError(conn, err)
 		}
 	}
+}
+
+// auth WebSocket connection
+func authWebSocket(conn *websocket.Conn) (*userDTO.UserDTO, error) {
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	var authMessage AuthWebSocketMessage
+	if err := json.Unmarshal(msg, &authMessage); err != nil || authMessage.Token == "" {
+		return nil, appErr.BadRequest("invalid auth request format")
+	}
+	authMessage.TrimSpaces()
+
+	user, err := token.ValidateAccessToken(authMessage.Token)
+	if err != nil || user == nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 // requests processing

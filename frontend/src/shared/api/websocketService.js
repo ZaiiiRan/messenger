@@ -2,15 +2,39 @@ export const WS_URL = import.meta.env.VITE_WS_URL
 
 class WebSocketService {
     socket = null
+    retries = 0
+    maxRetries = 2
 
     async connect() {
         if (this.socket) return
 
-        try {
-            this.socket = new WebSocket(`ws://localhost:8080/ws?token=${localStorage.getItem('token')}`)
+        const token = localStorage.getItem('token')
 
-            this.socket.onopen = () => console.log("✅ WebSocket подключен!")
-            this.socket.onmessage = (event) => console.log("📩 Сообщение:", event.data)
+        try {
+            this.socket = new WebSocket(WS_URL)
+
+            this.socket.onopen = () => {
+                console.log("✅ WebSocket подключен!")
+                this.sendMessage({ token })
+            }
+
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data)
+                if (data.type === "error" && data.content === "unauthorized") {
+                    console.warn("⚠️ Ошибка авторизации, пробуем ещё раз...")
+
+                    if (this.retries < this.maxRetries) {
+                        this.retries++
+                        this.disconnect()
+                        setTimeout(() => this.connect(), 1000)
+                    } else {
+                        throw new Error("🚫 Доступ запрещён: неверный токен")
+                    }
+                } else {
+                    console.log("📩 Сообщение:", event.data)
+                }
+            }
+
             this.socket.onclose = () => console.log("🔄 WebSocket закрыт!")
             this.socket.onerror = (error) => console.error("❌ Ошибка WebSocket:", error)
         } catch (error) {
