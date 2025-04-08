@@ -1,11 +1,10 @@
-/* eslint-disable react/prop-types */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { Select } from '../../../shared/ui/Select'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import 'flag-icons/css/flag-icons.min.css'
 
-const LaguageChanging = ({ goBack }) => {
+const LaguageChanging = () => {
     const { i18n } = useTranslation()
     const { t } = useTranslation('optionsFeature')
 
@@ -34,7 +33,6 @@ const LaguageChanging = ({ goBack }) => {
 
     const handleLanguageChange = (selectedLang) => {
         i18n.changeLanguage(selectedLang.key)
-        goBack()
     }
 
     return (
@@ -53,7 +51,7 @@ const LaguageChanging = ({ goBack }) => {
                     
             <Select 
                 className='sm:w-3/5 mobile:w-6/12 2xl:text-lg xl:text-base lg:text-sm 2k:text-xl 4k:text-2xl
-                    mobile:text-base md:text-lg' 
+                    mobile:text-base md:text-lg z-50' 
                 options={langs} 
                 onChange={handleLanguageChange} 
                 defaultValue={defaultLang} 

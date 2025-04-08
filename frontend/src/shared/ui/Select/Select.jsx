@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from './Select.module.css'
 
 const Select = ({ options, defaultValue=options[0], onChange, className }) => {
@@ -17,6 +17,10 @@ const Select = ({ options, defaultValue=options[0], onChange, className }) => {
             onChange(option)
         }
     }
+
+    useEffect(() => {
+        setSelectedOption(defaultValue)
+    }, [defaultValue])
 
     return (
         <div className={`${styles.SelectContainer} ${className}`}>

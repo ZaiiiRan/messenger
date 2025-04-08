@@ -36,7 +36,7 @@ const ThemeChanging = observer(() => {
             
             <Select 
                 className='sm:w-3/5 mobile:w-6/12 2xl:text-lg xl:text-base lg:text-sm 2k:text-xl 4k:text-2xl
-                    mobile:text-base md:text-lg' 
+                    mobile:text-base md:text-lg z-40' 
                 options={themeOptions} 
                 onChange={handleThemeChange} 
                 defaultValue={themeOptions.find(opt => opt.key === themeStore.theme)} 
