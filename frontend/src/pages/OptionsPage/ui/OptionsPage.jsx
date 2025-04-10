@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { OptionsList, AppearanceOptions } from '../../../widgets/options'
 import { useState } from 'react'
 
-
 const OptionsPage = () => {
     const [selected, setSelected] = useState(null)
 

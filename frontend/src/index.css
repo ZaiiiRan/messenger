@@ -106,6 +106,14 @@ body {
   fill: var(--icon-color);
 }
 
+.Option-Icon {
+  height: 33%;
+  aspect-ratio: 1/1;
+}
+.Option-Icon svg {
+  fill: var(--icon-color);
+}
+
 .scrollContainer {
   overflow-y: overlay;
 }
