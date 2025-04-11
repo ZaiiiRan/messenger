@@ -1,7 +1,14 @@
-/* eslint-disable react/prop-types */
 import styles from './Button.module.css'
 
-const Button = ({ children, className, onClick, disabled=false, id }) => {
+interface ButtonProps {
+    children?: React.ReactNode,
+    className?: string,
+    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void,
+    disabled?: boolean,
+    id?: string
+}
+
+const Button: React.FC<ButtonProps> = ({ children, className, onClick, disabled=false, id }) => {
     return (
         <button 
             className={styles.Button + ' ' + className}

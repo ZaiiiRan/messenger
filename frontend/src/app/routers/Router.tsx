@@ -13,7 +13,7 @@ import { OptionsPage } from '../../pages/OptionsPage'
 import { PeoplePage } from '../../pages/PeoplePage'
 import { MessengingPage } from '../../pages/MessengingPage'
 
-export const Router = () => {
+export const Router: React.FC = () => {
     return(
         <BrowserRouter>
             <AnimatePresence mode="wait">

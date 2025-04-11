@@ -11,8 +11,7 @@ import '../shared/config/i18n'
 import { themeStore } from '../shared/theme'
 
 
-function App() {
-
+const App: React.FC = () => {
   useEffect(() => {
     themeStore.applyTheme(themeStore.theme)
   }, [])
@@ -43,7 +42,7 @@ function App() {
       setIsLandscape(landscapeSmallHeight || landscapeMediumResolution || landscapeHighResolution)
     }
 
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
     const isMobileUserAgent = /android|iphone|ipad|ipod|windows phone|opera mini|iemobile/i.test(userAgent)
 
     setIsMobile(isMobileUserAgent)

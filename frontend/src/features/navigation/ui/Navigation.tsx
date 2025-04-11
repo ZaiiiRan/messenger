@@ -4,7 +4,11 @@ import { NavLink } from '../../../shared/ui/NavLink'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../entities/user'
 
-const Navigation = ({ className }) => {
+interface NavigationProps {
+    className?: string
+}
+
+const Navigation: React.FC<NavigationProps> = ({ className }) => {
     const userStore = useAuth()
 
     return (
