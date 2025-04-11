@@ -1,18 +1,35 @@
-/* eslint-disable react/prop-types */
 import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../../entities/user'
+import { Loader } from '../../../shared/ui/Loader'
+import ValidateResponse from '../../../entities/user/validations/validateResponse'
 
+interface StepAdditionalInfoRegisterProps {
+    onNext: (e: React.MouseEvent<HTMLButtonElement>, validators?: { field: string, validate: (name: string) => ValidateResponse }) => Promise<void>,
+    onPrev: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    phone: string,
+    setPhone: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    phoneErr: boolean,
+    birthdate: string,
+    setBirthdate: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    birthdateErr: boolean,
+}
 
-const StepEmailUsername = ({ onNext, onPrev, email, setEmail, emailErr, username, setUsername, usernameErr }) => {
+const StepAdditionalInfoRegister: React.FC<StepAdditionalInfoRegisterProps> = ({ onNext, onPrev, phone, setPhone, phoneErr, birthdate, setBirthdate, birthdateErr }) => {
     const { t } = useTranslation('registerFeature')
+
+    const userStore = useAuth()
     
-    const handleFormKeyDown = (e) => {
+    const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault()
-            document.getElementById('submitBtn').click()
+            const button = document.getElementById('submitBtn')
+            if (button) {
+                button.click()
+            }
         }
     }
 
@@ -36,25 +53,27 @@ const StepEmailUsername = ({ onNext, onPrev, email, setEmail, emailErr, username
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    { t('Enter your Email and create a username') }
+                    { t('You can provide additional information') }
                 </h2>
             </div>
 
             <Input 
-                placeholder='Email' 
+                placeholder={t('Phone number (optional)')} 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                value={email}
-                onChange={setEmail}
-                error={emailErr}
+                value={phone}
+                onChange={setPhone}
+                error={phoneErr}
+                phone={true}
             />
             <Input 
-                placeholder={t('Username')}
+                placeholder={t('Date of birth (optional)')}
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
-                value={username}
-                onChange={setUsername}
-                error={usernameErr}
+                value={birthdate}
+                onChange={setBirthdate}
+                error={birthdateErr}
+                date={true}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -74,15 +93,21 @@ const StepEmailUsername = ({ onNext, onPrev, email, setEmail, emailErr, username
                 </Button>
                 <Button 
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
-                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl flex items-center justify-center'
                     onClick={onNext}
                     id='submitBtn'
                 >
-                    { t('Next') }
+                    {
+                        userStore.isLoading ? (
+                            <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
+                        ) : (
+                            t('Register')
+                        )
+                    }
                 </Button>
             </div>
         </motion.form>
     )
 }
 
-export default StepEmailUsername
+export default StepAdditionalInfoRegister

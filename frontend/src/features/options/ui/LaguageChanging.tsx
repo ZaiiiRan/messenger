@@ -3,6 +3,7 @@ import { Select } from '../../../shared/ui/Select'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import 'flag-icons/css/flag-icons.min.css'
+import OptionsItem from '../models/OptionsItem'
 
 const LaguageChanging = () => {
     const { i18n } = useTranslation()
@@ -31,7 +32,7 @@ const LaguageChanging = () => {
 
     const defaultLang = langs.find(lang => lang.key === i18n.language) || langs[0]
 
-    const handleLanguageChange = (selectedLang) => {
+    const handleLanguageChange = (selectedLang: OptionsItem) => {
         i18n.changeLanguage(selectedLang.key)
     }
 

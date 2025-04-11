@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
 import { themeStore } from '../../../shared/theme'
+import OptionsItem from '../models/OptionsItem'
 
 const ThemeChanging = observer(() => {
     const { t } = useTranslation('optionsFeature')
@@ -13,7 +14,7 @@ const ThemeChanging = observer(() => {
         { key: 'system', label: t('System') }
     ], [t])
 
-    const handleThemeChange = (selectedTheme) => {
+    const handleThemeChange = (selectedTheme: OptionsItem) => {
         themeStore.setTheme(selectedTheme.key)
     }
 

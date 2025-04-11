@@ -6,7 +6,17 @@ import { observer } from 'mobx-react'
 import { useAuth } from '../../../entities/user'
 import { useTranslation } from 'react-i18next'
 
-const Login = observer(({ login, setLogin, loginErr, password, setPassword, passwordErr, onLogin }) => {
+interface LoginProps {
+    login: string,
+    setLogin: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    loginErr: boolean,
+    password: string,
+    setPassword: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    passwordErr: boolean,
+    onLogin: (e: React.MouseEvent<HTMLButtonElement>) => void
+}
+
+const Login: React.FC<LoginProps> = observer(({ login, setLogin, loginErr, password, setPassword, passwordErr, onLogin }) => {
     const { t } = useTranslation('loginFeature')
     
     const userStore = useAuth()

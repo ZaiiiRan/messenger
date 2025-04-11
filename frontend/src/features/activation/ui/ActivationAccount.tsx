@@ -6,7 +6,33 @@ import { observer } from 'mobx-react'
 import { useAuth } from '../../../entities/user'
 import { useTranslation } from 'react-i18next'
 
-const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace, err, submit, resend }) => {
+type Position = 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth'
+
+interface ActivationAccountProps {
+    data: {
+        first: string;
+        second: string;
+        third: string;
+        fourth: string;
+        fifth: string;
+        sixth: string;
+    },
+    refs: Array<React.Ref<HTMLInputElement>>,
+    handleChange: (e: React.ChangeEvent<HTMLInputElement>, position: string) => void,
+    handleBackspace: (e: React.KeyboardEvent<HTMLInputElement>, position: string) => void,
+    err: {
+        first: boolean;
+        second: boolean;
+        third: boolean;
+        fourth: boolean;
+        fifth: boolean;
+        sixth: boolean;
+    },
+    submit: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    resend: (e: React.MouseEvent<HTMLAnchorElement>) => void
+}
+
+const ActivationAccount: React.FC<ActivationAccountProps> = observer(({ refs, data, handleChange, handleBackspace, err, submit, resend }) => {
     const { t } = useTranslation('activationFeature')
     const userStore = useAuth()
 
@@ -28,7 +54,7 @@ const ActivationAccount = observer(({ refs, data, handleChange, handleBackspace,
             </div>
 
             <div className='flex 2xl:px-8 2k:px-4 mobile:px-0 w-full items-center justify-between'>
-            {['first', 'second', 'third', 'fourth', 'fifth', 'sixth'].map((position, index) => (
+            {(['first', 'second', 'third', 'fourth', 'fifth', 'sixth'] as const).map((position, index) => (
                     <Input 
                         disabled = { userStore.isLoading }
                         key={position}

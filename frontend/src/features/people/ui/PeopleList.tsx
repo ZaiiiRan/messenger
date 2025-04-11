@@ -1,19 +1,27 @@
-/* eslint-disable react/prop-types */
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react'
 import { ShortUser, ShortUserSkeleton } from '../../../entities/ShortUser'
 import { useModal } from '../../../features/modal'
-import { apiErrors } from '../../../shared/api'
-import axios from 'axios'
+import { apiErrors, ApiErrorsKey } from '../../../shared/api'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 
-const PeopleList = ({ search, fetchFunction, setSelectedUser, minSearchLength = 0, userManipulation, setUserManipulation, selectedUser }) => {
+interface PeopleListProps {
+    search: string,
+    fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
+    setSelectedUser: Dispatch<SetStateAction<any>>,
+    minSearchLength: number, 
+    userManipulation: boolean,
+    setUserManipulation: Dispatch<SetStateAction<boolean>>,
+    selectedUser: any // TODO: написать интерфейс
+}
+
+const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelectedUser, minSearchLength = 0, userManipulation, setUserManipulation, selectedUser }) => {
     const { t } = useTranslation('peopleFeature')
-    const limit = 10
-    const [offset, setOffset] = useState(0)
-    const [data, setData] = useState([])
-    const [isFetching, setFetching] = useState(false)
-    const [end, setEnd] = useState(false)
+    const limit: number = 10
+    const [offset, setOffset] = useState<number>(0)
+    const [data, setData] = useState<Array<any>>([])
+    const [isFetching, setFetching] = useState<boolean>(false)
+    const [end, setEnd] = useState<boolean>(false)
     const { openModal, setModalTitle, setModalText } = useModal()
 
     const loadUsers = async (newSearch = search, newOffset = offset, newEnd = end, newLimit = limit) => {
@@ -28,12 +36,14 @@ const PeopleList = ({ search, fetchFunction, setSelectedUser, minSearchLength = 
             if (newUsers.length < limit) setEnd(true)
             setData((prevUsers) => [...prevUsers, ...newUsers])
             setOffset((prevOffset) => prevOffset + limit)
-        } catch (e) {
-            if (e.status === 404) {
+        } catch (e: any) {
+            if (e instanceof AxiosError && e.status === 404) {
                 setEnd(true)
             } else {
                 setModalTitle(t('Error'))
-                setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+                const errorKey: ApiErrorsKey = e.response?.data?.error
+                setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
                 openModal()
             }
         } finally {
@@ -45,7 +55,7 @@ const PeopleList = ({ search, fetchFunction, setSelectedUser, minSearchLength = 
         }
     }
 
-    const lastSearchRef = useRef()
+    const lastSearchRef = useRef<string>()
 
     useEffect(() => {
         const trimmedSearch = search.trim()
@@ -58,8 +68,8 @@ const PeopleList = ({ search, fetchFunction, setSelectedUser, minSearchLength = 
         loadUsers(trimmedSearch, 0, false)
     }, [search])
 
-    const observerRef = useRef()
-    const lastUserRef = useCallback((node) => {
+    const observerRef = useRef<IntersectionObserver | null>(null)
+    const lastUserRef = useCallback((node: HTMLDivElement | null) => {
         if (isFetching) return
         if (observerRef.current) observerRef.current.disconnect()
         observerRef.current = new IntersectionObserver((entries) => {

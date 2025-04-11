@@ -1,21 +1,31 @@
-/* eslint-disable react/prop-types */
 import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../../../entities/user'
-import { Loader } from '../../../shared/ui/Loader'
+import ValidateResponse from '../../../entities/user/validations/validateResponse'
 
-const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr, birthdate, setBirthdate, birthdateErr }) => {
+interface StepPasswordProps {
+    onNext: (e: React.MouseEvent<HTMLButtonElement>, validators?: { field: string, validate: (name: string) =>  ValidateResponse }) => Promise<void>,
+    onPrev: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    password: string,
+    setPassword: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    passwordErr: boolean,
+    repeatPassword: string,
+    setRepeatPassword: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    repeatPasswordErr: boolean,
+}
+
+const StepPassword: React.FC<StepPasswordProps> = ({ onNext, onPrev, password, setPassword, passwordErr, repeatPassword,  setRepeatPassword, repeatPasswordErr }) => {
     const { t } = useTranslation('registerFeature')
-
-    const userStore = useAuth()
     
-    const handleFormKeyDown = (e) => {
+    const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault()
-            document.getElementById('submitBtn').click()
+            const button = document.getElementById('submitBtn')
+            if (button) {
+                button.click()
+            }
         }
     }
 
@@ -39,27 +49,27 @@ const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr,
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    { t('You can provide additional information') }
+                    { t('Create a password') }
                 </h2>
             </div>
 
             <Input 
-                placeholder={t('Phone number (optional)')} 
+                placeholder={t('Password')}
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                value={phone}
-                onChange={setPhone}
-                error={phoneErr}
-                phone={true}
+                password={true}
+                value={password}
+                onChange={setPassword}
+                error={passwordErr}
             />
             <Input 
-                placeholder={t('Date of birth (optional)')}
+                placeholder={t('Repeat password')}
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
-                value={birthdate}
-                onChange={setBirthdate}
-                error={birthdateErr}
-                date={true}
+                    password={true}
+                value={repeatPassword}
+                onChange={setRepeatPassword}
+                error={repeatPasswordErr}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -79,21 +89,15 @@ const StepAdditionalInfoRegister = ({ onNext, onPrev, phone, setPhone, phoneErr,
                 </Button>
                 <Button 
                     className='flex-grow h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
-                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl flex items-center justify-center'
+                        md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
                     onClick={onNext}
                     id='submitBtn'
                 >
-                    {
-                        userStore.isLoading ? (
-                            <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
-                        ) : (
-                            t('Register')
-                        )
-                    }
+                    { t('Next') }
                 </Button>
             </div>
         </motion.form>
     )
 }
 
-export default StepAdditionalInfoRegister
+export default StepPassword

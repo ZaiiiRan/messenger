@@ -1,11 +1,21 @@
-/* eslint-disable react/prop-types */
 import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import ValidateResponse from '../../../entities/user/validations/validateResponse'
 
-const StepNames = ({ onNext, firstname, setFirstname, firstnameErr, lastname, setLastname, lastnameErr }) => {
+interface StepNamesProps {
+    onNext: (e: React.MouseEvent<HTMLButtonElement>, validators?: { field: string, validate: (name: string) =>  ValidateResponse }) => Promise<void>,
+    firstname: string,
+    setFirstname: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    firstnameErr: boolean,
+    lastname: string,
+    setLastname: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    lastnameErr: boolean,
+}
+
+const StepNames: React.FC<StepNamesProps> = ({ onNext, firstname, setFirstname, firstnameErr, lastname, setLastname, lastnameErr }) => {
     const { t } = useTranslation('registerFeature')
     
     return (

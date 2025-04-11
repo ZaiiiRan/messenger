@@ -1,17 +1,31 @@
-/* eslint-disable react/prop-types */
 import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { Link } from '../../../shared/ui/Link'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import ValidateResponse from '../../../entities/user/validations/validateResponse'
 
-const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repeatPassword,  setRepeatPassword, repeatPasswordErr }) => {
+interface StepEmailUsernameProps {
+    onNext: (e: React.MouseEvent<HTMLButtonElement>, validators?: { field: string, validate: (name: string) =>  ValidateResponse }) => Promise<void>,
+    onPrev: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    email: string,
+    setEmail: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    emailErr: boolean,
+    username: string,
+    setUsername: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    usernameErr: boolean,
+}
+
+const StepEmailUsername: React.FC<StepEmailUsernameProps> = ({ onNext, onPrev, email, setEmail, emailErr, username, setUsername, usernameErr }) => {
     const { t } = useTranslation('registerFeature')
     
-    const handleFormKeyDown = (e) => {
+    const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault()
-            document.getElementById('submitBtn').click()
+            const button = document.getElementById('submitBtn')
+            if (button) {
+                button.click()
+            }
         }
     }
 
@@ -35,27 +49,25 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
                     className='text-center font-extrabold 
                         md:text-lg mobile:text-base 2k:text-2xl 4k:text-4xl'
                 >
-                    { t('Create a password') }
+                    { t('Enter your Email and create a username') }
                 </h2>
             </div>
 
             <Input 
-                placeholder={t('Password')}
+                placeholder='Email' 
                 className='px-3 py-2 2k:px-4 2k:py-3 4k:px-6 4k:py-5 rounded-lg 
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                password={true}
-                value={password}
-                onChange={setPassword}
-                error={passwordErr}
+                value={email}
+                onChange={setEmail}
+                error={emailErr}
             />
             <Input 
-                placeholder={t('Repeat password')}
+                placeholder={t('Username')}
                 className='px-3 py-2 rounded-lg 2k:px-4 2k:py-3 4k:px-6 4k:py-5
                     md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl' 
-                    password={true}
-                value={repeatPassword}
-                onChange={setRepeatPassword}
-                error={repeatPasswordErr}
+                value={username}
+                onChange={setUsername}
+                error={usernameErr}
             />
             <div 
                 className='flex md:gap-4 items-center 
@@ -86,4 +98,4 @@ const StepPassword = ({ onNext, onPrev, password, setPassword, passwordErr, repe
     )
 }
 
-export default StepPassword
+export default StepEmailUsername

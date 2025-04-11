@@ -1,9 +1,9 @@
 import { makeAutoObservable } from 'mobx'
 
 class ModalStore {
-    isOpen = false
-    title = ''
-    text = ''
+    isOpen: boolean = false
+    title: string = ''
+    text: string = ''
 
     constructor() {
         makeAutoObservable(this)
@@ -17,11 +17,11 @@ class ModalStore {
         this.isOpen = false
     }
 
-    setTitle(title) {
+    setTitle(title: string) {
         this.title = title
     }
 
-    setText(text) {
+    setText(text: string) {
         this.text = text
     }
 
