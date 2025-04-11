@@ -1,9 +1,12 @@
-/* eslint-disable react/prop-types */
 import { useTranslation } from 'react-i18next'
 import { ListWidget } from '../../../shared/ui/ListWidget'
 import { MenuItem } from '../../../shared/ui/MenuItem'
 
-const OptionsList = ({ open }) => {
+interface OptionsList {
+    open: (category: string) => void
+}
+
+const OptionsList: React.FC<OptionsList> = ({ open }) => {
     const { t } = useTranslation('optionsWidget')
 
     return (

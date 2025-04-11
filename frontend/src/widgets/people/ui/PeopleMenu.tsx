@@ -1,9 +1,12 @@
-/* eslint-disable react/prop-types */
 import { useTranslation } from 'react-i18next'
 import { ListWidget } from '../../../shared/ui/ListWidget'
 import { MenuItem } from '../../../shared/ui/MenuItem'
 
-const PeopleMenu = ({ open }) => {
+interface PeopleMenuProps {
+    open: (category: string) => void
+}
+
+const PeopleMenu: React.FC<PeopleMenuProps> = ({ open }) => {
     const { t } = useTranslation('peopleWidget')
 
     return (

@@ -1,8 +1,20 @@
-/* eslint-disable react/prop-types */
 import { MainWidget } from '../../../shared/ui/MainWidget'
 import { SocialUser } from '../../../entities/SocialUser'
+import { Dispatch, SetStateAction } from 'react'
 
-const UserWidget = ({ 
+interface UserWidgetProps {
+    key: number | string,
+    title: string,
+    goBack: () => void,
+    className?: string,
+    setUserManipulation: Dispatch<SetStateAction<boolean>>,
+    selectedUser: any
+    checkAfterUpdate?: boolean,
+    onLoadError: () => void,
+    onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+}
+
+const UserWidget: React.FC<UserWidgetProps> = ({ 
     key, 
     selectedUser, 
     checkAfterUpdate = true, 

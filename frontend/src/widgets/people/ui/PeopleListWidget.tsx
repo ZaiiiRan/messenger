@@ -1,11 +1,27 @@
-/* eslint-disable react/prop-types */
 import { MainWidget } from '../../../shared/ui/MainWidget'
 import { useTranslation } from 'react-i18next'
 import { Input } from '../../../shared/ui/Input'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { PeopleList } from '../../../features/people'
+import { AxiosResponse } from 'axios'
 
-const PeopleListWidget = ({
+interface PeopleListWidgetProps {
+    key: number | string,
+    title: string,
+    goBack: () => void,
+    fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
+    setSelectedUser: Dispatch<SetStateAction<null>>,
+    minSearchLength: number,
+    className?: string,
+    initialAnimation?: { opcaity: number; x: number},
+    exitAnimation?: { opcaity: number; x: number},
+    animation?: { opcaity: number; x: number},
+    userManipulation: boolean,
+    setUserManipulation: Dispatch<SetStateAction<boolean>>,
+    selectedUser: any
+}
+
+const PeopleListWidget: React.FC<PeopleListWidgetProps> = ({
     key, 
     title, 
     goBack, 
