@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import { useAuth } from '../../entities/user'
+import HocProps from './HocProps'
 
-const RequireActivate = observer(({ children }) => {
+const RequireActivate: React.FC<HocProps> = observer(({ children }) => {
     const userStore = useAuth()
 
-    if (!userStore.user.is_activated) {
+    if (!userStore.user?.is_activated) {
         return <Navigate to='/activate' />
     }
     
