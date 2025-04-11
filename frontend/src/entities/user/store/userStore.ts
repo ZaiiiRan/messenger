@@ -2,39 +2,40 @@ import { makeAutoObservable } from 'mobx'
 import Auth from '../api/auth'
 import Activation from '../api/activation'
 import { webSocketService } from '../../../shared/api'
+import IUser from '../models/IUser'
 
 class UserStore {
-    user = {}
-    isAuth = false
-    isLoading = false
-    isBegin = true
-    isOpen = false
+    user: IUser | null = null
+    isAuth: boolean = false
+    isLoading: boolean = false
+    isBegin: boolean = true
+    isOpen: boolean = false
 
     constructor() {
         makeAutoObservable(this)
     }
 
-    setAuth(bool) {
+    setAuth(bool: boolean) {
         this.isAuth = bool
     }
 
-    setUser(user) {
+    setUser(user: any) {
         this.user = user
     }
 
-    setLoading(bool) {
+    setLoading(bool: boolean) {
         this.isLoading = bool
     }
 
-    setBegin(bool) {
+    setBegin(bool: boolean) {
         this.isBegin = bool
     }
 
-    setOpen(bool) {
+    setOpen(bool: boolean) {
         this.isOpen = bool
     }
 
-    async login(username, password) {
+    async login(username: string, password: string) {
         const response = await Auth.login(username, password)
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
@@ -42,7 +43,8 @@ class UserStore {
         return response.data
     }
 
-    async register(username, email, password, firstname, lastname, phone, birthdate) {
+    async register(username: string, email: string, password: string, firstname: string, 
+    lastname: string, phone: string | undefined | null, birthdate: string | undefined | null) {
         const response = await Auth.register(username, email, password, firstname, lastname, phone, birthdate)
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
@@ -52,7 +54,7 @@ class UserStore {
 
     async logout() {
         const response = await Auth.logout()
-        localStorage.removeItem('token', response.data.accessToken)
+        localStorage.removeItem('token')
         this.setAuth(false)
         this.setUser({})
         return response.data
@@ -67,8 +69,8 @@ class UserStore {
         return response.data
     }
 
-    async activate(code) {
-        if (this.user.isActivated) throw Error('Аккаунт уже активирован')
+    async activate(code: string) {
+        if (this.user && this.user.is_activated) throw Error('Аккаунт уже активирован')
         const response = await Activation.activate(code)
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
@@ -77,7 +79,7 @@ class UserStore {
     }
 
     async resend() {
-        if (this.user.isActivated) throw Error('Аккаунт уже активирован')
+        if (this.user && this.user.is_activated) throw Error('Аккаунт уже активирован')
         const response = await Activation.resend()
         return response.data
     }

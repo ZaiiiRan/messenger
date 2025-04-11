@@ -1,4 +1,6 @@
-const validatePhone = (phone) => {
+import ValidateResponse from './validateResponse'
+
+const validatePhone: (phone: string) => ValidateResponse = (phone) => {
     if (phone === '') {
         return { valid: true }
     }

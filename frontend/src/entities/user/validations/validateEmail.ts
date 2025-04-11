@@ -1,4 +1,6 @@
-const validateEmail = (email) => {
+import ValidateResponse from './validateResponse'
+
+const validateEmail: (email: string) => ValidateResponse = (email) => {
     if (email === '') {
         return { valid: false, message: 'Email is empty' }
     }

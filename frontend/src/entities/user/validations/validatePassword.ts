@@ -1,4 +1,6 @@
-const validatePassword = (password) => {
+import ValidateResponse from './validateResponse'
+
+const validatePassword: (password: string) => ValidateResponse = (password) => {
     if (password === '') {
         return { valid: false, message: 'Password is empty' }
     }

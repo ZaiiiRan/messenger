@@ -1,4 +1,6 @@
-const validateBirthdate = (date) => {
+import ValidateResponse from './validateResponse'
+
+const validateBirthdate: (date: string) => ValidateResponse = (date) => {
     if (date === '') {
         return { valid: true }
     }

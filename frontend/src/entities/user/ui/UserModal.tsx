@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 const UserModal = observer(() => {
     const { t } = useTranslation('userCard')
 
-    const logout = async (e) => {
+    const logout = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
         await userStore.logout()
     }
@@ -76,17 +76,17 @@ const UserModal = observer(() => {
                                     className='font-bold lg:text-2xl 2k:text-3xl 4k:text-5xl
                                         md:text-3xl sm:text-2xl mobile:text-xl'
                                 >
-                                    { userStore.user.firstname } { userStore.user.lastname }
+                                    { userStore.user?.firstname } { userStore.user?.lastname }
                                 </div>
-                                <div>{ t('Username') }: { userStore.user.username }</div>
-                                <div>Email: { userStore.user.email }</div>
+                                <div>{ t('Username') }: { userStore.user?.username }</div>
+                                <div>Email: { userStore.user?.email }</div>
                                 { 
-                                    userStore.user.phone && (
+                                    userStore.user?.phone && (
                                         <div>{ t('Phone number') }: { userStore.user.phone }</div>
                                     )    
                                 }
                                 { 
-                                    userStore.user.birthdate && (
+                                    userStore.user?.birthdate && (
                                         <div>{ t('Birthdate') }: { new Date(userStore.user.birthdate).toLocaleDateString() }</div>
                                     )    
                                 }

@@ -1,4 +1,6 @@
-const validateUsername = (username) => {
+import ValidateResponse from './validateResponse'
+
+const validateUsername: (username: string) => ValidateResponse = (username) => {
     if (username === '') {
         return { valid: false, message: 'Username is empty' }
     } else if (username.length < 5) {

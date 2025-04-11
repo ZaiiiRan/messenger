@@ -1,4 +1,6 @@
-const validateFirstName = (name) => {
+import ValidateResponse from './validateResponse'
+
+const validateFirstName: (name: string) => ValidateResponse = (name) => {
     if (name === '') {
         return { valid: false, message: 'Firstname is empty' }
     }
@@ -12,7 +14,7 @@ const validateFirstName = (name) => {
     return { valid: true }
 }
 
-const validateLastName = (name) => {
+const validateLastName: (name: string) => ValidateResponse = (name) => {
     if (name === '') {
         return { valid: false, message: 'Lastname is empty' }
     }

@@ -12,6 +12,8 @@ import { validateFirstName, validateLastName } from "./validations/validateName"
 import validateBirthdate from './validations/validateBirthdate'
 import useAuth from './hook/useAuth'
 import UserModal from "./ui/UserModal"
+import IUser from "./models/IUser"
 
 export { validateEmail, validateFirstName, validateLastName, validateUsername, 
     validatePhone, validatePassword, validateBirthdate, useAuth, UserModal }
+export type { IUser }
