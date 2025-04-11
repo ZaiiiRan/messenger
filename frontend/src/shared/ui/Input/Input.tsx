@@ -1,15 +1,29 @@
-/* eslint-disable react/prop-types */
 import { useState, forwardRef } from 'react'
 import InputMask from 'react-input-mask'
 import styles from './Input.module.css'
 
-const Input = forwardRef(({ className, placeholder, onChange, value, password = false, phone = false, 
-date = false, disabled = false, oneDigit = false, error, name,onKeyDown }, ref) => {
-    const [showPassword, setShowPassword] = useState(password ? false : true)
+interface InputProps {
+    className?: string,
+    placeholder?: string,
+    onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void,
+    value?: string,
+    password?: boolean,
+    phone?: boolean,
+    date?: boolean,
+    disabled?: boolean,
+    oneDigit?: boolean,
+    error?: boolean,
+    name?: string,
+    onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void,
+}
+
+const Input = forwardRef<HTMLInputElement, InputProps>(({ className, placeholder, onChange, value, password = false, phone = false, 
+date = false, disabled = false, oneDigit = false, error, name, onKeyDown }, ref) => {
+    const [showPassword, setShowPassword] = useState<boolean>(password ? false : true)
 
     const toggleShowPassword = () => setShowPassword((prev) => !prev)
 
-    const handleKeyPress = (e) => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (oneDigit && !/[0-9]/.test(e.key)) {
             e.preventDefault()
         }
@@ -22,7 +36,7 @@ date = false, disabled = false, oneDigit = false, error, name,onKeyDown }, ref) 
         mask = '99.99.9999'
     }
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault()
         if (onChange) {
             onChange(e)

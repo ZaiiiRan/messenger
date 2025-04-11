@@ -1,7 +1,12 @@
-/* eslint-disable react/prop-types */
 import styles from './MenuItem.module.css'
 
-const MenuItem = ({ icon, text, onClick }) => {
+interface MenuItemProps {
+    icon?: React.ReactNode,
+    text?: React.ReactNode,
+    onClick?: (event: React.MouseEvent<HTMLDivElement>) => void
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ icon, text, onClick }) => {
     return (
         <div 
             className={`${styles.MenuItem} flex items-center justify-between px-5 py-2 2k:px-8 2k:py-3 4k:px-12 4k:py-4 rounded-3xl`}

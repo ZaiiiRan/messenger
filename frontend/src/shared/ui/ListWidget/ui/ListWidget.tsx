@@ -1,7 +1,12 @@
-/* eslint-disable react/prop-types */
 import './ListWidget.css'
 
-const ListWidget = ({ title, children, className }) => {
+interface ListWidget {
+    title?: React.ReactNode,
+    children?: React.ReactNode,
+    className?: string
+}
+
+const ListWidget: React.FC<ListWidget> = ({ title, children, className }) => {
     return (
         <div className={`Widget-List lg:rounded-3xl flex flex-col 
             gap-6 2k:gap-10 4k:gap-14 ${className}`}

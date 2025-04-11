@@ -1,8 +1,18 @@
-/* eslint-disable react/prop-types */
 import './MainWidget.css'
 import { motion } from 'framer-motion'
 
-const MainWidget = ({ 
+interface MainWidgetProps {
+    key?: any,
+    goBack?: () => void,
+    title?: React.ReactNode,
+    children?: React.ReactNode,
+    className?: string,
+    initialAnimation?: any,
+    animation?: any,
+    exitAnimation?: any
+}
+
+const MainWidget: React.FC<MainWidgetProps> = ({ 
     key, 
     goBack, 
     title, 

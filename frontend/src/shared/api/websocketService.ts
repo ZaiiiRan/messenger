@@ -1,9 +1,9 @@
 export const WS_URL = import.meta.env.VITE_WS_URL
 
 class WebSocketService {
-    socket = null
-    retries = 0
-    maxRetries = 2
+    socket: WebSocket | null = null
+    retries: number = 0
+    maxRetries: number = 2
 
     async connect() {
         if (this.socket) return
@@ -50,7 +50,7 @@ class WebSocketService {
         }
     }
 
-    sendMessage(message) {
+    sendMessage(message: any) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(message));
         } else {

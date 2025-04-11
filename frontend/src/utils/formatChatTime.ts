@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { differenceInCalendarDays } from 'date-fns'
 
-const formatChatTime = (date) => {
+const formatChatTime: (date: string | number) => string = (date) => {
     const now = new Date()
     const messageDate = new Date(date)
 

@@ -1,11 +1,17 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-hooks/rules-of-hooks */
-/* eslint-disable react/prop-types */
 import { forwardRef, useRef, useEffect } from 'react'
 import styles from './Textarea.module.css'
 
-const Textarea = forwardRef(({ className, placeholder, onChange, value, disabled = false, maxRows = 4, ...props }, ref) => {
-    const textareaRef = ref || useRef()
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+    className?: string,
+    placeholder?: string,
+    onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void,
+    value?: string,
+    disabled?: boolean,
+    maxRows?: number,
+}
+
+const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, placeholder, onChange, value, disabled = false, maxRows = 4, ...restProps }, ref) => {
+    const textareaRef: any = ref || useRef()
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -35,7 +41,7 @@ const Textarea = forwardRef(({ className, placeholder, onChange, value, disabled
                     onChange?.(e);
                     autoResize();
                 }}
-                {...props}
+                {...restProps}
             />
         </div>
     )

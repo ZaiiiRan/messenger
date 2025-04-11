@@ -1,7 +1,7 @@
 
 import styles from './ShortUser.module.css'
 
-const ShortUserSkeleton = () => {
+const ShortUserSkeleton: React.FC = () => {
     return (
         <div 
             className={`${styles.ShortUser} flex items-center px-5 py-2 

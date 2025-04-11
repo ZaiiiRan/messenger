@@ -1,4 +1,4 @@
-const getTime = (date) => {
+const getTime: (date: Date) => string = (date) => {
     const hours = date.getHours()
     const minutes = date.getMinutes()
 

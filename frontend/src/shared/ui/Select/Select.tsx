@@ -1,15 +1,21 @@
-/* eslint-disable react/prop-types */
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import styles from './Select.module.css'
 
-const Select = ({ options, defaultValue=options[0], onChange, className }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [selectedOption, setSelectedOption] = useState(defaultValue)
+interface SelectProps {
+    className?: string,
+    options: Array<any>,
+    defaultValue?: any,
+    onChange?: (option: any) => void
+}
+
+const Select: React.FC<SelectProps> = ({ options, defaultValue=options[0], onChange, className }) => {
+    const [isOpen, setIsOpen] = useState<boolean>(false)
+    const [selectedOption, setSelectedOption] = useState<any>(defaultValue)
 
     const toggleOpen = () => setIsOpen(prev => !prev)
 
-    const handleSelect = (option) => {
+    const handleSelect = (option: any) => {
         setSelectedOption(option)
         setIsOpen(false)
 

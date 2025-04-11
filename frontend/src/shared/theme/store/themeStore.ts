@@ -1,19 +1,19 @@
 import { makeAutoObservable } from 'mobx'
 
 class ThemeStore {
-    theme = localStorage.getItem('theme') || 'system'
+    theme: string = localStorage.getItem('theme') || 'system'
 
     constructor() {
         makeAutoObservable(this)
     }
 
-    setTheme(theme) {
+    setTheme(theme: string) {
         this.theme = theme
         localStorage.setItem('theme', theme)
         this.applyTheme(theme)
     }
 
-    applyTheme(theme) {
+    applyTheme(theme: string) {
         const root = document.documentElement
 
         this.removeSystemThemeListener()
@@ -27,7 +27,7 @@ class ThemeStore {
         }
     }
 
-    handleSystemThemeChange = (e) => {
+    handleSystemThemeChange = (e: MediaQueryListEvent) => {
         this.applyTheme(e.matches ? "light" : "dark")
     }
 

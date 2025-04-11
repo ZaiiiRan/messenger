@@ -1,9 +1,13 @@
-/* eslint-disable react/prop-types */
 import { NavLink } from 'react-router-dom'
 import styles from './NavLink.module.css'
 
+interface NavBarLinkProps {
+    className?: string,
+    children?: React.ReactNode,
+    to: string
+}
 
-const NavBarLink = ({ className, children, to }) => {
+const NavBarLink: React.FC<NavBarLinkProps> = ({ className, children, to }) => {
     return (
         <NavLink 
             to={to} 

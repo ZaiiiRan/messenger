@@ -58,6 +58,9 @@ const apiErrors = {
     "you are already friends": "You are already friends",
     "friend request has already been sent": "Friend request has already been sent",
     
-}
+} as const
+
+type ApiErrorsKey = keyof typeof apiErrors
 
 export default apiErrors
+export type { ApiErrorsKey }

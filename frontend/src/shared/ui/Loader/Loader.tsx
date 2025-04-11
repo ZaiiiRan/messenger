@@ -1,7 +1,10 @@
-/* eslint-disable react/prop-types */
 import styles from './Loader.module.css'
 
-const Loader = ({ className }) => {
+interface LoaderProps {
+    className?: string
+}
+
+const Loader: React.FC<LoaderProps> = ({ className }) => {
     return (
         <div className={styles.Loader + ' ' + className}>
         <div

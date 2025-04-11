@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 export const API_URL = import.meta.env.VITE_API_URL
 
@@ -23,7 +23,7 @@ api.interceptors.response.use((config) => {
             localStorage.setItem('token', response.data.accessToken)
             return api.request(originalRequest)
         } catch (e) {
-            if (e.status === 401) {
+            if (e instanceof AxiosError && e.status === 401) {
                 localStorage.removeItem('token')
             }
             console.log(e)

@@ -1,7 +1,17 @@
-/* eslint-disable react/prop-types */
 import styles from './ShortUser.module.css'
 
-const ShortUser = ({ firstname, lastname, username, isDeleted, isBanned, isActivated, onClick, isClickable=true }) => {
+interface ShortUserProps {
+    firstname: string,
+    lastname: string,
+    username: string,
+    isDeleted: boolean,
+    isBanned: boolean,
+    isActivated: boolean,
+    onClick: (event: React.MouseEvent<HTMLDivElement>) => void,
+    isClickable?: boolean
+}
+
+const ShortUser: React.FC<ShortUserProps> = ({ firstname, lastname, username, isDeleted, isBanned, isActivated, onClick, isClickable=true }) => {
     return (
         <div 
             className={`${styles.ShortUser} flex items-center px-5 py-2 

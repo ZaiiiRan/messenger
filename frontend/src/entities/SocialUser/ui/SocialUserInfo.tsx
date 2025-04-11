@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import styles from './SocialUser.module.css'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../shared/ui/Button'
@@ -7,13 +6,22 @@ import { useModal } from '../../../features/modal'
 import { apiErrors } from '../../../shared/api'
 import { useState } from 'react'
 import { Loader } from '../../../shared/ui/Loader'
+import { AxiosError } from 'axios'
+import { ApiErrorsKey } from '../../../shared/api'
 
-const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={onMessageClick}  }) => {
+interface SocialUserInfoProps {
+    data: any,
+    onUpdate: (data: any) => void,
+    setUserManipulation: React.Dispatch<React.SetStateAction<boolean>>,
+    onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+}
+
+const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUserManipulation, onMessageClick  }) => {
     const { t } = useTranslation('socialUser')
     const { openModal, setModalTitle, setModalText } = useModal()
     const [isLoading, setLoading] = useState(false)
 
-    const addFriend = async (action) => {
+    const addFriend = async (action: string) => {
         try {
             setLoading(true)
             const response = await socialUserAPI.addFriend(data.user.user_id)
@@ -28,19 +36,21 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
             openModal()
             onUpdate(response.data.user)
             setUserManipulation(true)
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            if (e.status === 404) {
+            if (e instanceof AxiosError && e.status === 404) {
                 setModalText(t('User not found'))
             }
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             setLoading(false)
         }
     }
 
-    const removeFriend = async (action) => {
+    const removeFriend = async (action: string) => {
         try {
             setLoading(true)
             const response = await socialUserAPI.removeFriend(data.user.user_id)
@@ -57,12 +67,14 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
             openModal()
             onUpdate(response.data.user)
             setUserManipulation(true)
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            if (e.status === 404) {
+            if (e instanceof AxiosError && e.status === 404) {
                 setModalText(t('User not found'))
             }
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             setLoading(false)
@@ -80,12 +92,14 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
             openModal()
             onUpdate(response.data.user)
             setUserManipulation(true)
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            if (e.status === 404) {
+            if (e instanceof AxiosError && e.status === 404) {
                 setModalText(t('User not found'))
             }
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             setLoading(false)
@@ -102,12 +116,14 @@ const SocialUserInfo = ({ data, onUpdate, setUserManipulation, onMessageClick={o
             openModal()
             onUpdate(response.data.user)
             setUserManipulation(true)
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            if (e.status === 404) {
+            if (e instanceof AxiosError && e.status === 404) {
                 setModalText(t('User not found'))
             }
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             setLoading(false)

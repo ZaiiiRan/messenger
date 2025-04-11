@@ -1,6 +1,6 @@
 import styles from './SocialUser.module.css'
 
-const SocialUserInfoSkeleton = () => {
+const SocialUserInfoSkeleton: React.FC = () => {
     return (
         <>
             <div className='flex w-full h-auto gap-9 4k:gap-14'>
