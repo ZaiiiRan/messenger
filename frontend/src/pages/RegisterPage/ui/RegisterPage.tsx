@@ -5,19 +5,35 @@ import { validateEmail, validateFirstName, validateLastName, validateUsername, v
 import { useModal } from '../../../features/modal'
 import { useAuth } from '../../../entities/user' 
 import { useTranslation } from 'react-i18next'
-import { apiErrors } from '../../../shared/api'
+import { apiErrors, ApiErrorsKey } from '../../../shared/api'
+import ValidateResponse from '../../../entities/user/validations/validateResponse'
+
+interface RegisterData {
+    username: string,
+    email: string,
+    firstname: string,
+    lastname: string,
+    password: string,
+    repeatPassword: string,
+    birthdate: string,
+    phone: string
+}
+type Validators = Array<{
+    field: keyof RegisterData;
+    validate: (value: string) => ValidateResponse;
+}>
 
 const RegisterPage = () => {
     const { t } = useTranslation('registerPage')
-    const [step, setStep] = useState(1)
-    const [data, setData] = useState({ username: '', email: '', firstname: '', lastname: '', password: '', repeatPassword: '', birthdate: '', phone: ''})
+    const [step, setStep] = useState<number>(1)
+    const [data, setData] = useState<RegisterData>({ username: '', email: '', firstname: '', lastname: '', password: '', repeatPassword: '', birthdate: '', phone: ''})
     const [err, setErr] = useState({ username: false, email: false, firstname: false, lastname: false, password: false, repeatPassword: false, birthdate: false, phone: false})
     const { openModal, setModalTitle, setModalText } = useModal()
     const userStore = useAuth()
 
-    const validateStep = (stepData, validationFunctions) => {
+    const validateStep = (stepData: RegisterData, validationFunctions: Validators) => {
         let isValid = true
-        let newErrors = {}
+        let newErrors: Partial<Record<keyof RegisterData, boolean>> = {}
         
         validationFunctions.forEach(({ field, validate }) => {
             const result = validate(stepData[field].trim())
@@ -25,7 +41,7 @@ const RegisterPage = () => {
                 newErrors[field] = true
                 isValid = false
                 setModalTitle(t('Error'))
-                setModalText(t(result.message))
+                if (result.message) setModalText(t(result.message))
                 openModal()
             } else {
                 newErrors[field] = false
@@ -36,14 +52,14 @@ const RegisterPage = () => {
         return isValid
     }
 
-    const handleNext = async (e, validators) => {
+    const handleNext = async (e: React.MouseEvent<HTMLButtonElement>, validators: Validators) => {
         e.preventDefault()
         if (validators && !validateStep(data, validators)) return
         if (step < 4) setStep(step + 1)
         else await handleRegister()
     }
 
-    const handlePrev = (e) => {
+    const handlePrev = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
         setStep(step - 1)
     }
@@ -52,10 +68,12 @@ const RegisterPage = () => {
         try {
             userStore.setLoading(true)
             await userStore.register(data.username, data.email, data.password, data.firstname, data.lastname, data.phone, data.birthdate)
-        } catch (e) {
+        } catch (e: any) {
             console.log(e)
             setModalTitle(t('Error'))
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)
@@ -110,7 +128,7 @@ const RegisterPage = () => {
                     step === 3 && (
                         <StepPassword
                             onNext={(e) => handleNext(e, [
-                                { field: 'repeatPassword', validate: (value) => ({
+                                { field: 'repeatPassword', validate: (value: string) => ({
                                     valid: value === data.password,
                                     message: t('Passwords dont match')
                                 }) },

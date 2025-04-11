@@ -7,9 +7,9 @@ interface MainWidgetProps {
     title?: React.ReactNode,
     children?: React.ReactNode,
     className?: string,
-    initialAnimation?: { opcaity: number; x: number},
-    exitAnimation?: { opcaity: number; x: number},
-    animation?: { opcaity: number; x: number}
+    initialAnimation?: { opacity?: number; x?: number},
+    exitAnimation?: { opacity?: number; x?: number},
+    animation?: { opacity?: number; x?: number}
 }
 
 const MainWidget: React.FC<MainWidgetProps> = ({ 

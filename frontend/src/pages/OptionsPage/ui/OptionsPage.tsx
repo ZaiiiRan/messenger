@@ -3,9 +3,9 @@ import { OptionsList, AppearanceOptions } from '../../../widgets/options'
 import { useState } from 'react'
 
 const OptionsPage = () => {
-    const [selected, setSelected] = useState(null)
+    const [selected, setSelected] = useState<string | null>(null)
 
-    const open = (optionGroup) => {
+    const open = (optionGroup: string) => {
         setSelected(optionGroup)
     }
 

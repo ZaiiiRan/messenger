@@ -4,41 +4,43 @@ import { useState, useRef } from 'react'
 import { useModal } from '../../../features/modal'
 import { ActivationAccount } from '../../../features/activation/'
 import { useTranslation } from 'react-i18next'
-import { apiErrors, apiMessages } from '../../../shared/api'
+import { apiErrors, ApiErrorsKey, apiMessages, ApiMessagesKey } from '../../../shared/api'
 
+type DataKeys = 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth'
 
 const ActivationPage = () => {
     const { t } = useTranslation('activationPage')
     const userStore = useAuth()
     
-    const [data, setData] = useState({ first: '', second: '', third: '', fourth: '', fifth: '', sixth: '' })
+    const [data, setData] = useState<{ [key in DataKeys]: string }>({ first: '', second: '', third: '', fourth: '', fifth: '', sixth: '' })
     const [err, setErr] = useState({ first: false, second: false, third: false, fourth: false, fifth: false, sixth: false })
 
     const { openModal, setModalTitle, setModalText } = useModal()
 
-    const firstRef = useRef(null)
-    const secondRef = useRef(null)
-    const thirdRef = useRef(null)
-    const fourthRef = useRef(null)
-    const fifthRef = useRef(null)
-    const sixthRef = useRef(null)
+    const firstRef = useRef<HTMLInputElement>(null)
+    const secondRef = useRef<HTMLInputElement>(null)
+    const thirdRef = useRef<HTMLInputElement>(null)
+    const fourthRef = useRef<HTMLInputElement>(null)
+    const fifthRef = useRef<HTMLInputElement>(null)
+    const sixthRef = useRef<HTMLInputElement>(null)
 
     const refs = [firstRef, secondRef, thirdRef, fourthRef, fifthRef, sixthRef]
 
-    const handleChange = (e, position) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>, position: string) => {
         const value = e.target.value.slice(-1)
         setData((prev) => ({ ...prev, [position]: value }))
 
         if (value && position !== 'sixth') {
-            const nextIndex = refs.findIndex(ref => ref.current.name === position) + 1
-            refs[nextIndex].current.focus()
+            const nextIndex = refs.findIndex(ref => ref.current?.name === position) + 1
+            refs[nextIndex].current?.focus()
         }
     }
 
-    const handleBackspace = (e, position) => {
-        if (e.key === 'Backspace' && !data[position] && position !== 'first') {
-            const prevIndex = refs.findIndex(ref => ref.current.name === position) - 1
-            refs[prevIndex].current.focus()
+    const handleBackspace = (e: React.KeyboardEvent<HTMLInputElement>, position: string) => {
+        const pos = position as DataKeys
+        if (e.key === 'Backspace' && !data[pos] && position !== 'first') {
+            const prevIndex = refs.findIndex(ref => ref.current?.name === position) - 1
+            refs[prevIndex].current?.focus()
         }
     }
 
@@ -78,7 +80,7 @@ const ActivationPage = () => {
         return !hasErr
     }
 
-    const submit = async (e) => {
+    const submit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
         if (!validate()) return
 
@@ -86,26 +88,32 @@ const ActivationPage = () => {
         try {
             userStore.setLoading(true)
             await userStore.activate(code)
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)
         }
     }
 
-    const resend = async (e) => {
+    const resend = async (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault()
         try {
             const response = await userStore.resend()
             console.log
             setModalTitle(t('Activation code'))
-            setModalText(t(apiMessages[response?.message]))
+
+            const messageKey: ApiMessagesKey = response?.message
+            setModalText(t(apiMessages[messageKey]))
             openModal()
-        } catch (e) {
+        } catch (e: any) {
             setModalTitle(t('Error'))
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         }
     }

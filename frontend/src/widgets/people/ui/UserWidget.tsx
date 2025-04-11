@@ -3,8 +3,8 @@ import { SocialUser } from '../../../entities/SocialUser'
 import { Dispatch, SetStateAction } from 'react'
 
 interface UserWidgetProps {
-    key: number | string,
-    title: string,
+    key?: number | string,
+    title?: string,
     goBack: () => void,
     className?: string,
     setUserManipulation: Dispatch<SetStateAction<boolean>>,

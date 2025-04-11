@@ -3,10 +3,10 @@ import { useState } from 'react'
 import { PeopleChatsList, GroupChatsList, ChatWidget } from '../../../features/chats'
 import './MessangingPage.css'
 
-const MessenginPage = () => {
-    const [selected, setSelected] = useState(null)
+const MessengingPage = () => {
+    const [selected, setSelected] = useState<number | null>(null)
 
-    const open = (chatID) => {
+    const open = (chatID: number) => {
         setSelected(chatID)
     }
 
@@ -39,4 +39,4 @@ const MessenginPage = () => {
     )
 }
 
-export default MessenginPage
+export default MessengingPage

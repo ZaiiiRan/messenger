@@ -5,12 +5,12 @@ import { PeopleMenu, PeopleListWidget, UserWidget } from '../../../widgets/peopl
 import { SendMessageModal } from '../../../features/chats'
 
 const PeoplePage = () => {
-    const [selected, setSelected] = useState(null)
-    const [selectedUser, setSelectedUser] = useState(null)
-    const [messageModalOpen, setMessageModalOpen] = useState(false)
-    const [userManipulation, setUserManipulation] = useState(false)
+    const [selected, setSelected] = useState<string | null>(null)
+    const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [messageModalOpen, setMessageModalOpen] = useState<boolean>(false)
+    const [userManipulation, setUserManipulation] = useState<boolean>(false)
 
-    const open = (optionGroup) => {
+    const open = (optionGroup: string) => {
         setSelected(optionGroup)
     }
 
@@ -51,9 +51,9 @@ const PeoplePage = () => {
                             {
                                 selected === 'search_friends' && (
                                     <PeopleListWidget
-                                        initialAnimation={null}
-                                        animation={null}
-                                        exitAnimation={null}
+                                        initialAnimation={undefined}
+                                        animation={undefined}
+                                        exitAnimation={undefined}
                                         key="search_friends"
                                         goBack={goBack}
                                         title={'Find friends'}
@@ -61,15 +61,18 @@ const PeoplePage = () => {
                                         minSearchLength={4}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
+                                        selectedUser={selectedUser}
+                                        userManipulation={userManipulation}
+                                        setUserManipulation={setUserManipulation}
                                     />
                                 )
                             }
                             {
                                 selected === 'your_friends' && (
                                     <PeopleListWidget
-                                        initialAnimation={null}
-                                        animation={null}
-                                        exitAnimation={null}
+                                        initialAnimation={undefined}
+                                        animation={undefined}
+                                        exitAnimation={undefined}
                                         key="your_friends"
                                         goBack={goBack}
                                         title={'Your friends'}
@@ -85,9 +88,9 @@ const PeoplePage = () => {
                             {
                                 selected === 'incoming_requests' && (
                                     <PeopleListWidget
-                                        initialAnimation={null}
-                                        animation={null}
-                                        exitAnimation={null}
+                                        initialAnimation={undefined}
+                                        animation={undefined}
+                                        exitAnimation={undefined}
                                         key="incoming_requests"
                                         goBack={goBack}
                                         title={'Incoming requests'}
@@ -103,9 +106,9 @@ const PeoplePage = () => {
                             {
                                 selected === 'outgoing_requests' && (
                                     <PeopleListWidget
-                                        initialAnimation={null}
-                                        animation={null}
-                                        exitAnimation={null}
+                                        initialAnimation={undefined}
+                                        animation={undefined}
+                                        exitAnimation={undefined}
                                         key="outgoing_requests"
                                         goBack={goBack}
                                         title={'Outgoing requests'}
@@ -121,9 +124,9 @@ const PeoplePage = () => {
                             {
                                 selected === 'black_list' && (
                                     <PeopleListWidget
-                                        initialAnimation={null}
-                                        animation={null}
-                                        exitAnimation={null}
+                                        initialAnimation={undefined}
+                                        animation={undefined}
+                                        exitAnimation={undefined}
                                         key="black_list"
                                         goBack={goBack}
                                         title={'Black list'}

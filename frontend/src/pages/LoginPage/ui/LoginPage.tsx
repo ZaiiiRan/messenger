@@ -4,19 +4,19 @@ import { useModal } from '../../../features/modal'
 import { Login } from '../../../features/login'
 import { useAuth } from '../../../entities/user' 
 import { useTranslation } from 'react-i18next'
-import { apiErrors } from '../../../shared/api'
+import { apiErrors, ApiErrorsKey } from '../../../shared/api'
 
 const LoginPage = () => {
     const { t } = useTranslation('loginPage')
 
-    const [data, setData] = useState({ login: '', password: '' })
-    const [err, setErr] = useState({ login: false, password: false })
+    const [data, setData] = useState<{login: string, password: string}>({ login: '', password: '' })
+    const [err, setErr] = useState<{login: boolean, password: boolean}>({ login: false, password: false })
 
     const { openModal, setModalTitle, setModalText } = useModal()
 
     const userStore = useAuth()
 
-    const proccessValidateErrors = (errors) => {
+    const proccessValidateErrors = (errors: {login: boolean, password: boolean}) => {
         if (errors.login && errors.password) {
             setModalTitle(t('Error'))
             setModalText(t('Enter your login and password'))
@@ -33,7 +33,7 @@ const LoginPage = () => {
         return true
     }
 
-    const handleLogin = async (e) => {
+    const handleLogin = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
 
         let newErrors = { ...err }
@@ -55,10 +55,12 @@ const LoginPage = () => {
         try {
             userStore.setLoading(true)
             await userStore.login(data.login, data.password)
-        } catch (e) {
+        } catch (e: any) {
             console.log(e)
             setModalTitle(t('Error'))
-            setModalText(t(apiErrors[e.response?.data?.error]) || t('Internal server error'))
+
+            const errorKey: ApiErrorsKey = e.response?.data?.error
+            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
         } finally {
             userStore.setLoading(false)
