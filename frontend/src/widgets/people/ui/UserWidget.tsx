@@ -1,6 +1,7 @@
 import { MainWidget } from '../../../shared/ui/MainWidget'
 import { SocialUser } from '../../../entities/SocialUser'
 import { Dispatch, SetStateAction } from 'react'
+import { IShortUser } from '../../../entities/ShortUser'
 
 interface UserWidgetProps {
     key?: number | string,
@@ -8,7 +9,7 @@ interface UserWidgetProps {
     goBack: () => void,
     className?: string,
     setUserManipulation: Dispatch<SetStateAction<boolean>>,
-    selectedUser: any
+    selectedUser: IShortUser,
     checkAfterUpdate?: boolean,
     onLoadError: () => void,
     onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void

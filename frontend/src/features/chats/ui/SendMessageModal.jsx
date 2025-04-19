@@ -69,12 +69,7 @@ const SendMessageModal = ({ recipient, show, setShow }) => {
                                 </div>
                                 <ShortUser 
                                     isClickable={false}
-                                    firstname={recipient.firstname}
-                                    lastname={recipient.lastname}
-                                    username={recipient.username}
-                                    isDeleted={recipient.is_deleted}
-                                    isBanned={recipient.is_banned}
-                                    isActivated={recipient.is_activated}
+                                    user={recipient}
                                 />
 
                                 <Textarea 
