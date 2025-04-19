@@ -8,9 +8,10 @@ import { useState } from 'react'
 import { Loader } from '../../../shared/ui/Loader'
 import { AxiosError } from 'axios'
 import { ApiErrorsKey } from '../../../shared/api'
+import ISocialUser from '../models/ISocialUser'
 
 interface SocialUserInfoProps {
-    data: any,
+    data: ISocialUser,
     onUpdate: (data: any) => void,
     setUserManipulation: React.Dispatch<React.SetStateAction<boolean>>,
     onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void

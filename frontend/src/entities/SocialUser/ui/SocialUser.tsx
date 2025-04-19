@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { apiErrors } from '../../../shared/api'
 import { AxiosError } from 'axios'
 import { ApiErrorsKey } from '../../../shared/api'
+import ISocialUser from '../models/ISocialUser'
 
 interface SocialUserProps {
     id: number,
@@ -17,7 +18,7 @@ interface SocialUserProps {
 
 const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulation, onMessageClick }) => {
     const { t } = useTranslation('socialUser')
-    const [data, setData] = useState<any>()
+    const [data, setData] = useState<ISocialUser | null>(null)
     const [isFetching, setFetching] = useState<boolean>(true)
     const { openModal, setModalTitle, setModalText } = useModal()
 
@@ -52,7 +53,7 @@ const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulatio
             {
                 isFetching ? (
                     <SocialUserInfoSkeleton />
-                ) : (
+                ) : ( data &&
                     <SocialUserInfo 
                         data={data} 
                         onUpdate={setData} 
