@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react'
-import { ShortUser, ShortUserSkeleton } from '../../../entities/ShortUser'
+import { ShortUser, ShortUserSkeleton, IShortUser } from '../../../entities/ShortUser'
 import { useModal } from '../../../features/modal'
 import { apiErrors, ApiErrorsKey } from '../../../shared/api'
 import axios, { AxiosError, AxiosResponse } from 'axios'
@@ -8,11 +8,11 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 interface PeopleListProps {
     search: string,
     fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
-    setSelectedUser: Dispatch<SetStateAction<any>>,
+    setSelectedUser: Dispatch<SetStateAction<IShortUser | null>>,
     minSearchLength: number, 
     userManipulation: boolean,
     setUserManipulation: Dispatch<SetStateAction<boolean>>,
-    selectedUser: any // TODO: написать интерфейс
+    selectedUser: IShortUser | null
 }
 
 const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelectedUser, minSearchLength = 0, userManipulation, setUserManipulation, selectedUser }) => {
@@ -98,16 +98,11 @@ const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelec
                 {
                     data.map((user, index) => (
                         <div
-                            key={user.user_id}
+                            key={user.userId}
                             ref={index === data.length - 1 ? lastUserRef : null}
                         >
                             <ShortUser 
-                                lastname={user.lastname}
-                                firstname={user.firstname}
-                                username={user.username}
-                                isActivated={user.is_activated}
-                                isBanned={user.is_banned}
-                                isDeleted={user.is_deleted}
+                                user={user}
                                 onClick={() => setSelectedUser(user)}
                             />
                         </div>

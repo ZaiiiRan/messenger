@@ -24,7 +24,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     const addFriend = async (action: string) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.addFriend(data.user.user_id)
+            const response = await socialUserAPI.addFriend(data.user.userId)
             setModalTitle(t('Success'))
             if (action === 'request') {
                 setModalText(t('Friend request sent'))
@@ -53,7 +53,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     const removeFriend = async (action: string) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.removeFriend(data.user.user_id)
+            const response = await socialUserAPI.removeFriend(data.user.userId)
             setModalTitle(t('Success'))
             if (action === 'decline') {
                 if (data.user.username.length > 15) setModalText(t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
@@ -84,7 +84,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     const blockUser = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.blockUser(data.user.user_id)
+            const response = await socialUserAPI.blockUser(data.user.userId)
             
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been blocked'))
@@ -109,7 +109,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     const unblockUser = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.unblockUser(data.user.user_id)
+            const response = await socialUserAPI.unblockUser(data.user.userId)
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been unblocked'))
             else setModalText(`${data.user.username} ${t('has been unblocked')}`)
@@ -159,23 +159,23 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                     </div>
                     <div>{ t('Username') }: { data.user.username }</div>
                     {
-                        data.friend_status !== 'blocked by target' && data.friend_status !== 'blocked' && (
+                        data.friendStatus !== 'blocked by target' && data.friendStatus !== 'blocked' && (
                             <div>Email: { data.user.email }</div>
                         )
                     }
                     
                     { 
-                        data.friend_status !== 'blocked by target' && data.friend_status !== 'blocked' && data.user.phone && (
+                        data.friendStatus !== 'blocked by target' && data.friendStatus !== 'blocked' && data.user.phone && (
                             <div>{ t('Phone number') }: { data.user.phone }</div>
                         )    
                     }
                     { 
-                        data.friend_status !== 'blocked by target' && data.friend_status !== 'blocked' && data.user.birthdate && (
+                        data.friendStatus !== 'blocked by target' && data.friendStatus !== 'blocked' && data.user.birthdate && (
                             <div>{ t('Birthdate') }: { new Date(data.user.birthdate).toLocaleDateString() }</div>
                         )    
                     }
                     { 
-                        (data.friend_status === 'blocked by target' || data.friend_status === 'blocked') && (
+                        (data.friendStatus === 'blocked by target' || data.friendStatus === 'blocked') && (
                             <div>{t('Viewing information about this person is restricted')}</div>
                         )    
                     }
@@ -186,7 +186,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
             <div className='flex justify-between'>
                 <div className='flex flex-col gap-7 mt-2 2k:mt-4 4k:mt-6 2k:gap-10 4k:gap-14'>
                     {
-                        !data.friend_status && (
+                        !data.friendStatus && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -204,7 +204,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status !== 'blocked' && data.friend_status !== 'blocked by target' && data.friend_status === 'incoming request' && (
+                        data.friendStatus !== 'blocked' && data.friendStatus !== 'blocked by target' && data.friendStatus === 'incoming request' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -222,7 +222,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status !== 'blocked' && data.friend_status !== 'blocked by target' && data.friend_status === 'incoming request' && (
+                        data.friendStatus !== 'blocked' && data.friendStatus !== 'blocked by target' && data.friendStatus === 'incoming request' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -240,7 +240,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status !== 'blocked' && data.friend_status !== 'blocked by target' && data.friend_status === 'outgoing request' && (
+                        data.friendStatus !== 'blocked' && data.friendStatus !== 'blocked by target' && data.friendStatus === 'outgoing request' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -258,7 +258,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status !== 'blocked' && data.friend_status !== 'blocked by target' && data.friend_status === 'accepted' && (
+                        data.friendStatus !== 'blocked' && data.friendStatus !== 'blocked by target' && data.friendStatus === 'accepted' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -277,7 +277,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status !== 'blocked' && (
+                        data.friendStatus !== 'blocked' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -296,7 +296,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                         )
                     }
                     {
-                        data.friend_status === 'blocked' && (
+                        data.friendStatus === 'blocked' && (
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -317,7 +317,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
 
                 <div className='flex flex-col gap-7 mt-2 2k:mt-4 4k:mt-6 2k:gap-10 4k:gap-14'>
                     {
-                        data.friend_status !== 'blocked' && data.friend_status !== 'blocked by target' && (
+                        data.friendStatus !== 'blocked' && data.friendStatus !== 'blocked by target' && (
                             <Button
                                 className='h-14 aspect-square flex items-center justify-center 2k:h-20 4k:h-32
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'

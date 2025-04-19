@@ -35,7 +35,7 @@ const UserWidget: React.FC<UserWidgetProps> = ({
             className={className}
         >
             <SocialUser 
-                id={selectedUser.user_id} 
+                id={selectedUser.userId} 
                 onError={onLoadError} 
                 setUserManipulation={checkAfterUpdate ? setUserManipulation : () => {}} 
                 onMessageClick={onMessageClick} 

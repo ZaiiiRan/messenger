@@ -4,13 +4,14 @@ import { Input } from '../../../shared/ui/Input'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { PeopleList } from '../../../features/people'
 import { AxiosResponse } from 'axios'
+import { IShortUser } from '../../../entities/ShortUser'
 
 interface PeopleListWidgetProps {
     key: number | string,
     title: string,
     goBack: () => void,
     fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
-    setSelectedUser: Dispatch<SetStateAction<null>>,
+    setSelectedUser: Dispatch<SetStateAction<IShortUser | null>>,
     minSearchLength?: number,
     className?: string,
     initialAnimation?: { opacity?: number; x?: number},
@@ -18,7 +19,7 @@ interface PeopleListWidgetProps {
     animation?: { opacity?: number; x?: number},
     userManipulation: boolean,
     setUserManipulation: Dispatch<SetStateAction<boolean>>,
-    selectedUser: any
+    selectedUser: IShortUser | null
 }
 
 const PeopleListWidget: React.FC<PeopleListWidgetProps> = ({

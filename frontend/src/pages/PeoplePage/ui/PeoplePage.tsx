@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { shortUsersFetching } from '../../../entities/ShortUser'
+import { IShortUser, shortUsersFetching } from '../../../entities/ShortUser'
 import { PeopleMenu, PeopleListWidget, UserWidget } from '../../../widgets/people'
 import { SendMessageModal } from '../../../features/chats'
 
 const PeoplePage = () => {
     const [selected, setSelected] = useState<string | null>(null)
-    const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [selectedUser, setSelectedUser] = useState<IShortUser | null>(null)
     const [messageModalOpen, setMessageModalOpen] = useState<boolean>(false)
     const [userManipulation, setUserManipulation] = useState<boolean>(false)
 

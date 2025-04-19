@@ -6,7 +6,7 @@ import HocProps from './HocProps'
 const RequireActivate: React.FC<HocProps> = observer(({ children }) => {
     const userStore = useAuth()
 
-    if (!userStore.user?.is_activated) {
+    if (!userStore.user?.isActivated) {
         return <Navigate to='/activate' />
     }
     

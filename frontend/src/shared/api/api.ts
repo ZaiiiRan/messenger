@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import { transformKeysToCamelCase } from '../../utils/transformKeysToCamelCase'
 
 export const API_URL = import.meta.env.VITE_API_URL
 
@@ -12,8 +13,9 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-api.interceptors.response.use((config) => {
-    return config
+api.interceptors.response.use((response) => {
+    response.data = transformKeysToCamelCase(response.data)
+    return response
 }, (async (error) => {
     const originalRequest = error.config
     if (error.response.status === 401 && error.config && !error.config._isRetry) {

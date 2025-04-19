@@ -70,7 +70,7 @@ class UserStore {
     }
 
     async activate(code: string) {
-        if (this.user && this.user.is_activated) throw Error('Аккаунт уже активирован')
+        if (this.user && this.user.isActivated) throw Error('Аккаунт уже активирован')
         const response = await Activation.activate(code)
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
@@ -79,7 +79,7 @@ class UserStore {
     }
 
     async resend() {
-        if (this.user && this.user.is_activated) throw Error('Аккаунт уже активирован')
+        if (this.user && this.user.isActivated) throw Error('Аккаунт уже активирован')
         const response = await Activation.resend()
         return response.data
     }
