@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import { transformKeysToCamelCase } from '../../utils/transformKeysToCamelCase'
+import { transformKeysToSnakeCase } from '../../utils/transformKeysToSnakeCase'
 
 export const API_URL = import.meta.env.VITE_API_URL
 
@@ -10,6 +11,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
+    if (config.data) {
+        config.data = transformKeysToSnakeCase(config.data)
+    }
     return config
 })
 
