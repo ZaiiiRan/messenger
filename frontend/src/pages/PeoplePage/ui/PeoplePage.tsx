@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { IShortUser, shortUsersFetching } from '../../../entities/ShortUser'
+import { IShortUser, fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList } from '../../../entities/ShortUser'
 import { PeopleMenu, PeopleListWidget, UserWidget } from '../../../widgets/people'
 import { SendMessageModal } from '../../../features/chats'
 
@@ -57,7 +57,7 @@ const PeoplePage = () => {
                                         key="search_friends"
                                         goBack={goBack}
                                         title={'Find friends'}
-                                        fetchFunction={shortUsersFetching.fetchShortUser}
+                                        fetchFunction={fetchShortUser}
                                         minSearchLength={4}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
@@ -76,7 +76,7 @@ const PeoplePage = () => {
                                         key="your_friends"
                                         goBack={goBack}
                                         title={'Your friends'}
-                                        fetchFunction={shortUsersFetching.fetchFriends}
+                                        fetchFunction={fetchFriends}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
                                         selectedUser={selectedUser}
@@ -94,7 +94,7 @@ const PeoplePage = () => {
                                         key="incoming_requests"
                                         goBack={goBack}
                                         title={'Incoming requests'}
-                                        fetchFunction={shortUsersFetching.fetchIncomingFriendRequests}
+                                        fetchFunction={fetchIncomingFriendRequests}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
                                         selectedUser={selectedUser}
@@ -112,7 +112,7 @@ const PeoplePage = () => {
                                         key="outgoing_requests"
                                         goBack={goBack}
                                         title={'Outgoing requests'}
-                                        fetchFunction={shortUsersFetching.fetchOutgoingFriendRequests}
+                                        fetchFunction={fetchOutgoingFriendRequests}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
                                         selectedUser={selectedUser}
@@ -130,7 +130,7 @@ const PeoplePage = () => {
                                         key="black_list"
                                         goBack={goBack}
                                         title={'Black list'}
-                                        fetchFunction={shortUsersFetching.fetchBlackList}
+                                        fetchFunction={fetchBlackList}
                                         setSelectedUser={setSelectedUser}
                                         className='w-full h-full'
                                         selectedUser={selectedUser}
