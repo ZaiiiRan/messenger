@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import socialUserAPI from '../api/SocialUserFetching'
+import { fetchSocialUser } from '../api/SocialUserFetching'
 import SocialUserInfoSkeleton from './SocialUserInfoSkeleton'
 import SocialUserInfo from './SocialUserInfo'
 import { useModal } from '../../../features/modal'
@@ -24,7 +24,7 @@ const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulatio
 
     const load = async () => {
         try {
-            const response = await socialUserAPI.fetch(id)
+            const response = await fetchSocialUser(id)
             setData(response.data)
         } catch (e: any) {
             setModalTitle(t('Error'))

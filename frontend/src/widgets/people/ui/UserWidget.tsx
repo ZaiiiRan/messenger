@@ -1,7 +1,7 @@
 import { MainWidget } from '../../../shared/ui/MainWidget'
 import { SocialUser } from '../../../entities/SocialUser'
 import { Dispatch, SetStateAction } from 'react'
-import { IShortUser } from '../../../entities/ShortUser'
+import { IShortUser } from '../../../entities/SocialUser'
 
 interface UserWidgetProps {
     key?: number | string,

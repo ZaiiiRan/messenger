@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { IShortUser, fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList } from '../../../entities/ShortUser'
+import { IShortUser, fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList } from '../../../entities/SocialUser'
 import { PeopleMenu, PeopleListWidget, UserWidget } from '../../../widgets/people'
 import { SendMessageModal } from '../../../features/chats'
 

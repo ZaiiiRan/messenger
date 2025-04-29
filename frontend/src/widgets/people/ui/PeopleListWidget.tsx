@@ -4,7 +4,7 @@ import { Input } from '../../../shared/ui/Input'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { PeopleList } from '../../../features/people'
 import { AxiosResponse } from 'axios'
-import { IShortUser } from '../../../entities/ShortUser'
+import { IShortUser } from '../../../entities/SocialUser'
 
 interface PeopleListWidgetProps {
     key: number | string,

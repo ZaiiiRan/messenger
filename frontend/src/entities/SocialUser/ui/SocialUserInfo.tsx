@@ -1,7 +1,7 @@
 import styles from './SocialUser.module.css'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../shared/ui/Button'
-import socialUserAPI from '../api/SocialUserFetching'
+import { addFriend, removeFriend, blockUser, unblockUser } from '../api/SocialUserFetching'
 import { useModal } from '../../../features/modal'
 import { apiErrors } from '../../../shared/api'
 import { useState } from 'react'
@@ -22,10 +22,10 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     const { openModal, setModalTitle, setModalText } = useModal()
     const [isLoading, setLoading] = useState(false)
 
-    const addFriend = async (action: string) => {
+    const addFriendAction = async (action: string) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.addFriend(data.user.userId)
+            const response = await addFriend(data.user.userId)
             setModalTitle(t('Success'))
             if (action === 'request') {
                 setModalText(t('Friend request sent'))
@@ -51,10 +51,10 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
         }
     }
 
-    const removeFriend = async (action: string) => {
+    const removeFriendAction = async (action: string) => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.removeFriend(data.user.userId)
+            const response = await removeFriend(data.user.userId)
             setModalTitle(t('Success'))
             if (action === 'decline') {
                 if (data.user.username.length > 15) setModalText(t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
@@ -82,10 +82,10 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
         }
     }
 
-    const blockUser = async () => {
+    const blockUserAction = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.blockUser(data.user.userId)
+            const response = await blockUser(data.user.userId)
             
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been blocked'))
@@ -107,10 +107,10 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
         }
     }
 
-    const unblockUser = async () => {
+    const unblockUserAction = async () => {
         try {
             setLoading(true)
-            const response = await socialUserAPI.unblockUser(data.user.userId)
+            const response = await unblockUser(data.user.userId)
             setModalTitle(t('Success'))
             if (data.user.username.length > 15) setModalText(t('The user') + ' ' + t('has been unblocked'))
             else setModalText(`${data.user.username} ${t('has been unblocked')}`)
@@ -191,7 +191,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={() => addFriend('request')}
+                                onClick={() => addFriendAction('request')}
                                 disabled={isLoading}
                             >
                                 {
@@ -209,7 +209,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={() => addFriend('add')}
+                                onClick={() => addFriendAction('add')}
                                 disabled={isLoading}
                             >
                                 {
@@ -227,7 +227,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={() => removeFriend('decline')}
+                                onClick={() => removeFriendAction('decline')}
                                 disabled={isLoading}
                             >
                                 {
@@ -245,7 +245,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={() => removeFriend('cancel')}
+                                onClick={() => removeFriendAction('cancel')}
                                 disabled={isLoading}
                             >
                                 {
@@ -263,7 +263,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={() => removeFriend('remove')}
+                                onClick={() => removeFriendAction('remove')}
                                 disabled={isLoading}
                             >
                                 
@@ -282,7 +282,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={blockUser}
+                                onClick={blockUserAction}
                                 disabled={isLoading}
                             >
                                 {
@@ -301,7 +301,7 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
                             <Button
                                 className='h-14 flex items-center justify-center 2k:h-20 4k:h-32 w-80 xl:w-72 lg:w-64 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                     rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                                onClick={unblockUser}
+                                onClick={unblockUserAction}
                                 disabled={isLoading}
                             >
                                 {

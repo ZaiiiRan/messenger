@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react'
-import { ShortUser, ShortUserSkeleton, IShortUser } from '../../../entities/ShortUser'
+import { ShortUser, ShortUserSkeleton, IShortUser } from '../../../entities/SocialUser'
 import { useModal } from '../../../features/modal'
 import { apiErrors, ApiErrorsKey } from '../../../shared/api'
 import axios, { AxiosError, AxiosResponse } from 'axios'
