@@ -1,5 +1,5 @@
 interface IShortUser {
-    userId: number,
+    userId: number | string,
     username: string,
     firstname: string,
     lastname: string,

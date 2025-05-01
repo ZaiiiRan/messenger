@@ -1,5 +1,5 @@
 interface IChatMember {
-    userId: number,
+    userId: number | string,
     role: string,
     isRemoved: boolean,
     isLeft: boolean,

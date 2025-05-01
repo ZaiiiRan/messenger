@@ -1,5 +1,5 @@
 interface IChatInfo {
-    id: number,
+    id: number | string,
     name?: string,
     isGroupChat: boolean
 }

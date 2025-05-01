@@ -1,5 +1,5 @@
 interface IUser {
-    userId: number,
+    userId: number | string,
     username: string,
     email: string,
     isActivated: boolean,

@@ -1,13 +1,17 @@
-/* eslint-disable react/prop-types */
 import styles from './ChatCard.module.css'
 import formatChatTime from '../../../utils/formatChatTime'
 import { useTranslation } from 'react-i18next'
+import { observer } from 'mobx-react'
+import IChat from '../models/IChat'
 
-const ChatCard = ({ type, name, lastMessage, unreadCount, onClick }) => {
-    const { text, time, from, read } = lastMessage
-    const isGroupChat = type === 'group'
-    const isMessageFromMe = from === 'me'
-    const { t } = useTranslation('chatsFeature')
+interface ChatCardProps {
+    onClick: () => void,
+    chat: IChat
+}
+
+const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
+    const isGroupChat = chat.chat.isGroupChat
+    const { t } = useTranslation('chatEntity')
 
     return (
         <div 
@@ -43,63 +47,58 @@ const ChatCard = ({ type, name, lastMessage, unreadCount, onClick }) => {
                     className='2xl:text-xl xl:text-lg lg:text-base 2k:text-2xl 4k:text-3xl
                         md:text-xl sm:text-lg mobile:text-text-base whitespace-nowrap text-ellipsis overflow-hidden'
                 >
-                    { name }
+                    { chat.chat.name }
                 </div>
 
                 {/* Last Message */}
-                <div
-                    className='max-w-[90%] 2xl:text-base xl:text-sm lg:text-sm 2k:text-lg 4k:text-xl
-                        md:text-base sm:text-sm mobile:text-sm whitespace-nowrap text-ellipsis overflow-hidden'
-                >
-                    {
-                        isGroupChat && from !== 'me' && (
-                            <span className='font-semibold'>{from}: </span>
-                        )
-                    }
-                    { text }
-                </div>
-            </div>
-
-            {/* Status */}
-            <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4 ml-auto'>
-                <div
-                    className={`${styles.Time} lg:text-sm 2k:text-base 4k:text-xl
-                        md:text-sm sm:text-sm mobile:text-xs`}
-                >
-                    {formatChatTime(time) === 'Yesterday' ? t('Yesterday') : formatChatTime(time)}
-                </div>
                 {
-                    isMessageFromMe ? (
-                        <div className="flex items-center gap-1">
-                            <svg className={`${!read ? styles.checkMark : styles.checkMarkReaded} w-4 h-4 2k:w-6 2k:h-6 4k:w-8 4k:h-8`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <polygon fillRule="evenodd" points="9.707 14.293 19 5 20.414 6.414 9.707 17.121 4 11.414 5.414 10"></polygon> </g></svg>
+                    chat.lastMessage && (
+                        <div
+                            className='max-w-[90%] 2xl:text-base xl:text-sm lg:text-sm 2k:text-lg 4k:text-xl
+                                md:text-base sm:text-sm mobile:text-sm whitespace-nowrap text-ellipsis overflow-hidden'
+                        >
+                            {
+                                isGroupChat && chat.lastMessage.from !== 'me' && (
+                                    <span className='font-semibold'>{chat.lastMessage.from}: </span>
+                                )
+                            }
+                            { chat.lastMessage.text }
                         </div>
-                    ) : (
-                        unreadCount && (
-                            <div 
-                                className={`${styles.Unread} rounded-3xl text-center p-1 2k:p-1.5 4k:p-2 2xl:text-sm lg:text-xs 2k:text-base 4k:text-xl
-                                    md:text-sm sm:text-sm mobile:text-xs`}
-                            >
-                                { unreadCount < 1000 ? unreadCount : '999+' }
-                            </div>
-                        )
                     )
                 }
             </div>
+
+            {/* Status */}
+            {
+                chat.lastMessage && (
+                    <div className='flex flex-col items-end justify-between gap-2 2k:gap-3 4k:gap-4 ml-auto'>
+                        <div
+                            className={`${styles.Time} lg:text-sm 2k:text-base 4k:text-xl
+                                md:text-sm sm:text-sm mobile:text-xs`}
+                        >
+                            {formatChatTime(chat.lastMessage.time) === 'Yesterday' ? t('Yesterday') : formatChatTime(chat.lastMessage.time)}
+                        </div>
+                        {/* {
+                            isMessageFromMe ? (
+                                <div className="flex items-center gap-1">
+                                    <svg className={`${!read ? styles.checkMark : styles.checkMarkReaded} w-4 h-4 2k:w-6 2k:h-6 4k:w-8 4k:h-8`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <polygon fillRule="evenodd" points="9.707 14.293 19 5 20.414 6.414 9.707 17.121 4 11.414 5.414 10"></polygon> </g></svg>
+                                </div>
+                            ) : (
+                                unreadCount && (
+                                    <div 
+                                        className={`${styles.Unread} rounded-3xl text-center p-1 2k:p-1.5 4k:p-2 2xl:text-sm lg:text-xs 2k:text-base 4k:text-xl
+                                            md:text-sm sm:text-sm mobile:text-xs`}
+                                    >
+                                        { unreadCount < 1000 ? unreadCount : '999+' }
+                                    </div>
+                                )
+                            )
+                        } */}
+                    </div>
+                )
+            }
         </div>
     )
 }
 
-export default ChatCard
-
-
-// {
-//     type: 'group', // 'private' или 'group'
-//     name: 'Team Chat', // Имя чата или пользователя
-//     lastMessage: {
-//       text: 'Hey, how are you?', // Текст сообщения
-//       time: 'time', // Время сообщения
-//       from: 'Misha', // Отправитель (может быть 'me' или имя пользователя)
-//       read: false, // Прочитано (только для сообщений от me)
-//     },
-//     unreadCount: 3, // Непрочитанные сообщения
-//   }
+export default observer(ChatCard)
