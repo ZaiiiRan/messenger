@@ -8,8 +8,9 @@ import useChatStore from './hook/useChatStore'
 import IChat from './models/IChat'
 import IChatInfo from './models/IChatInfo'
 import IChatMember from './models/IChatMember'
+import IMessage from './models/IMessage'
 import ChatCard from './ui/ChatCard'
 import ChatCardSkeleton from './ui/ChatCardSkeleton'
 
 export { useChatStore, ChatCard, ChatCardSkeleton }
-export type { IChat, IChatInfo, IChatMember }
+export type { IChat, IChatInfo, IChatMember, IMessage }

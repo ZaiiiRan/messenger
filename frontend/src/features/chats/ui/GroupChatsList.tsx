@@ -21,7 +21,14 @@ const GroupChatsList = ({ open }) => {
                     isLeft: false,
                     addedBy: 1,
                 },
-                lastMessage: { text: 'Привет, как дела?', time: new Date(2025, 3, 30, 0, 0, 0, 0), from:'me' }
+                lastMessage: {
+                    id: 1,
+                    memberId: 1,
+                    chatId: 1,
+                    content: 'Привет, как дела?',
+                    sentAt: new Date(2025, 3, 30, 0, 0, 0, 0),
+                    lastEdited: null
+                }
             },
             {
                 chat: {
@@ -37,7 +44,14 @@ const GroupChatsList = ({ open }) => {
                     isLeft: false,
                     addedBy: 1,
                 },
-                lastMessage: { text: 'Привет, как дела?', time: new Date(), from: 'Test', read:true }
+                lastMessage: {
+                    id: 2,
+                    memberId: 2,
+                    chatId: 1,
+                    content: 'Привет, как дела?',
+                    sentAt: new Date(),
+                    lastEdited: null
+                }
             },
             {
                 chat: {
@@ -53,7 +67,14 @@ const GroupChatsList = ({ open }) => {
                     isLeft: false,
                     addedBy: 1,
                 },
-                lastMessage: { text: 'Привет, как дела?', time: new Date(), from:'me', read:true }
+                lastMessage: {
+                    id: 2,
+                    memberId: 3,
+                    chatId: 1,
+                    content: 'Привет, как дела?',
+                    sentAt: new Date(),
+                    lastEdited: null
+                }
             },
             {
                 chat: {

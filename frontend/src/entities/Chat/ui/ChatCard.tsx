@@ -58,11 +58,11 @@ const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
                                 md:text-base sm:text-sm mobile:text-sm whitespace-nowrap text-ellipsis overflow-hidden'
                         >
                             {
-                                isGroupChat && chat.lastMessage.from !== 'me' && (
-                                    <span className='font-semibold'>{chat.lastMessage.from}: </span>
+                                isGroupChat && (chat.lastMessage.memberId !== chat.you.userId ) && (
+                                    <span className='font-semibold'>{chat.lastMessage.memberId}: </span>
                                 )
                             }
-                            { chat.lastMessage.text }
+                            { chat.lastMessage.content }
                         </div>
                     )
                 }
@@ -76,7 +76,7 @@ const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
                             className={`${styles.Time} lg:text-sm 2k:text-base 4k:text-xl
                                 md:text-sm sm:text-sm mobile:text-xs`}
                         >
-                            {formatChatTime(chat.lastMessage.time) === 'Yesterday' ? t('Yesterday') : formatChatTime(chat.lastMessage.time)}
+                            {formatChatTime(chat.lastMessage.sentAt) === 'Yesterday' ? t('Yesterday') : formatChatTime(chat.lastMessage.sentAt)}
                         </div>
                         {/* {
                             isMessageFromMe ? (

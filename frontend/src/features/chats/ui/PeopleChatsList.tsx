@@ -21,7 +21,14 @@ const PeopleChatsList = ({ open }) => {
                 isLeft: false,
                 addedBy: 1,
             },
-            lastMessage: { text: 'Привет 😁😁😁', from:'me', time: new Date() }
+            lastMessage: {
+                id: 4,
+                memberId: 1,
+                chatId: 1,
+                content: 'Привет 😁😁😁',
+                sentAt: new Date(),
+                lastEdited: null
+            }
         },
         {
             chat: {
@@ -37,7 +44,14 @@ const PeopleChatsList = ({ open }) => {
                 isLeft: false,
                 addedBy: 1,
             },
-            lastMessage: { text: 'Привет, как дела?', time: new Date(2024, 10, 16, 0, 0, 0, 0), from: 'Test' }
+            lastMessage: {
+                id: 5,
+                memberId: 2,
+                chatId: 1,
+                content: 'Привет, как дела?',
+                sentAt: new Date(2024, 10, 16, 0, 0, 0, 0),
+                lastEdited: null
+            }
         },
         {
             chat: {
@@ -53,7 +67,14 @@ const PeopleChatsList = ({ open }) => {
                 isLeft: false,
                 addedBy: 1,
             },
-            lastMessage: { text: 'Привет, как дела?', time: new Date(2011, 0, 1, 2, 3, 4, 567), from: 'me', read:true }
+            lastMessage: {
+                id: 6,
+                memberId: 1,
+                chatId: 1,
+                content: 'Привет, как дела?',
+                sentAt: new Date(2011, 0, 1, 2, 3, 4, 567),
+                lastEdited: null
+            }
         }
     ]
 
