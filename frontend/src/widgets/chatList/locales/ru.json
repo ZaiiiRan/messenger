@@ -1,0 +1,12 @@
+{
+    "Groups": "Группы",
+    "People": "Люди",
+    "It's empty here for now": "Пока здесь пусто",
+
+    "Error": "Ошибка",
+
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Internal server error": "Внутренняя ошибка сервера",
+    "Chats not found": "Чаты не найдены"
+}

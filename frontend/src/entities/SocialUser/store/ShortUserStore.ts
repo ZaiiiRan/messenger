@@ -1,5 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 import IShortUser from '../models/IShortUser'
+import { fetchSocialUserForStore } from '../api/SocialUserFetching'
 
 class ShortUserStore {
     store: Map<string | number, IShortUser>
@@ -10,15 +11,23 @@ class ShortUserStore {
     }
 
     set(user: IShortUser) {
+        makeAutoObservable(user)
         this.store.set(user.userId, user)
     }
 
-    get(id: string | number): IShortUser | undefined {
-        return this.store.get(id)
+    async get(id: string | number): Promise<IShortUser | undefined> {
+        if (this.has(id)) {
+            return this.store.get(id)
+        }
+        return fetchSocialUserForStore(id)
     }
 
     delete(id: string | number): boolean {
         return this.store.delete(id)
+    }
+
+    has(id: string | number): boolean {
+        return this.store.has(id)
     }
 }
 

@@ -10,6 +10,7 @@ class ChatStore {
     }
 
     set(chat: IChat) {
+        makeAutoObservable(chat, {}, { deep: true })
         this.store.set(chat.chat.id, chat)
     }
 
@@ -21,8 +22,29 @@ class ChatStore {
         this.store.delete(chatId)
     }
 
-    getAll() {
-        return this.store.values().toArray()
+    getAll(): IChat[] {
+        return this.sortChats(Array.from(this.store.values()))
+    }
+
+    getGroupChats(): IChat[] {
+        return this.sortChats(
+            Array.from(this.store.values()).filter((chat) => chat.chat.isGroupChat)
+        )
+    }
+
+    getPrivateChats(): IChat[] {
+        return this.sortChats(
+            Array.from(this.store.values()).filter((chat) => !chat.chat.isGroupChat)
+        )
+    }
+
+    private sortChats(chats: IChat[]): IChat[] {
+        return chats.sort((a, b) => {
+            if (!a.lastMessage && !b.lastMessage) return 0
+            if (!a.lastMessage) return 1
+            if (!b.lastMessage) return -1
+            return new Date(b.lastMessage.sentAt).getTime() - new Date(a.lastMessage.sentAt).getTime()
+        })
     }
 }
 

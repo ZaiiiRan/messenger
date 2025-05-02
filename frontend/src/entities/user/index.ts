@@ -13,7 +13,8 @@ import validateBirthdate from './validations/validateBirthdate'
 import useAuth from './hook/useAuth'
 import UserModal from "./ui/UserModal"
 import IUser from "./models/IUser"
+import userStore from './store/userStore'
 
 export { validateEmail, validateFirstName, validateLastName, validateUsername, 
-    validatePhone, validatePassword, validateBirthdate, useAuth, UserModal }
+    validatePhone, validatePassword, validateBirthdate, useAuth, UserModal, userStore }
 export type { IUser }

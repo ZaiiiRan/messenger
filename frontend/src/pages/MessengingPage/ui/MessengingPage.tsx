@@ -1,12 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
-import { PeopleChatsList, GroupChatsList, ChatWidget } from '../../../features/chats'
+import { ChatWidget } from '../../../features/chats'
 import './MessangingPage.css'
+import { ChatList } from '../../../widgets/chatList'
+import { fetchPrivateChats, fetchGroupChats } from '../../../features/chatsFetching'
 
 const MessengingPage = () => {
-    const [selected, setSelected] = useState<number | null>(null)
+    const [selected, setSelected] = useState<number | string | null>(null)
 
-    const open = (chatID: number) => {
+    const open = (chatID: number | string) => {
         setSelected(chatID)
     }
 
@@ -23,8 +25,8 @@ const MessengingPage = () => {
             className='w-full h-full flex relative lg:gap-10 xl:gap-12 2xl:gap-14 2k:gap-24 4k:gap-36'
         >
             <div className='chat_lists h-full lg:w-2/5 2k:w-7/20 flex flex-col items-center justify-between lg:gap-10 2k:gap-20 4k:gap-32 mobile:w-full_screen'>
-                <PeopleChatsList open={open} />
-                <GroupChatsList open={open} />
+                <ChatList open={open} />
+                <ChatList open={open} group />
             </div>
             
 

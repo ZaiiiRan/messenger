@@ -8,12 +8,15 @@ import SocialUser from './ui/SocialUser'
 import ISocialUser from './models/ISocialUser'
 import ISocialUserData from './models/ISocialUserData'
 import IShortUser from './models/IShortUser'
-import { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList } from './api/ShortUsersFetching'
+import { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList} from './api/ShortUsersFetching'
+import { fetchSocialUserForStore, fetchSocialUsersForStore } from './api/SocialUserFetching'
 import useShortUserStore from './hook/useShortUserStore'
 import ShortUserSkeleton from './ui/ShortUserSkeleton'
 import ShortUser from './ui/ShortUser'
+import shortUserStore from './store/ShortUserStore'
 
 export { SocialUser, ShortUser, ShortUserSkeleton, useShortUserStore, 
-    fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList
+    fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList, fetchSocialUserForStore, fetchSocialUsersForStore,
+    shortUserStore
 }
 export type { ISocialUser, ISocialUserData, IShortUser }

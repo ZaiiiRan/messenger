@@ -2,22 +2,53 @@ import styles from './ChatCard.module.css'
 import formatChatTime from '../../../utils/formatChatTime'
 import { useTranslation } from 'react-i18next'
 import { observer } from 'mobx-react'
-import IChat from '../models/IChat'
+import IChat from '../../../entities/Chat/models/IChat'
+import { forwardRef, useEffect, useState } from 'react'
+import { shortUserStore } from '../../../entities/SocialUser'
+import { userStore } from '../../../entities/user'
 
 interface ChatCardProps {
     onClick: () => void,
-    chat: IChat
+    chat: IChat,
+    key: any,
 }
 
-const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
+const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key }, ref) => {
     const isGroupChat = chat.chat.isGroupChat
     const { t } = useTranslation('chatEntity')
+
+    const [senderName, setSenderName] = useState<string | null>(null)
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadSenderName = async () => {
+            if (chat.lastMessage && chat.lastMessage.memberId !== userStore.user?.userId && isGroupChat) {
+                const member = await shortUserStore.get(chat.lastMessage.memberId)
+                if (isMounted) {
+                    setSenderName(member ? `${member.firstname} ${member.lastname[0]}` : '???')
+                }
+            } else {
+                if (isMounted) {
+                    setSenderName('')
+                }
+            }
+        }
+
+        loadSenderName()
+
+        return () => {
+            isMounted = false
+        }
+    }, [chat.lastMessage])
 
     return (
         <div 
             className={`${styles.ChatCard} flex items-center px-5 py-2 
                 2k:px-8 2k:py-3 4k:px-12 4k:py-4 rounded-3xl xl:gap-5 mobile:gap-4 2k:gap-8 4k:gap-12`}
             onClick={onClick}
+            key={key}
+            ref={ref}
         >
             {/* Avatar */}
             <div className='md:h-2/3 mobile:h-3/5 rounded-3xl aspect-square'>
@@ -58,8 +89,8 @@ const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
                                 md:text-base sm:text-sm mobile:text-sm whitespace-nowrap text-ellipsis overflow-hidden'
                         >
                             {
-                                isGroupChat && (chat.lastMessage.memberId !== chat.you.userId ) && (
-                                    <span className='font-semibold'>{chat.lastMessage.memberId}: </span>
+                                isGroupChat && (chat.lastMessage.memberId !== userStore.user?.userId ) && (
+                                    <span className='font-semibold'>{senderName}: </span>
                                 )
                             }
                             { chat.lastMessage.content }
@@ -99,6 +130,6 @@ const ChatCard: React.FC<ChatCardProps> = ({ chat, onClick }) => {
             }
         </div>
     )
-}
+})
 
 export default observer(ChatCard)

@@ -1,0 +1,12 @@
+{
+    "Groups": "Groups",
+    "People": "People",
+    "It's empty here for now": "It's empty here for now",
+
+    "Error": "Error",
+
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Unauthorized": "There was a problem checking authorization",
+    "Internal server error": "Internal server error",
+    "Chats not found": "Chats not found"
+}

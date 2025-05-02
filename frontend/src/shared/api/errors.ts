@@ -57,7 +57,10 @@ const apiErrors = {
     "you blocked this user": "You blocked this user",
     "you are already friends": "You are already friends",
     "friend request has already been sent": "Friend request has already been sent",
-    
+
+    // chat list fetching
+    "chats not found": "Chats not found",
+    "message not found": "An unexpected error occurred",
 } as const
 
 type ApiErrorsKey = keyof typeof apiErrors
