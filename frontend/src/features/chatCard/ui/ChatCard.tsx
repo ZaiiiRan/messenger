@@ -18,6 +18,7 @@ const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key
     const { t } = useTranslation('chatEntity')
 
     const [senderName, setSenderName] = useState<string | null>(null)
+    const [name, setName] = useState<string | null>(null)
 
     useEffect(() => {
         let isMounted = true
@@ -41,6 +42,33 @@ const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key
             isMounted = false
         }
     }, [chat.lastMessage])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadPartnerName = async () => {
+            if (!isGroupChat) {
+                const partner = await shortUserStore.get(chat.members[0].userId)
+                if (isMounted) {
+                    setName(partner ? `${partner.firstname} ${partner.lastname}` : '???')
+                } else {
+                    if (isMounted) {
+                        setName('')
+                    }
+                }
+            }
+        }
+
+        if (chat.chat.name) {
+            setName(chat.chat.name)
+        } else if (!isGroupChat) {
+            loadPartnerName()
+        }
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
 
     return (
         <div 
@@ -78,7 +106,7 @@ const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key
                     className='2xl:text-xl xl:text-lg lg:text-base 2k:text-2xl 4k:text-3xl
                         md:text-xl sm:text-lg mobile:text-text-base whitespace-nowrap text-ellipsis overflow-hidden'
                 >
-                    { chat.chat.name }
+                    { name }
                 </div>
 
                 {/* Last Message */}
