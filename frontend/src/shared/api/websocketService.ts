@@ -1,4 +1,6 @@
 import { transformKeysToCamelCase } from "../../utils/transformKeysToCamelCase"
+import { transformKeysToSnakeCase } from "../../utils/transformKeysToSnakeCase"
+import IWebSocketMessage from "./models/IWebSocketMessage"
 
 export const WS_URL = import.meta.env.VITE_WS_URL
 
@@ -22,7 +24,8 @@ class WebSocketService {
             }
 
             this.socket.onmessage = (event) => {
-                const data = JSON.parse(event.data)
+                const data = transformKeysToCamelCase(JSON.parse(event.data)) as IWebSocketMessage
+
                 if (data.type === "error" && data.content === "unauthorized") {
                     console.warn("Authorization error, try again...")
 
@@ -35,7 +38,7 @@ class WebSocketService {
                     }
                 } else {
                     if (this.messageHandler) {
-                        this.messageHandler(transformKeysToCamelCase(data))
+                        this.messageHandler(data)
                     }
                 }
             }
@@ -57,7 +60,7 @@ class WebSocketService {
 
     sendMessage(message: any) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify(message))
+            this.socket.send(JSON.stringify(transformKeysToSnakeCase(message)))
         } else {
             console.error("WebSocket not connected")
         }

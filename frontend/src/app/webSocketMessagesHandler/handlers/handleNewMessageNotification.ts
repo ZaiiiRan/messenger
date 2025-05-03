@@ -1,4 +1,4 @@
-import IWebSocketMessage from '../models/IWebSocketMessage'
+import IWebSocketMessage from '../../../shared/api/models/IWebSocketMessage'
 import { chatStore, IMessage } from '../../../entities/Chat/'
 import { runInAction } from 'mobx'
 import { fetchChat } from '../../../features/chatsFetching'

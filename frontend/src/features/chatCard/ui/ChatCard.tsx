@@ -10,10 +10,9 @@ import { userStore } from '../../../entities/user'
 interface ChatCardProps {
     onClick: () => void,
     chat: IChat,
-    key: any,
 }
 
-const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key }, ref) => {
+const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick }, ref) => {
     const isGroupChat = chat.chat.isGroupChat
     const { t } = useTranslation('chatCard')
 
@@ -75,7 +74,6 @@ const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key
             className={`${styles.ChatCard} flex items-center px-5 py-2 
                 2k:px-8 2k:py-3 4k:px-12 4k:py-4 rounded-3xl xl:gap-5 mobile:gap-4 2k:gap-8 4k:gap-12`}
             onClick={onClick}
-            key={key}
             ref={ref}
         >
             {/* Avatar */}
