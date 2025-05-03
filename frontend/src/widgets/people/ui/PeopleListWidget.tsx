@@ -7,7 +7,6 @@ import { AxiosResponse } from 'axios'
 import { IShortUser } from '../../../entities/SocialUser'
 
 interface PeopleListWidgetProps {
-    key: number | string,
     title: string,
     goBack: () => void,
     fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
@@ -23,7 +22,6 @@ interface PeopleListWidgetProps {
 }
 
 const PeopleListWidget: React.FC<PeopleListWidgetProps> = ({
-    key, 
     title, 
     goBack, 
     fetchFunction, 
@@ -42,7 +40,6 @@ const PeopleListWidget: React.FC<PeopleListWidgetProps> = ({
 
     return (
         <MainWidget 
-            key={key} 
             title={ t(title) } 
             goBack={ goBack } 
             className={className}

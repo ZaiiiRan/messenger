@@ -2,7 +2,6 @@ import './MainWidget.css'
 import { motion } from 'framer-motion'
 
 interface MainWidgetProps {
-    key?: any,
     goBack?: () => void,
     title?: React.ReactNode,
     children?: React.ReactNode,
@@ -13,7 +12,6 @@ interface MainWidgetProps {
 }
 
 const MainWidget: React.FC<MainWidgetProps> = ({ 
-    key, 
     goBack, 
     title, 
     children, 
@@ -24,7 +22,6 @@ const MainWidget: React.FC<MainWidgetProps> = ({
 }) => {
     return (
         <motion.div 
-            key={key}
             initial={initialAnimation}
             animate={animation}
             exit={exitAnimation}
