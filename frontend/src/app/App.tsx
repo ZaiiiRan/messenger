@@ -1,5 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/exhaustive-deps */
 import { Modal } from '../features/modal'
 import { Router } from './routers/Router'
 import { useAuth } from '../entities/user'
@@ -9,6 +7,9 @@ import { Loader } from '../shared/ui/Loader'
 import { useTranslation } from 'react-i18next'
 import '../shared/config/i18n'
 import { themeStore } from '../shared/theme'
+import { webSocketService } from '../shared/api'
+import handleWSMessage from './webSocketMessagesHandler/webSocketMessagesHandler'
+import { chatStore } from '../entities/Chat'
 
 
 const App: React.FC = () => {
@@ -68,7 +69,15 @@ const App: React.FC = () => {
     }
 
     refresh()
+
+    webSocketService.setHandler(handleWSMessage)
   }, [])
+
+  useEffect(() => {
+    if (!userStore.isAuth && !userStore.user) {
+      chatStore.clear()
+    }
+  }, [userStore.isAuth])
 
   if (!isChecked) {
     return (
@@ -78,7 +87,6 @@ const App: React.FC = () => {
     )
   }
   
-
   return (
     <>
       {

@@ -60,7 +60,14 @@ const ChatList: React.FC<ChatListProps> = ({ open, group }) => {
 
     useEffect(() => {
         loadChats()
-    })
+    }, [])
+
+    useEffect(() => {
+        const chatCount = group ? chatStore.getGroupChatCount() : chatStore.getPrivateChatCount()
+        if (chatCount > offset) {
+            setOffset(chatCount)
+        }
+    }, [chatStore])
 
     const observerRef = useRef<IntersectionObserver | null>(null)
     const lastChatRef = useCallback((node: HTMLDivElement | null) => {

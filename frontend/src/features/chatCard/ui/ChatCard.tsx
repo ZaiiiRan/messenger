@@ -15,7 +15,7 @@ interface ChatCardProps {
 
 const ChatCard = forwardRef<HTMLDivElement, ChatCardProps>(({ chat, onClick, key }, ref) => {
     const isGroupChat = chat.chat.isGroupChat
-    const { t } = useTranslation('chatEntity')
+    const { t } = useTranslation('chatCard')
 
     const [senderName, setSenderName] = useState<string | null>(null)
     const [name, setName] = useState<string | null>(null)

@@ -22,6 +22,14 @@ class ChatStore {
         this.store.delete(chatId)
     }
 
+    has(chatId: string | number): boolean {
+        return this.store.has(chatId)
+    }
+
+    clear() {
+        this.store.clear()
+    }
+
     getAll(): IChat[] {
         return this.sortChats(Array.from(this.store.values()))
     }
@@ -36,6 +44,14 @@ class ChatStore {
         return this.sortChats(
             Array.from(this.store.values()).filter((chat) => !chat.chat.isGroupChat)
         )
+    }
+
+    getGroupChatCount(): number {
+        return Array.from(this.store.values()).filter((chat) => chat.chat.isGroupChat).length
+    }
+
+    getPrivateChatCount(): number {
+        return Array.from(this.store.values()).filter((chat) => !chat.chat.isGroupChat).length
     }
 
     private sortChats(chats: IChat[]): IChat[] {

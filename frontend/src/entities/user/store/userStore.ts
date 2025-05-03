@@ -56,7 +56,7 @@ class UserStore {
         const response = await Auth.logout()
         localStorage.removeItem('token')
         this.setAuth(false)
-        this.setUser({})
+        this.setUser(null)
         return response.data
     }
 
