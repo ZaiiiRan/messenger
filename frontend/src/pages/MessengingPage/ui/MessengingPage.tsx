@@ -32,7 +32,7 @@ const MessengingPage = () => {
             <AnimatePresence mode='wait'>
                 {
                     selected && (
-                        <ChatWidget selected={selected} goBack={goBack} />
+                        <ChatWidget key={selected} selected={selected} goBack={goBack} />
                     )
                 }
             </AnimatePresence>
