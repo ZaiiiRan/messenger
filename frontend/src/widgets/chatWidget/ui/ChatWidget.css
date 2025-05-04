@@ -1,0 +1,113 @@
+.Chat-Widget {
+    padding: 3rem 3rem;
+    width: 55%;
+    height: 100%;
+    background-color: var(--widget-background);
+    z-index: 5;
+}
+
+.ChatHeader {
+    transition: background-color .2s ease, transform .2s ease;
+    user-select: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+.ChatHeader:hover {
+    background-color: var(--main-hover);
+}
+.ChatHeader:active {
+    transform: scale(0.98);
+    background-color: var(--main-hover);
+}
+.Chat-Main-Area {
+    width: 100%;
+    background-color: var(--chat-background);
+}
+.Send-Button {
+    cursor: pointer;
+}
+.Send-Button:hover {
+    background-color: var(--main-hover);
+}
+.Send-Button svg {
+    fill: var(--button-background);
+    transition: fill 0.2s ease, transform 0.2s ease;
+}
+.Send-Button:hover svg {
+    fill: var(--button-hover-background);
+}
+.Send-Button:active svg {
+    fill: var(--button-hover-background);
+    transform: scale(0.8);
+}
+
+@media (hover: none) {
+    .ChatHeader:hover {
+        background-color: transparent;
+    }
+    .Send-Button:hover {
+        background-color: transparent;
+    }
+    .ChatHeader:active {
+        transform: scale(0.98);
+        background-color: var(--main-hover);
+    }
+    .Send-Button:hover svg {
+        fill: var(--button-background);
+    }
+    .Send-Button:active svg {
+        fill: var(--button-hover-background);
+        transform: scale(0.8);
+    }
+}
+
+@media (max-width: 1023px) {
+    .Chat-Widget {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100vw;
+        z-index: 15;
+        border-radius: 0;
+    }
+}
+
+@media (min-width: 200px) and (max-width: 500px) {
+    .Chat-Widget {
+        padding: 1.5rem 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) and (orientation: portrait) {
+    .Chat-Widget {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100vw;
+        z-index: 15;
+        border-radius: 0;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+    .Chat-Widget {
+        padding: 2rem 2rem;
+    }
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    .Chat-Widget {
+        width: 55%;
+        padding: 4rem 4rem;
+    }
+}
+
+@media (min-width: 2561px) and (max-width: 3840px) {
+    .Chat-Widget {
+        width: 55%;
+        padding: 5rem 5rem;
+    }
+}

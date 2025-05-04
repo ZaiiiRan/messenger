@@ -1,9 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
-import { ChatWidget } from '../../../features/chats'
+import { ChatWidget } from '../../../widgets/chatWidget'
 import './MessangingPage.css'
 import { ChatList } from '../../../widgets/chatList'
-import { fetchPrivateChats, fetchGroupChats } from '../../../features/chatsFetching'
 
 const MessengingPage = () => {
     const [selected, setSelected] = useState<number | string | null>(null)
@@ -33,7 +32,7 @@ const MessengingPage = () => {
             <AnimatePresence mode='wait'>
                 {
                     selected && (
-                        <ChatWidget key={selected} goBack={goBack} />
+                        <ChatWidget selected={selected} goBack={goBack} />
                     )
                 }
             </AnimatePresence>
