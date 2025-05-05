@@ -1,0 +1,10 @@
+{
+    "Yesterday": "Yesterday",
+    "Today": "Today",
+
+    "Error": "Error",
+
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Unauthorized": "There was a problem checking authorization",
+    "Internal server error": "Internal server error"
+}

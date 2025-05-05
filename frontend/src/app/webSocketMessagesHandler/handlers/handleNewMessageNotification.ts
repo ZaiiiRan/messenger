@@ -12,13 +12,19 @@ function handleNewMessageNotification(wsMessage: IWebSocketMessage) {
 
     const chat = chatStore.get(message.chatId)
     if (chat) {
+        if (!shortUserStore.has(message.memberId) && message.memberId !== userStore.user?.userId) fetchUnknownUser(message.memberId)
+
         const isNewer = !chat.lastMessage || new Date(message.sentAt).getTime() > new Date(chat.lastMessage.sentAt).getTime()
         if (isNewer) {
-            if (!shortUserStore.has(message.memberId) && message.memberId !== userStore.user?.userId) fetchUnknownUser(message.memberId)
             runInAction(() => {
                 chat.lastMessage = message
             })
         }
+
+        if (chat.messages.some(item => message.id === item.id)) return
+        runInAction(() => {
+            chat.messages.unshift(message)
+        })
     }
 }
 

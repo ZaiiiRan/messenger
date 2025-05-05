@@ -1,0 +1,10 @@
+{
+    "Yesterday": "Вчера",
+    "Today": "Сегодня",
+
+    "Error": "Ошибка",
+
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Internal server error": "Внутренняя ошибка сервера"
+}

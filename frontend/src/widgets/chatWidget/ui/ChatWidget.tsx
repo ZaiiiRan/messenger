@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { Textarea } from '../../../shared/ui/Textarea'
 import React, { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { chatStore } from '../../../entities/Chat'
@@ -8,6 +7,7 @@ import './ChatWidget.css'
 import { shortUserStore } from '../../../entities/SocialUser'
 import ChatWidgetHeader from './ChatWidgetHeader'
 import { MessageSender } from '../../../features/messageSender'
+import { MessageList } from '../../../features/messagesList'
 
 interface IChatWidgetProps {
     goBack: () => void,
@@ -17,7 +17,6 @@ interface IChatWidgetProps {
 const ChatWidget: React.FC<IChatWidgetProps> = ({ goBack, selected }) => {
     const { t } = useTranslation('chatWidget')
     const chat = chatStore.get(selected)
-    const [message, setMessage] = useState<string>('')
     const [chatName, setChatName] = useState<string>(chat?.chat.name || '')
 
     const isGroupChat = chat?.chat.isGroupChat
@@ -61,11 +60,7 @@ const ChatWidget: React.FC<IChatWidgetProps> = ({ goBack, selected }) => {
             <ChatWidgetHeader goBack={goBack} chatName={chatName} isGroupChat/>
 
             {/* Main */}
-            <div 
-                className='Chat-Main-Area rounded-3xl w-full h-4/5 p-8 flex flex-col gap-5 2k:gap-9 4k:gap-12 overflow-y-scroll relative'
-            >
-            
-            </div>
+            <MessageList chat={chat} />
 
             {/* Message Sender */}
             <MessageSender chatId={selected} />

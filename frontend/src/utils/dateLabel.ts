@@ -1,4 +1,4 @@
-const getDateLabel: (messageDate: string | number) => string = (messageDate) => {
+const getDateLabel: (messageDate: string | number | Date) => string = (messageDate) => {
     const messageDateObj = new Date(messageDate)
     const today = new Date()
     const yesterday = new Date(today)

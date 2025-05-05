@@ -6,7 +6,8 @@ interface IChat {
     chat: IChatInfo,
     members: IChatMember[],
     you: IChatMember,
-    lastMessage?: IMessage | null
+    lastMessage?: IMessage | null,
+    messages: IMessage[],
 }
 
 export default IChat

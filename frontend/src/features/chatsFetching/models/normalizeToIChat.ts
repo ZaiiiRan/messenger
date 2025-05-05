@@ -1,4 +1,4 @@
-import { IChat, IChatInfo, IChatMember, IMessage } from "../../../entities/Chat"
+import { chatStore, IChat, IChatInfo, IChatMember, IMessage } from "../../../entities/Chat"
 
 function normalizeToIChat(object: any): IChat {
     const chatInfo = object.chat as IChatInfo
@@ -22,13 +22,22 @@ function normalizeToIChat(object: any): IChat {
         isRemoved: object.you.isRemoved,
         isLeft: object.you.isLeft,
         addedBy: object.you.addedBy
-    } 
+    }
+
+    let messages: IMessage[] = []
+    const chatCandidate = chatStore.get(chatInfo.id)
+    if (chatCandidate) {
+        messages = chatCandidate.messages
+    } else if (lastMessage) {
+        messages.push(lastMessage)
+    }
 
     const chat: IChat = {
         chat: chatInfo,
         lastMessage: lastMessage,
         members: members,
-        you: you
+        you: you,
+        messages: messages
     }
 
     return chat

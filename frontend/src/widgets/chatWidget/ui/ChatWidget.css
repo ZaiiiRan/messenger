@@ -20,10 +20,6 @@
     transform: scale(0.98);
     background-color: var(--main-hover);
 }
-.Chat-Main-Area {
-    width: 100%;
-    background-color: var(--chat-background);
-}
 .Send-Button {
     cursor: pointer;
 }
@@ -71,11 +67,6 @@
         width: 100vw;
         z-index: 15;
         border-radius: 0;
-    }
-}
-
-@media (min-width: 200px) and (max-width: 500px) {
-    .Chat-Widget {
         padding: 1.5rem 1.5rem;
     }
 }
@@ -89,6 +80,7 @@
         width: 100vw;
         z-index: 15;
         border-radius: 0;
+        padding: 1.5rem 1.5rem;
     }
 }
 
