@@ -1,0 +1,11 @@
+{
+    "Username or Email": "Имя пользователя или Email",
+
+    "We couldn't find anyone": "Мы не смогли никого найти",
+    "Error": "Ошибка",
+
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Users not found": "Пользователи не найдены",
+    "Internal server error": "Внутренняя ошибка сервера"
+}

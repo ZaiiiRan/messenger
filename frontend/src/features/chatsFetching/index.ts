@@ -1,4 +1,3 @@
-import { fetchPrivateChats, fetchGroupChats, fetchChat } from "./api/chatsFetching"
-import normalizeToIChat from "./models/normalizeToIChat"
+import { fetchPrivateChats, fetchGroupChats, fetchChat, saveChat } from "./api/chatsFetching"
 
-export {  fetchPrivateChats, fetchGroupChats, normalizeToIChat, fetchChat }
+export {  fetchPrivateChats, fetchGroupChats, fetchChat, saveChat }

@@ -3,9 +3,9 @@ interface IShortUser {
     username: string,
     firstname: string,
     lastname: string,
-    isDeleted: false,
-    isBanned: false,
-    isActivated: false
+    isDeleted: boolean,
+    isBanned: boolean,
+    isActivated: boolean
 }
 
 export default IShortUser

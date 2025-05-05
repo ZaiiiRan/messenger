@@ -38,6 +38,13 @@
     animation: pulse 1.5s infinite ease-in-out;
 }
 
+.select {
+    border-color: var(--button-background);
+}
+
+.selected {
+    background-color: var(--button-background);
+}
 
 @keyframes pulse {
     0% {

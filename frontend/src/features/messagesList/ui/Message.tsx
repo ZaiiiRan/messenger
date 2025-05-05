@@ -12,7 +12,7 @@ interface MessageProps {
     message: IMessage
 }
 
-const Message = forwardRef<HTMLDivElement, MessageProps>(({ className, message, isGroupChat = false, id }) => {
+const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = false, id }) => {
     const isMessageFromMe = message.memberId === userStore.user?.userId
     const [senderName, setSenderName] = useState<string | null>('')
 
@@ -99,6 +99,6 @@ const Message = forwardRef<HTMLDivElement, MessageProps>(({ className, message, 
             </div>
         </div>
     )
-})
+}
 
 export default observer(Message)

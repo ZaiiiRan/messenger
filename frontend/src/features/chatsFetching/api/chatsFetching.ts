@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios'
 import { api } from '../../../shared/api'
-import normalizeToIChat from '../models/normalizeToIChat'
+import { normalizeToIChat } from '../../../entities/Chat'
 import chatStore from '../../../entities/Chat/store/ChatStore'
 import shortUserStore from '../../../entities/SocialUser/store/ShortUserStore'
 import { IShortUser } from '../../../entities/SocialUser'
@@ -42,4 +42,4 @@ function saveUsers(chat: any) {
     })
 }
 
-export { fetchGroupChats, fetchPrivateChats, fetchChat }
+export { fetchGroupChats, fetchPrivateChats, fetchChat, saveChat }

@@ -1,0 +1,11 @@
+{
+    "Username or Email": "Username or Email",
+
+    "We couldn't find anyone": "We couldn't find anyone",
+    "Error": "Error",
+
+    "Users not found": "Users not found",
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Unauthorized": "There was a problem checking authorization",
+    "Internal server error": "Internal server error"
+}

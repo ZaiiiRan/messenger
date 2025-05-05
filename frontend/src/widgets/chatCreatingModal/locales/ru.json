@@ -1,0 +1,16 @@
+{
+    "New chat": "Новый чат",
+    "Create": "Создать",
+    "Chat name": "Название чата",
+
+    "Error": "Ошибка",
+
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Internal server error": "Внутренняя ошибка сервера",
+
+    "Chat name is empty": "Название чата не может быть пустым",
+    "Chat name must be at least 5 characters": "Название чата должно быть не менее 5 символов",
+    "Need at least 2 members for group chat": "Необходимо не менее 2 участников для группового чата",
+    "Maximum number of chat members: 1000": "Максимальное количество участников чата: 1000"
+}

@@ -10,7 +10,7 @@ import { ApiErrorsKey } from '../../../shared/api'
 import ISocialUser from '../models/ISocialUser'
 
 interface SocialUserProps {
-    id: number,
+    id: number | string,
     onError: () => void,
     setUserManipulation: React.Dispatch<React.SetStateAction<boolean>>,
     onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void

@@ -4,10 +4,12 @@ import styles from './ShortUser.module.css'
 interface ShortUserProps {
     user: IShortUser,
     onClick: (event: React.MouseEvent<HTMLDivElement>) => void,
-    isClickable?: boolean
+    isClickable?: boolean,
+    isSelectable?: boolean,
+    isSelected?: boolean
 }
 
-const ShortUser: React.FC<ShortUserProps> = ({ user, onClick, isClickable=true }) => {
+const ShortUser: React.FC<ShortUserProps> = ({ user, onClick, isClickable=true, isSelectable, isSelected }) => {
     return (
         <div 
             className={`${styles.ShortUser} flex items-center px-5 py-2 
@@ -46,6 +48,18 @@ const ShortUser: React.FC<ShortUserProps> = ({ user, onClick, isClickable=true }
                     { user.username }
                 </div>
             </div>
+
+            {
+                isSelectable && (
+                    <div className={`${styles.select} ml-auto rounded-full flex items-center justify-cente border-2 w-5 aspect-square`}>
+                        {
+                            isSelected && (
+                                <div className={`${styles.selected} w-full aspect-square rounded-full`}></div>
+                            )
+                        }
+                    </div>
+                )
+            }
         </div>
     )
 }

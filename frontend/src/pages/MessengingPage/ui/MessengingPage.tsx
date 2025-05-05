@@ -3,9 +3,11 @@ import { useState } from 'react'
 import { ChatWidget } from '../../../widgets/chatWidget'
 import './MessangingPage.css'
 import { ChatList } from '../../../widgets/chatList'
+import { ChatCreatingModal } from '../../../widgets/chatCreatingModal'
 
 const MessengingPage = () => {
     const [selected, setSelected] = useState<number | string | null>(null)
+    const [newChatModal, setNewChatModal] = useState<boolean>(false)
 
     const open = (chatID: number | string) => {
         setSelected(chatID)
@@ -25,7 +27,7 @@ const MessengingPage = () => {
         >
             <div className='chat_lists h-full lg:w-2/5 2k:w-7/20 flex flex-col items-center justify-between lg:gap-10 2k:gap-20 4k:gap-32 mobile:w-full_screen'>
                 <ChatList open={open} />
-                <ChatList open={open} group />
+                <ChatList open={open} group setNewChatModal={setNewChatModal} />
             </div>
             
 
@@ -36,6 +38,12 @@ const MessengingPage = () => {
                     )
                 }
             </AnimatePresence>
+
+            <ChatCreatingModal 
+                show={newChatModal}
+                setShow={(show: boolean) => setNewChatModal(show)}
+                open={open}
+            />
         </motion.div>
     )
 }

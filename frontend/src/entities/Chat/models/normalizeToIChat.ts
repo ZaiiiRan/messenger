@@ -1,4 +1,8 @@
-import { chatStore, IChat, IChatInfo, IChatMember, IMessage } from "../../../entities/Chat"
+import { chatStore } from '..'
+import IChat from './IChat'
+import IChatInfo from './IChatInfo'
+import IChatMember from './IChatMember'
+import IMessage from './IMessage'
 
 function normalizeToIChat(object: any): IChat {
     const chatInfo = object.chat as IChatInfo
