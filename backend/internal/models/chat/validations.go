@@ -64,12 +64,12 @@ func (chat *Chat) validateBeforeAddingMembers(addingCount int) error {
 // chat existing checking
 func checkPrivateChatExists(member1, member2 uint64) (bool, error) {
 	var appError *appErr.AppError
-	chat, err := getPrivateChatFromDB(member1, member2)
+	_, err := getPrivateChatFromDB(member1, member2)
 	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
 		return false, nil
 	} else if err != nil {
 		return false, err
 	}
 
-	return chat.ID == 0, nil
+	return true, nil
 }
