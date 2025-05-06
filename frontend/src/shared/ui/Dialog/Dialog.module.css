@@ -1,7 +1,7 @@
-.ChatCreatingModalBG {
+.DialogBG {
     z-index: 50;
 }
-.ChatCreatingModal {
+.Dialog {
     background-color: var(--widget-background);
 
     width: 33%;
@@ -9,25 +9,25 @@
 }
 
 @media (min-width: 1280px) and (max-width: 1535px) {
-    .ChatCreatingModal {
+    .Dialog {
         width: 50%;
     }
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) and (orientation: landscape) {
-    .ChatCreatingModal {
+    .Dialog {
         width: 50%;
     }
 }
 
 @media (min-width: 200px) and (max-width: 500px) {
-    .ChatCreatingModal {
+    .Dialog {
         padding: 1.5rem 1.5rem;
     }
 }
 
 @media (min-width: 1024px) and (orientation: portrait) {
-    .ChatCreatingModalBG {
+    .DialogBG {
         position: absolute;
         top: 0;
         left: 0;
@@ -35,7 +35,7 @@
         width: 100vw;
         border-radius: 0;
     }
-    .ChatCreatingModal {
+    .Dialog {
         position: absolute;
         top: 0;
         left: 0;
@@ -47,7 +47,7 @@
 }
 
 @media (max-width: 1023px) {
-    .ChatCreatingModalBG {
+    .DialogBG {
         position: absolute;
         top: 0;
         left: 0;
@@ -55,7 +55,7 @@
         width: 100vw;
         border-radius: 0;
     }
-    .ChatCreatingModal {
+    .Dialog {
         position: absolute;
         top: 0;
         left: 0;
@@ -66,20 +66,20 @@
 }
 
 @media (min-width: 1024px) and (max-width: 1280px) {
-    .ChatCreatingModal {
+    .Dialog {
         padding: 2rem 2rem;
     }
 }
 
 @media (min-width: 1921px) and (max-width: 2560px) {
-    .ChatCreatingModal {
+    .Dialog {
         width: 40%;
         padding: 4rem 4rem;
     }
 }
 
 @media (min-width: 2561px) and (max-width: 3840px) {
-    .ChatCreatingModal {
+    .Dialog {
         width: 40%;
         padding: 5rem 5rem;
     }
