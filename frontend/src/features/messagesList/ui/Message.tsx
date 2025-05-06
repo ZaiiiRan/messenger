@@ -3,7 +3,8 @@ import { IMessage } from '../../../entities/Chat'
 import styles from './Message.module.css'
 import { userStore } from '../../../entities/user'
 import { observer } from 'mobx-react'
-import { shortUserStore } from '../../../entities/SocialUser'
+import { IShortUser, shortUserStore, SocialUser } from '../../../entities/SocialUser'
+import { Dialog } from '../../../shared/ui/Dialog'
 
 interface MessageProps {
     id: string | number,
@@ -14,32 +15,38 @@ interface MessageProps {
 
 const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = false, id }) => {
     const isMessageFromMe = message.memberId === userStore.user?.userId
-    const [senderName, setSenderName] = useState<string | null>('')
+    const [sender, setSender] = useState<IShortUser | null>()
+    const [showUserModal, setShowUserModal] = useState<boolean>(false)
 
     useEffect(() => {
         let isMounted = true
 
-        const loadSenderName = async () => {
+        const loadSender = async () => {
             if (!isMessageFromMe) {
                 const member = await shortUserStore.get(message.memberId)
                 if (isMounted) {
-                    setSenderName(member ? `${member.firstname} ${member.lastname}` : '???')
+                    setSender(member)
                 }
             } else {
                 if (isMounted) {
-                    setSenderName('')
+                    setSender(null)
                 }
             }
         }
 
         if (isGroupChat) {
-            loadSenderName()
+            loadSender()
         }
 
         return () => {
             isMounted = false
         }
     }, [message])
+
+    const openUserModal = () => {
+        if (isGroupChat) 
+            setShowUserModal(true)
+    }
     
     return (
         <div 
@@ -52,6 +59,7 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
                         <div 
                             className='md:w-[40px] md:min-w-[40px] sm:w-[35px] sm:min-w-[35px] mobile:w-[30px] mobile:min-w-[30px] 2xl:w-[50px] 2xl:min-w-[50px] 2k:w-[60px] 2k:min-w-[60px] 4k:w-[80px] 4k:min-w-[80px]
                                 md:rounded-2xl 2k:rounded-3xl aspect-square cursor-pointer self-end'
+                            onClick={openUserModal}
                         >
                             <div className='flex items-center justify-center w-full h-full Avatar-standart mobile:rounded-2xl'>
                                 <div className='flex items-center justify-center w-1/2 aspect-square'>
@@ -73,9 +81,12 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
                 <div className='flex flex-col md:gap-2 mobile:gap-1 2k:gap-3 4k:gap-4'>
                     {
                         isGroupChat && !isMessageFromMe && (
-                            <div className={`${styles.from} self-start lg:text-sm 2k:text-base 4k:text-xl
-                                md:text-sm sm:text-sm mobile:text-xs cursor-pointer max-w-[70%] w-auto inline-block whitespace-nowrap text-ellipsis overflow-hidden`}>
-                                { senderName }
+                            <div 
+                                className={`${styles.from} self-start lg:text-sm 2k:text-base 4k:text-xl
+                                    md:text-sm sm:text-sm mobile:text-xs cursor-pointer max-w-[70%] w-auto inline-block whitespace-nowrap text-ellipsis overflow-hidden`}
+                                onClick={openUserModal}
+                            >
+                                { sender ? `${sender.firstname} ${sender.lastname}` : '???' }
                             </div>
                         )
                     }
@@ -97,6 +108,21 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
                 </div>
             
             </div>
+
+            {
+                isGroupChat && sender &&  (
+                    <Dialog
+                        show={showUserModal}
+                        setShow={(show: boolean) => setShowUserModal(show)}
+                        title={sender.username}
+                    >
+                        <SocialUser
+                            id={sender.userId}
+                            onError={() => setShowUserModal(false)}
+                        />
+                    </Dialog>
+                )
+            }
         </div>
     )
 }

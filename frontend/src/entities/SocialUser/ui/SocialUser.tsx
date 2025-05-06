@@ -11,7 +11,7 @@ import ISocialUser from '../models/ISocialUser'
 
 interface SocialUserProps {
     id: number | string,
-    onError: () => void,
+    onError?: () => void,
     setUserManipulation?: React.Dispatch<React.SetStateAction<boolean>>,
     onMessageClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
@@ -35,7 +35,7 @@ const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulatio
             const errorKey: ApiErrorsKey = e.response?.data?.error
             setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
             openModal()
-            onError()
+            if (onError) onError()
         } finally {
             setFetching(false)
         }
