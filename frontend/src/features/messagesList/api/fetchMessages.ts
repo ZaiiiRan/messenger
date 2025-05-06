@@ -1,3 +1,4 @@
+import { runInAction } from 'mobx'
 import { chatStore, IMessage } from '../../../entities/Chat'
 import { shortUserStore } from '../../../entities/SocialUser'
 import { userStore } from '../../../entities/user'
@@ -18,8 +19,9 @@ async function fetchMessages(chatId: number | string, limit: number, offset: num
 
     const chat = chatStore.get(chatId)
     if (chat) {
-        chat.messages = [...chat.messages, ...messages]
-        
+        runInAction(() => {
+            chat.messages = [...chat.messages, ...messages]
+        })
     }
 
     return messages

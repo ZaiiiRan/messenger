@@ -61,6 +61,33 @@ const apiErrors = {
     // chat list fetching
     "chats not found": "Chats not found",
     "message not found": "An unexpected error occurred",
+    "messages not found": "Messages not found",
+
+    // chat creating
+    "chat name is empty": "Chat name is empty",
+    "chat name must be at least 5 characters": "Chat name must be at least 5 characters",
+    "need at least 2 members for group chat": "Need at least 2 members for group chat",
+    "maximum number of chat members: 1000": "Maximum number of chat members: 1000",
+    "need at least 1 member for private chat": "Need at least 1 member for private chat",
+    "max 1 member for private chat": "Max 1 member for private chat",
+
+
+    // chat fetching
+    "chat is not a group chat": "Chat is not a group chat",
+    "you don't have enough rights": "You don't have enough rights",
+    "the names are the same": "The names are the same",
+    "you cannot access this chat": "You cannot access this chat",
+    "chat not found": "Chat not found",
+    "private chat not found": "Private chat not found",
+    "you have been removed from the chat": "You have been removed from the chat",
+    "you are already in chat": "You are already in chat",
+    "you can't add yourself": "You can't add yourself",
+    "you can't remove yourself": "You can't remove yourself",
+    "trying to delete a member with a higher role": "Trying to delete a member with a higher role",
+    "you can't change your role": "You can't change your role",
+    "you cannot assign a role to an excluded member": "You cannot assign a role to an excluded member",
+    "unknown role": "Unknown role",
+    "owner role cannot be assigned": "Owner role cannot be assigned",
 } as const
 
 type ApiErrorsKey = keyof typeof apiErrors

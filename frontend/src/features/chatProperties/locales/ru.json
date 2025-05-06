@@ -4,5 +4,21 @@
     "Return": "Вернуться",
     "Leave": "Выйти",
     "New chat name": "Новое название чата",
-    "Add members": "Добавить участников"
+    "Add members": "Добавить участников",
+
+    "Error": "Ошибка",
+    "Internal server error": "Внутренняя ошибка сервера",
+    "Unauthorized": "Возникла ошибка при проверке авторизации",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+
+    "Chat name is empty": "Название чата не может быть пустым",
+    "Chat name must be at least 5 characters": "Название чата должно быть не менее 5 символов",
+
+    "Chat is not a group chat": "Это не групповой чат",
+    "You don't have enough rights": "У вас недостаточно прав",
+    "The names are the same": "Названия совпадают",
+    "You cannot access this chat": "Вы не можете получить доступ к этому чату",
+    "Chat not found": "Чат не найден",
+    "You have been removed from the chat": "Вы были исключены из чата",
+    "You are already in chat": "Вы уже в этом чате"
 }

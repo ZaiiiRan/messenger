@@ -4,5 +4,21 @@
     "Return": "Return",
     "Leave": "Leave",
     "New chat name": "New chat name",
-    "Add members": "Add members"
+    "Add members": "Add members",
+
+    "Error": "Error",
+    "Internal server error": "Internal server error",
+    "An unexpected error occurred": "An unexpected error occurred",
+    "Unauthorized": "There was a problem checking authorization",
+
+    "Chat name is empty": "Chat name is empty",
+    "Chat name must be at least 5 characters": "Chat name must be at least 5 characters",
+
+    "Chat is not a group chat": "Chat is not a group chat",
+    "You don't have enough rights": "You don't have enough rights",
+    "The names are the same": "The names are the same",
+    "You cannot access this chat": "You cannot access this chat",
+    "Chat not found": "Chat not found",
+    "You have been removed from the chat": "You have been removed from the chat",
+    "You are already in chat": "You are already in chat"
 }

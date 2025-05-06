@@ -1,15 +1,24 @@
 import { useTranslation } from 'react-i18next'
-import { IChat } from '../../../entities/Chat'
+import { IChat, validateChatName } from '../../../entities/Chat'
 import { useEffect, useState } from 'react'
 import { Input } from '../../../shared/ui/Input'
 import { Button } from '../../../shared/ui/Button'
 import { observer } from 'mobx-react'
-import { deleteChat, fetchChat, leaveFromChat } from '../../chatsFetching'
+import { deleteChat, fetchChat, leaveFromChat, renameChat, returnToChat } from '../../chatsFetching'
 import { Loader } from '../../../shared/ui/Loader'
+import { useModal } from '../../modal'
+import { apiErrors, ApiErrorsKey } from '../../../shared/api'
 
 interface ChatPropertiesProps {
     chat: IChat,
     onDelete: () => void
+}
+
+interface IsFetchingStates {
+    rename: boolean,
+    delete: boolean,
+    leave: boolean,
+    return: boolean
 }
 
 const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
@@ -17,8 +26,12 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
     const { t } = useTranslation('chatProperties')
     const [newChatName, setNewChatName] = useState<string>(chat.chat.name || '')
     const [chatNameError, setChatNameError] = useState<boolean>(false)
-    const [isDeleting, setIsDeleting] = useState<boolean>(false)
-    const [isLeaving, setIsLeaving] = useState<boolean>(false)
+    const [isFetching, setIsFetching] = useState<IsFetchingStates>({ rename: false, delete: false, leave: false, return: false })
+    const { openModal, setModalText, setModalTitle } = useModal()
+
+    const isButtonsDisabled = () => {
+        return isFetching.rename || isFetching.delete || isFetching.leave || isFetching.return
+    }
 
     const isMember = () => {
         return role !== 'admin' && role !== 'owner'
@@ -33,28 +46,73 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
         if (trimmed.length === 0 || trimmed === chat.chat.name) return false
         return true
     }
+    
+    const showErrorModal = (e: any) => {
+        setModalTitle(t('Error'))
+
+        const errorKey: ApiErrorsKey = e.response?.data?.error
+        setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
+        openModal()
+    }
+
+    const renameChatAction = async () => {
+        const trimmed = newChatName.trim()
+
+        let error = validateChatName(trimmed)
+        if (error.error) {
+            setChatNameError(true)
+            setModalTitle(t('Error'))
+            if (error.message) {
+                setModalText(t(error.message))
+            }
+            openModal()
+            return 
+        }
+        setChatNameError(false)
+
+        try {
+            setIsFetching({ ...isFetching, rename: true })
+            await renameChat(chat.chat.id, trimmed)
+        } catch (e: any) {
+            showErrorModal(e)
+        } finally {
+            setIsFetching({ ...isFetching, rename: false })
+        }
+    }
+
 
     const deleteChatAction = async () => {
         try {
-            setIsDeleting(true)
+            setIsFetching({ ...isFetching, delete: true })
             await deleteChat(chat.chat.id)
             onDelete()
         } catch (e: any) {
-            console.error(e)
+            showErrorModal(e)
         } finally {
-            setIsDeleting(false)
+            setIsFetching({ ...isFetching, delete: false })
         }
-        
     }
 
     const leaveFromChatAction = async () => {
         try {
-            setIsLeaving(true)
+            setIsFetching({ ...isFetching, leave: true })
             await leaveFromChat(chat.chat.id)
         } catch (e: any) {
-            console.error(e)
+            showErrorModal(e)
         } finally {
-            setIsLeaving(false)
+            setIsFetching({ ...isFetching, leave: false })
+        }
+    }
+
+    const returnToChatAction = async () => {
+        try {
+            setIsFetching({ ...isFetching, return: true })
+            await returnToChat(chat.chat.id)
+            await fetchChat(chat.chat.id)
+        } catch (e: any) {
+            showErrorModal(e)
+        } finally {
+            setIsFetching({ ...isFetching, return: false })
         }
     }
 
@@ -91,31 +149,36 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                     <Input
                         placeholder={t('New chat name')}
                         className='px-2 py-1 2k:px-3 2k:py-2 4k:px-4 4k:py-35 rounded-lg
-                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl lg:w-44 xl:w-2/3'
+                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl lg:w-64 xl:w-2/3 mobile:w-full flex-1'
                         value={newChatName}
                         onChange={ (e) => setNewChatName(e.target.value) }
                         error={chatNameError}
                         disabled={isMember() || chat.you.isLeft || chat.you.isRemoved}
                     />
                     <Button
-                        className='flex items-center justify-center w-1/4 xl:w-1/4 lg:w-32 md:w-32 sm:w-24 mobile:w-24
+                        className='flex items-center justify-center lg:w-32 xl:w-1/4 mobile:w-full sm:w-32
                             rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                        disabled={isMember() || chat.you.isLeft || chat.you.isRemoved || !isSaveChatAvailable()}
+                        disabled={isMember() || chat.you.isLeft || chat.you.isRemoved || !isSaveChatAvailable() || isButtonsDisabled()}
+                        onClick={renameChatAction}
                     >
-                        {t('Save')}
+                        {
+                                isFetching.rename ? (
+                                    <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
+                                ) : t('Save')
+                            }
                     </Button>
                 </div>
             </div>
 
-            <div className='flex gap-3 justify-between'>
+            <div className='flex gap-3 justify-between w-full'>
                 <Button
                     className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                         rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                    disabled={!isOwner() || chat.you.isLeft || chat.you.isRemoved || isDeleting}
+                    disabled={!isOwner() || chat.you.isLeft || chat.you.isRemoved || isButtonsDisabled()}
                     onClick={deleteChatAction}
                 >
                     {
-                        isDeleting ? (
+                        isFetching.delete ? (
                             <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
                         ) : t('Delete chat')
                     }
@@ -125,19 +188,24 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                         <Button
                             className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                 rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                            disabled={chat.you.isRemoved}
+                            disabled={chat.you.isRemoved || isButtonsDisabled()}
+                            onClick={returnToChatAction}
                         >
-                            { t('Return') }
+                            {
+                                isFetching.return ? (
+                                    <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
+                                ) : t('Return')
+                            }
                         </Button>
                     ) : (
                         <Button
                             className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                                 rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                            disabled={chat.you.isRemoved}
+                            disabled={chat.you.isRemoved || isButtonsDisabled()}
                             onClick={leaveFromChatAction}
                         >
                             {
-                                isLeaving ? (
+                                isFetching.leave ? (
                                     <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
                                 ) : t('Leave')
                             }
@@ -146,9 +214,9 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                 }
             </div>
 
-            <div>
+            <div className='flex gap-3 justify-between w-full'>
                 <Button
-                    className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
+                    className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-1/2 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                         rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
                     disabled={chat.you.isLeft || chat.you.isRemoved}
                 >

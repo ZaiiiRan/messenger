@@ -1,3 +1,3 @@
-import { fetchPrivateChats, fetchGroupChats, fetchChat, deleteChat, leaveFromChat, saveChat } from "./api/chatsFetching"
+import { fetchPrivateChats, fetchGroupChats, fetchChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat } from "./api/chatsFetching"
 
-export {  fetchPrivateChats, fetchGroupChats, fetchChat, deleteChat, leaveFromChat, saveChat }
+export {  fetchPrivateChats, fetchGroupChats, fetchChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat }

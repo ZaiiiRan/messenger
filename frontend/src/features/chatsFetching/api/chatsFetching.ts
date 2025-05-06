@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios'
 import { api } from '../../../shared/api'
-import { IChatInfo, normalizeToIChat } from '../../../entities/Chat'
+import { IChatInfo, IChatMember, normalizeToIChat } from '../../../entities/Chat'
 import chatStore from '../../../entities/Chat/store/ChatStore'
 import shortUserStore from '../../../entities/SocialUser/store/ShortUserStore'
 import { IShortUser } from '../../../entities/SocialUser'
@@ -37,7 +37,42 @@ async function deleteChat(id: string | number): Promise<void> {
 
 async function leaveFromChat(id: string | number): Promise<void> {
     const response = await api.patch(`/chats/${id}/leave`)
-    console.log(response.data)
+    const you = response.data.you as IChatMember
+    const chatInfo = response.data.chat as IChatInfo
+
+    const chat = chatStore.get(id)
+    if (chat) {
+        runInAction(() => {
+            chat.chat = chatInfo,
+            chat.you = you
+        })
+    }
+}
+
+async function returnToChat(id: string | number): Promise<void> {
+    const response = await api.patch(`/chats/${id}/return`)
+    const you = response.data.you as IChatMember
+    const chatInfo = response.data.chat as IChatInfo
+
+    const chat = chatStore.get(id)
+    if (chat) {
+        runInAction(() => {
+            chat.chat = chatInfo,
+            chat.you = you
+        })
+    }
+}
+
+async function renameChat(id: string | number, newName: string): Promise<void> {
+    const response = await api.patch(`/chats/${id}`, { name: newName })
+    const chatInfo = response.data.chat as IChatInfo
+    
+    const chat = chatStore.get(id)
+    if (chat) {
+        runInAction(() => {
+            chat.chat = chatInfo
+        })
+    }
 }
 
 function saveChat(data: any) {
@@ -56,4 +91,4 @@ function saveUsers(chat: any) {
     }
 }
 
-export { fetchGroupChats, fetchPrivateChats, fetchChat, deleteChat, leaveFromChat, saveChat }
+export { fetchGroupChats, fetchPrivateChats, fetchChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat }
