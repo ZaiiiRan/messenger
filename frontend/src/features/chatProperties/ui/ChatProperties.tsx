@@ -110,7 +110,9 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
             await returnToChat(chat.chat.id)
             await fetchChat(chat.chat.id)
         } catch (e: any) {
-            showErrorModal(e)
+            if (e.response?.data?.error !== 'messages not found') {
+                showErrorModal(e)
+            }
         } finally {
             setIsFetching({ ...isFetching, return: false })
         }
@@ -133,9 +135,9 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
 
     return (
         <>
-            <div className='flex gap-6 h-32'>
+            <div className='flex gap-6 h-32 2k:h-48 2k:gap-10 4k:h-56 4k:gap-12'>
                 {/* Avatar */}
-                <div className='md:h-2/3 mobile:h-3/5 rounded-3xl aspect-square'>
+                <div className='md:h-24 mobile:h-16 rounded-3xl aspect-square'>
                     <div className='flex items-center justify-center w-full h-full Avatar-standart xl:rounded-3xl lg:rounded-2xl mobile:rounded-2xl md:rounded-3xl'>
                         <div className='flex items-center justify-center w-1/2 aspect-square'>
                             <svg viewBox="0 0 26.6666 24" xmlns="http://www.w3.org/2000/svg">
@@ -149,14 +151,14 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                     <Input
                         placeholder={t('New chat name')}
                         className='px-2 py-1 2k:px-3 2k:py-2 4k:px-4 4k:py-35 rounded-lg
-                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl lg:w-64 xl:w-2/3 mobile:w-full flex-1'
+                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl xl:w-auto lg:w-64 xl:min-w-40 mobile:w-full flex-1'
                         value={newChatName}
                         onChange={ (e) => setNewChatName(e.target.value) }
                         error={chatNameError}
                         disabled={isMember() || chat.you.isLeft || chat.you.isRemoved}
                     />
                     <Button
-                        className='flex items-center justify-center lg:w-32 xl:w-1/4 mobile:w-full sm:w-32
+                        className='flex items-center justify-center lg:w-32 xl:w-1/3 xl:min-w-28 mobile:w-full sm:w-32
                             rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
                         disabled={isMember() || chat.you.isLeft || chat.you.isRemoved || !isSaveChatAvailable() || isButtonsDisabled()}
                         onClick={renameChatAction}
@@ -170,7 +172,7 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                 </div>
             </div>
 
-            <div className='flex gap-3 justify-between w-full'>
+            <div className='flex gap-10 mobile:gap-6 2k:gap-12 4k:gap-14 justify-between w-full flex-wrap'>
                 <Button
                     className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                         rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -212,9 +214,7 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                         </Button>
                     )
                 }
-            </div>
 
-            <div className='flex gap-3 justify-between w-full'>
                 <Button
                     className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-1/2 xl:w-60 lg:w-56 md:w-60 sm:w-56 mobile:w-56 2k:w-96
                         rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
@@ -222,6 +222,10 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
                 >
                     { t('Add members') }
                 </Button>
+            </div>
+
+            <div className='flex gap-3 justify-between w-full'>
+                
             </div>
         </>
     )

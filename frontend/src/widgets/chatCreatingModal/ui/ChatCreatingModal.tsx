@@ -92,9 +92,9 @@ const ChatCreatingModal: React.FC<ChatCreatingModalProps> = ({ show, setShow, op
             setShow={setShow}
             title={t('New chat')}
         >
-            <div className='flex gap-6 h-32'>
+            <div className='flex gap-6 2k:gap-10 4k:gap-12'>
                 {/* Avatar */}
-                <div className='md:h-2/3 mobile:h-3/5 rounded-3xl aspect-square'>
+                <div className='md:h-24 mobile:h-16 2k:h-32 4k:h-40 rounded-3xl aspect-square'>
                     <div className='flex items-center justify-center w-full h-full Avatar-standart xl:rounded-3xl lg:rounded-2xl mobile:rounded-2xl md:rounded-3xl'>
                         <div className='flex items-center justify-center w-1/2 aspect-square'>
                             <svg viewBox="0 0 26.6666 24" xmlns="http://www.w3.org/2000/svg">

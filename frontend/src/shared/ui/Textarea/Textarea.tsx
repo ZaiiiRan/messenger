@@ -8,9 +8,10 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
     value?: string,
     disabled?: boolean,
     maxRows?: number,
+    onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void
 }
 
-const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, placeholder, onChange, value, disabled = false, maxRows = 4, ...restProps }, ref) => {
+const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, placeholder, onChange, value, disabled = false, maxRows = 4, onKeyDown, ...restProps }, ref) => {
     const textareaRef: any = ref || useRef()
 
     useEffect(() => {
@@ -41,6 +42,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, pl
                     onChange?.(e);
                     autoResize();
                 }}
+                onKeyDown={onKeyDown}
                 {...restProps}
             />
         </div>

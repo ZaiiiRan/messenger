@@ -92,7 +92,7 @@ const UserSelection: React.FC<UserSelectionProps> = ({ onSelect, fetchFunction, 
                     />
             </div>
 
-            <div className='h-96 scrollContainer flex flex-col overflow-y-scroll gap-3 w-full box-border'>
+            <div className='scrollContainer flex flex-col overflow-y-scroll gap-3 w-full box-border flex-grow'>
                 {
                     users.map((user, index) => (
                         <div

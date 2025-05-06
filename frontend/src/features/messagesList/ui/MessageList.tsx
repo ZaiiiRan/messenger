@@ -95,6 +95,20 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
         }
     }, [loadMoreMessages, end])
 
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+
+        const isNearBottom = container.scrollHeight - (container.scrollTop + container.clientHeight) <= 300
+
+        if (isNearBottom && !loading) {
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            })
+        }
+    }, [chat?.messages.length, chat?.messages])
+
     const groupMessagesByDate = () => {
         const chatMessages = chat?.messages || []
         const messages = chatMessages.toSorted((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime())
@@ -136,20 +150,24 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
                                 <MessageSkeleton
                                     displayFrom={chat ? chat.chat.isGroupChat : false}
                                     lines={2}
+                                    key={index + 10}
                                 />
                                 <MessageSkeleton
                                     displayFrom={chat ? chat.chat.isGroupChat : false}
                                     lines={3}
                                     me
+                                    key={index + 20}
                                 />
                                 <MessageSkeleton
                                     displayFrom={chat ? chat.chat.isGroupChat : false}
                                     lines={4}
                                     me
+                                    key={index + 30}
                                 />
                                 <MessageSkeleton
                                     displayFrom={chat ? chat.chat.isGroupChat : false}
                                     lines={1}
+                                    key={index + 40}
                                 />
                             </div>
                         ))}
@@ -157,7 +175,7 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
             )}
             {
                 groupMessagesByDate().map((group: IMessageGroup, index: number) => (
-                    <>
+                    <div key={index} className='Chat-Main-Area w-full flex flex-col gap-5 2k:gap-9 4k:gap-12'>
                         <div key={index} className='w-full flex items-center justify-center my-5'>
                             <div
                                 className='py-2 px-5 2k:py-3 2k:px-6 rounded-3xl DateBlock lg:text-sm 2k:text-base 4k:text-xl
@@ -167,7 +185,7 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
                             </div>
                         </div>
                         {
-                            group.messages.map((msg, i) => (
+                            group.messages.map((msg: IMessage, i: number) => (
                                 <Message
                                     isGroupChat={chat ? chat.chat.isGroupChat : false}
                                     key={msg.id}
@@ -176,7 +194,7 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
                                 />
                             ))
                         }
-                    </>
+                    </div>
                 ))
             }
         </div>

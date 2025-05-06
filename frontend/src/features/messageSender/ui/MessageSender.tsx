@@ -19,6 +19,13 @@ const MessageSender: React.FC<MessageSenderProps> = ({ chatId }) => {
         sendMessage(chatId, trimmedMessage)
         setMessage('')
     }
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            send()
+        }
+    }
     
     return (
         <div className='Chat-Control-Area flex items-center justify-between h-[10%] px-3 gap-5'>
@@ -28,6 +35,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({ chatId }) => {
                 placeholder={t('Enter message')}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
             />
 
             <div className='Send-Button aspect-square max-h-[80%] flex items-center justify-center rounded-3xl'
