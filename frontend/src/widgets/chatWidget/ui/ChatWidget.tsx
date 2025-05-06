@@ -8,6 +8,8 @@ import { shortUserStore } from '../../../entities/SocialUser'
 import ChatWidgetHeader from './ChatWidgetHeader'
 import { MessageSender } from '../../../features/messageSender'
 import { MessageList } from '../../../features/messagesList'
+import { ChatProperties } from '../../../features/chatProperties'
+import { Dialog } from '../../../shared/ui/Dialog'
 
 interface IChatWidgetProps {
     goBack: () => void,
@@ -15,9 +17,9 @@ interface IChatWidgetProps {
 }
 
 const ChatWidget: React.FC<IChatWidgetProps> = ({ goBack, selected }) => {
-    const { t } = useTranslation('chatWidget')
     const chat = chatStore.get(selected)
     const [chatName, setChatName] = useState<string>(chat?.chat.name || '')
+    const [propertiesShown, setPropertiesShown] = useState<boolean>(false)
 
     const isGroupChat = chat?.chat.isGroupChat
 
@@ -57,13 +59,36 @@ const ChatWidget: React.FC<IChatWidgetProps> = ({ goBack, selected }) => {
             className='Chat-Widget rounded-3xl flex flex-col gap-8 2k:gap-14 4k:gap-24'
         >
             {/* Header */}
-            <ChatWidgetHeader goBack={goBack} chatName={chatName} isGroupChat/>
+            <ChatWidgetHeader goBack={goBack} chatName={chatName} isGroupChat openProperties={() => setPropertiesShown(true)} />
 
             {/* Main */}
             <MessageList chat={chat} />
 
             {/* Message Sender */}
             <MessageSender chatId={selected} />
+
+            {
+                isGroupChat ? (
+                    <Dialog
+                        show={propertiesShown}
+                        setShow={(show: boolean) => setPropertiesShown(show)}
+                        title={chat.chat.name ? chat.chat.name : "???"}
+                    >
+                        <ChatProperties
+                            chat={chat}
+                            onDelete={() => { setPropertiesShown(false); goBack(); }}
+                        />
+                    </Dialog>
+                ) : (
+                    <Dialog
+                        show={propertiesShown}
+                        setShow={(show: boolean) => setPropertiesShown(show)}
+                        title={'man'}
+                    >
+                        man
+                    </Dialog>
+                )
+            }
         </motion.div>
     )
 }

@@ -9,16 +9,18 @@ function normalizeToIChat(object: any): IChat {
     const lastMessage = object.lastMessage as IMessage
     const members: IChatMember[] = []
 
-    object.members.forEach((value: any) => {
-        const member: IChatMember = {
-            userId: value.user.userId,
-            role: value.role,
-            isRemoved: value.isRemoved,
-            isLeft: value.isLeft,
-            addedBy: value.addedBy
-        } 
-        members.push(member)
-    })
+    if (object.members) {
+        object.members.forEach((value: any) => {
+            const member: IChatMember = {
+                userId: value.user.userId,
+                role: value.role,
+                isRemoved: value.isRemoved,
+                isLeft: value.isLeft,
+                addedBy: value.addedBy
+            } 
+            members.push(member)
+        })
+    }
 
     const you: IChatMember = {
         userId: object.you.user.userId,

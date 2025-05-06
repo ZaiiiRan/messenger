@@ -1,10 +1,11 @@
 interface ChatWidgetHeaderProps {
     goBack: () => void,
     chatName: string,
-    isGroupChat: boolean
+    isGroupChat: boolean,
+    openProperties: () => void
 }
 
-const ChatWidgetHeader: React.FC<ChatWidgetHeaderProps> = ({ goBack, chatName, isGroupChat }) => {
+const ChatWidgetHeader: React.FC<ChatWidgetHeaderProps> = ({ goBack, chatName, isGroupChat, openProperties }) => {
     return (
         <>
             <div className='flex items-center gap-5 2k:gap-7 4k:gap-9'>
@@ -21,7 +22,10 @@ const ChatWidgetHeader: React.FC<ChatWidgetHeaderProps> = ({ goBack, chatName, i
                         </svg>
                     </div>
                 </div>
-                <div className='ChatHeader flex items-center h-full gap-5 py-3 px-4 2k:py-5 2k:px-6 2k:h-24 4k:py-7 4k:px-8 4k:h-32 rounded-3xl max-w-[90%]'>
+                <div 
+                    className='ChatHeader flex items-center h-full gap-5 py-3 px-4 2k:py-5 2k:px-6 2k:h-24 4k:py-7 4k:px-8 4k:h-32 rounded-3xl max-w-[90%]'
+                    onClick={openProperties}
+                >
                     {/* Avatar */}
                     <div className='h-full rounded-3xl aspect-square'>
                         <div className='flex items-center justify-center w-full h-full Avatar-standart xl:rounded-3xl lg:rounded-2xl mobile:rounded-2xl md:rounded-3xl'>
