@@ -207,17 +207,37 @@ func GetChatByID(id uint64) (*Chat, error) {
 	return chat, nil
 }
 
-// Getting a chat object and its member object (request sender)
+// Getting a chat object by ID and its member object (request sender)
 func GetChatAndMember(chatID uint64, memberID uint64) (*Chat, *chatMember.ChatMember, error) {
+	getChatFunc := func() (*Chat, error) {
+		return GetChatByID(chatID)
+	}
+
+	return getChatAndMember(getChatFunc, memberID)
+}
+
+// Getting a private chat object and its member object (request sender)
+func GetPrivateChatAndMember(memberID uint64, member2ID uint64) (*Chat, *chatMember.ChatMember, error) {
+	getChatFunc := func() (*Chat, error) {
+		return getPrivateChatFromDB(memberID, member2ID)
+	}
+	
+	return getChatAndMember(getChatFunc, memberID)
+}
+
+// getting chat object and its member object (request sender)
+func getChatAndMember(getChatFunc func() (*Chat, error), memberID uint64) (*Chat, *chatMember.ChatMember, error) {
 	var appError *appErr.AppError
 
-	chat, err := GetChatByID(chatID)
+	chat, err := getChatFunc()
 	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
 		return nil, nil, appErr.Forbidden("you cannot access this chat")
 	} else if err != nil {
 		return nil, nil, err
 	}
 
+	chat.IsGroupChat = false
+	
 	member, err := chat.GetChatMemberByID(memberID)
 	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
 		return nil, nil, appErr.Forbidden("you cannot access this chat")

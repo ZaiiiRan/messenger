@@ -59,6 +59,10 @@ func getPrivateChatList(c *fiber.Ctx) error {
 	return controller.GetPrivateChats(c)
 }
 
+func getPrivateChat(c *fiber.Ctx) error {
+	return controller.GetPrivateChat(c)
+}
+
 func SetupRoutes(app *fiber.App) {
 	chat := app.Group("/chats")
 
@@ -71,6 +75,7 @@ func SetupRoutes(app *fiber.App) {
 	chat.Get("/:chat_id", authMiddleware.AuthMiddleware, getChat)
 	chat.Patch("/:chat_id", authMiddleware.AuthMiddleware, renameChat)
 	chat.Delete("/:chat_id", authMiddleware.AuthMiddleware, deleteChat)
+	chat.Get("/private/:member_id", authMiddleware.AuthMiddleware, getPrivateChat)
 
 	// Members management
 	chat.Post("/:chat_id/members/friends-are-not-chatting", authMiddleware.AuthMiddleware, getFriendsAreNotChatting)

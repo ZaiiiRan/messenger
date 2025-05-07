@@ -301,27 +301,31 @@ func GetChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	var members []chatMember.ChatMember
-	if !member.IsRemoved() && !member.IsLeft() {
-		members, err = chat.GetChatMembers(member)
-		if err != nil {
-			return err
-		}
-	}
-	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
+	return createChatResponse(c, chat, member)
+}
 
-	lastMessage, err := message.GetMessages(chat, member, 1, 0)
+// Get private chat
+func GetPrivateChat(c *fiber.Ctx) error {
+	user, err := utils.GetUserDTOFromLocals(c)
 	if err != nil {
 		return err
 	}
-	lastMessageDTO := messageDTO.CreateMessageDTO(&lastMessage[0])
 
-	return c.JSON(fiber.Map{
-		"chat":         chatDTO.CreateChatDTO(chat),
-		"you":          chatMemberDTO.CreateChatMemberDTO(member),
-		"members":      membersDTOs,
-		"last_message": lastMessageDTO,
-	})
+	memberID, err := parseMemberID(c)
+	if err != nil {
+		return err
+	}
+
+	if user.ID == memberID {
+		return appErr.BadRequest("you can't have a chat with yourself")
+	}
+
+	chat, member, err := chatModel.GetPrivateChatAndMember(user.ID, memberID)
+	if err != nil {
+		return err
+	}
+
+	return createChatResponse(c, chat, member)
 }
 
 // Get friends are not chatting
@@ -429,5 +433,35 @@ func getChatList(c *fiber.Ctx, isGroup bool) error {
 
 	return c.JSON(fiber.Map{
 		"chats": response,
+	})
+}
+
+// create chat response
+func createChatResponse(c *fiber.Ctx, chat *chatModel.Chat, member *chatMember.ChatMember) error {
+	var members []chatMember.ChatMember
+	if !member.IsRemoved() && !member.IsLeft() {
+		var err error
+		members, err = chat.GetChatMembers(member)
+		if err != nil {
+			return err
+		}
+	}
+	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
+
+	lastMessage, err := message.GetLastMessage(chat, member)
+	if err != nil {
+		return err
+	}
+
+	var lastMessageDTO *messageDTO.MessageDTO
+	if lastMessage != nil {
+		lastMessageDTO = messageDTO.CreateMessageDTO(lastMessage)
+	}
+
+	return c.JSON(fiber.Map{
+		"chat":         chatDTO.CreateChatDTO(chat),
+		"you":          chatMemberDTO.CreateChatMemberDTO(member),
+		"members":      membersDTOs,
+		"last_message": lastMessageDTO,
 	})
 }

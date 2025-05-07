@@ -5,6 +5,7 @@ import (
 	"backend/internal/models/chat"
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/utils"
+	"errors"
 	"time"
 )
 
@@ -110,6 +111,19 @@ func GetMessage(id uint64) (*Message, error) {
 // Get messages
 func GetMessages(chat *chat.Chat, actor *chatMember.ChatMember, limit, offset int) ([]Message, error) {
 	return getMessagesFromDB(chat, actor, limit, offset)
+}
+
+// Get last message
+func GetLastMessage(chat *chat.Chat, actor *chatMember.ChatMember) (*Message, error) {
+	var appError *appErr.AppError
+
+	messages, err := GetMessages(chat, actor, 1, 0)
+	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return &messages[0], nil
 }
 
 // validate message content
