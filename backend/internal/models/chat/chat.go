@@ -221,8 +221,13 @@ func GetPrivateChatAndMember(memberID uint64, member2ID uint64) (*Chat, *chatMem
 	getChatFunc := func() (*Chat, error) {
 		return getPrivateChatFromDB(memberID, member2ID)
 	}
-	
-	return getChatAndMember(getChatFunc, memberID)
+
+	chat, member, err := getChatAndMember(getChatFunc, memberID)
+	if chat != nil {
+		chat.IsGroupChat = false
+	}
+
+	return chat, member, err
 }
 
 // getting chat object and its member object (request sender)
@@ -236,8 +241,6 @@ func getChatAndMember(getChatFunc func() (*Chat, error), memberID uint64) (*Chat
 		return nil, nil, err
 	}
 
-	chat.IsGroupChat = false
-	
 	member, err := chat.GetChatMemberByID(memberID)
 	if err != nil && errors.As(err, &appError) && appError.StatusCode == 404 {
 		return nil, nil, appErr.Forbidden("you cannot access this chat")
