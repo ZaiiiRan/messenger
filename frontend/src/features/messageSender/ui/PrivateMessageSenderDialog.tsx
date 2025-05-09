@@ -22,12 +22,10 @@ const PrivateMessageSenderDialog: React.FC<PrivateMessageSenderDialogProps> = ({
     const [message, setMessage] = useState<string>('')
     const [isSending, setIsSending] = useState<boolean>(false)
 
-    const { openModal, setModalText, setModalTitle } = useModal()
+    const { openModal } = useModal()
 
     const showModal = (title: string, message: string) => {
-        setModalTitle(title)
-        setModalText(message)
-        openModal()
+        openModal(title, message)
     }
 
     const send = async () => {

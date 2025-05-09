@@ -9,7 +9,6 @@ import ChatWidgetHeader from './ChatWidgetHeader'
 import { MessageSender } from '../../../features/messageSender'
 import { MessageList } from '../../../features/messagesList'
 import { ChatProperties } from '../../../features/chatProperties'
-import { Dialog } from '../../../shared/ui/Dialog'
 
 interface IChatWidgetProps {
     goBack: () => void,

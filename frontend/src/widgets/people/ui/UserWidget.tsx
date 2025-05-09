@@ -12,7 +12,7 @@ interface UserWidgetProps {
     selectedUser: IShortUser,
     checkAfterUpdate?: boolean,
     onLoadError: () => void,
-    onMessageClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+    onMessageClick: (event: React.MouseEvent<HTMLButtonElement> | void) => void
 }
 
 const UserWidget: React.FC<UserWidgetProps> = ({ 

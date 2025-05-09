@@ -30,7 +30,7 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete, show, s
     const [newChatName, setNewChatName] = useState<string>(chat.chat.name || '')
     const [chatNameError, setChatNameError] = useState<boolean>(false)
     const [isFetching, setIsFetching] = useState<IsFetchingStates>({ rename: false, delete: false, leave: false, return: false })
-    const { openModal, setModalText, setModalTitle } = useModal()
+    const { openModal } = useModal()
 
     const isButtonsDisabled = () => {
         return isFetching.rename || isFetching.delete || isFetching.leave || isFetching.return
@@ -51,11 +51,9 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete, show, s
     }
     
     const showErrorModal = (e: any) => {
-        setModalTitle(t('Error'))
-
         const errorKey: ApiErrorsKey = e.response?.data?.error
-        setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-        openModal()
+        const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+        openModal(t('Error'), errMsg)
     }
 
     const renameChatAction = async () => {
@@ -64,11 +62,10 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete, show, s
         let error = validateChatName(trimmed)
         if (error.error) {
             setChatNameError(true)
-            setModalTitle(t('Error'))
             if (error.message) {
-                setModalText(t(error.message))
+                openModal(t('Error'), t(error.message))
             }
-            openModal()
+            
             return 
         }
         setChatNameError(false)

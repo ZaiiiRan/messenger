@@ -16,7 +16,7 @@ const LIMIT = 10
 
 const UserSelection: React.FC<UserSelectionProps> = ({ onSelect, fetchFunction, checkSelected }) => {
     const { t } = useTranslation('userSelection')
-    const { openModal, setModalText, setModalTitle } = useModal()
+    const { openModal } = useModal()
     const [users, setUsers] = useState<any[]>([])
     const [isFetching, setFetching] = useState<boolean>(false)
     const [end, setEnd] = useState<boolean>(false)
@@ -39,11 +39,9 @@ const UserSelection: React.FC<UserSelectionProps> = ({ onSelect, fetchFunction, 
             if (e instanceof AxiosError && e.status === 404) {
                 setEnd(true)
             } else {
-                setModalTitle(t('Error'))
-
                 const errorKey: ApiErrorsKey = e.response?.data?.error
-                setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-                openModal()
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
             }
         } finally {
             setFetching(false)

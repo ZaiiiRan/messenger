@@ -21,7 +21,7 @@ const ChatList: React.FC<ChatListProps> = ({ open, group, setNewChatModal }) => 
     const [offset, setOffset] = useState<number>(0)
     const [isFetching, setFetching] = useState<boolean>(false)
     const [end, setEnd] = useState<boolean>(false)
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     const fetchFunction = group ? fetchGroupChats : fetchPrivateChats
     const title = group ? t('Groups') : t('People')
@@ -44,11 +44,9 @@ const ChatList: React.FC<ChatListProps> = ({ open, group, setNewChatModal }) => 
             if (e instanceof AxiosError && e.status === 404) {
                 setEnd(true)
             } else {
-                setModalTitle(t('Error'))
-
                 const errorKey: ApiErrorsKey = e.response?.data?.error
-                setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-                openModal()
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
             }
         } finally {
             setFetching(false)

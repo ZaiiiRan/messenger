@@ -1,30 +1,22 @@
 import { makeAutoObservable } from 'mobx'
+import ModalData from '../models/modalData'
 
 class ModalStore {
-    isOpen: boolean = false
-    title: string = ''
-    text: string = ''
+    modals: ModalData[] = []
 
     constructor() {
         makeAutoObservable(this)
     }
 
-    openModal() {
-        this.isOpen = true
+    openModal(title: string, text: string) {
+        if (this.modals.length >= 10) return
+        const id = Date.now().toString()
+        this.modals.push({ id, title, text })
     }
 
-    closeModal() {
-        this.isOpen = false
+    closeModal(id: string) {
+        this.modals = this.modals.filter(modal => modal.id !== id)
     }
-
-    setTitle(title: string) {
-        this.title = title
-    }
-
-    setText(text: string) {
-        this.text = text
-    }
-
 }
 
 const modalStore = new ModalStore()

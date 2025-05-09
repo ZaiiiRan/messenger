@@ -7,8 +7,9 @@ import styles from './Modal.module.css'
 const Modal = observer(() => {
     return (
         <AnimatePresence mode='popLayout'>
-            { modalStore.isOpen && 
+            { modalStore.modals.map((modal) => (
                 <motion.div 
+                    key={modal.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -26,21 +27,21 @@ const Modal = observer(() => {
                         <h1 className='text-center font-extrabold 
                             md:text-3xl mobile:text-2xl 2k:text-5xl 4k:text-7xl'
                         >
-                            {modalStore.title}
+                            {modal.title}
                         </h1>
                         <div className='text-xl mobile:text-lg 2k:text-2xl 4k:text-4xl text-center'>
-                            {modalStore.text}
+                            {modal.text}
                         </div>
                         <Button 
                             className='h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
                                 md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                            onClick={() => modalStore.closeModal()}
+                            onClick={() => modalStore.closeModal(modal.id)}
                         >
                             ОК
                         </Button>
                     </motion.div>
                 </motion.div>
-            }
+            ))}
         </AnimatePresence>
     )
 })

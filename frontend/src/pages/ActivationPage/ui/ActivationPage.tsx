@@ -15,7 +15,7 @@ const ActivationPage = () => {
     const [data, setData] = useState<{ [key in DataKeys]: string }>({ first: '', second: '', third: '', fourth: '', fifth: '', sixth: '' })
     const [err, setErr] = useState({ first: false, second: false, third: false, fourth: false, fifth: false, sixth: false })
 
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     const firstRef = useRef<HTMLInputElement>(null)
     const secondRef = useRef<HTMLInputElement>(null)
@@ -73,9 +73,7 @@ const ActivationPage = () => {
         }
         setErr(newErr)
         if (hasErr) {
-            setModalTitle(t('Error'))
-            setModalText(t('The code is not completely filled out'))
-            openModal()
+            openModal(t('Error'), t('The code is not completely filled out'))
         }
         return !hasErr
     }
@@ -89,11 +87,9 @@ const ActivationPage = () => {
             userStore.setLoading(true)
             await userStore.activate(code)
         } catch (e: any) {
-            setModalTitle(t('Error'))
-
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-            openModal()
+            const errMsg = (t(apiErrors[errorKey]) || t('Internal server error'))
+            openModal(t('Error'), errMsg)
         } finally {
             userStore.setLoading(false)
         }
@@ -104,17 +100,13 @@ const ActivationPage = () => {
         try {
             const response = await userStore.resend()
             console.log
-            setModalTitle(t('Activation code'))
-
             const messageKey: ApiMessagesKey = response?.message
-            setModalText(t(apiMessages[messageKey]))
-            openModal()
+            openModal(t('Activation code'), t(apiMessages[messageKey]))
         } catch (e: any) {
-            setModalTitle(t('Error'))
 
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-            openModal()
+            const errMsg = (t(apiErrors[errorKey]) || t('Internal server error'))
+            openModal(t('Error'), errMsg)
         }
     }
 

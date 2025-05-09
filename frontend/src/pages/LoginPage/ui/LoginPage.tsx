@@ -12,24 +12,22 @@ const LoginPage = () => {
     const [data, setData] = useState<{login: string, password: string}>({ login: '', password: '' })
     const [err, setErr] = useState<{login: boolean, password: boolean}>({ login: false, password: false })
 
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     const userStore = useAuth()
 
     const proccessValidateErrors = (errors: {login: boolean, password: boolean}) => {
+        let errMsg = ''
         if (errors.login && errors.password) {
-            setModalTitle(t('Error'))
-            setModalText(t('Enter your login and password'))
+            errMsg = t('Enter your login and password')
         } else if (errors.login) {
-            setModalTitle(t('Error'))
-            setModalText(t('Enter your login'))
+            errMsg = t('Enter your login')
         } else if (errors.password) {
-            setModalTitle(t('Error'))
-            setModalText(t('Enter your password'))
+            errMsg = t('Enter your password')
         } else {
             return false
         }
-        openModal()
+        openModal(t('Error'), errMsg)
         return true
     }
 
@@ -57,11 +55,9 @@ const LoginPage = () => {
             await userStore.login(data.login, data.password)
         } catch (e: any) {
             console.log(e)
-            setModalTitle(t('Error'))
-
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-            openModal()
+            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+            openModal(t('Error'), errMsg)
         } finally {
             userStore.setLoading(false)
         }

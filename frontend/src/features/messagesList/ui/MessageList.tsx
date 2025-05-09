@@ -29,7 +29,7 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
     const skeletonRef = useRef<HTMLDivElement | null>(null)
     const [end, setEnd] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(false)
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     useEffect(() => {
         const container = containerRef.current
@@ -63,11 +63,9 @@ const MessageList: React.FC<MessageListProps> = ({ chat }) => {
             if (e instanceof AxiosError && e.status === 404) {
                 setEnd(true)
             } else {
-                setModalTitle(t('Error'))
-
                 const errorKey: ApiErrorsKey = e.response?.data?.error
-                setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-                openModal()
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
             }
         } finally {
             setLoading(false)

@@ -22,7 +22,7 @@ const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelec
     const [data, setData] = useState<Array<any>>([])
     const [isFetching, setFetching] = useState<boolean>(false)
     const [end, setEnd] = useState<boolean>(false)
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     const loadUsers = async (newSearch = search, newOffset = offset, newEnd = end, newLimit = limit) => {
         if (newEnd || newSearch.length < minSearchLength || isFetching) return
@@ -40,11 +40,9 @@ const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelec
             if (e instanceof AxiosError && e.status === 404) {
                 setEnd(true)
             } else {
-                setModalTitle(t('Error'))
-
                 const errorKey: ApiErrorsKey = e.response?.data?.error
-                setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-                openModal()
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
             }
         } finally {
             setFetching(false)

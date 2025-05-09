@@ -88,7 +88,27 @@ const apiErrors = {
     "you cannot assign a role to an excluded member": "You cannot assign a role to an excluded member",
     "unknown role": "Unknown role",
     "owner role cannot be assigned": "Owner role cannot be assigned",
-    "you can't have a chat with yourself": "You can't have a chat with yourself"
+    "you can't have a chat with yourself": "You can't have a chat with yourself",
+
+    // messages
+    "your interlocutor is blocked": "Your interlocutor is blocked",
+    "you are blocked by your interlocutor": "You are blocked by your interlocutor",
+    "your interlocutor is blocked by you": "You are blocked by your interlocutor",
+
+    "invalid send_message payload": "An unexpected error occurred",
+    "invalid payload": "Invalid payload",
+    "message content is empty": "Message can't be empty",
+
+    // edit message
+    "invalid edit_message payload": "An unexpected error occurred",
+    "you cannot access this message": "You cannot access this message",
+    "the message was sent more than 12 hours ago": "The message was sent more than 12 hours ago",
+    "content match": "Content match",
+
+    // delete message
+    "invalid remove_message payload": "An unexpected error occurred",
+    "the message has already been deleted": "The message has already been deleted"
+
 } as const
 
 type ApiErrorsKey = keyof typeof apiErrors

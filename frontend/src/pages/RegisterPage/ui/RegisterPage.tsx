@@ -28,7 +28,7 @@ const RegisterPage = () => {
     const [step, setStep] = useState<number>(1)
     const [data, setData] = useState<RegisterData>({ username: '', email: '', firstname: '', lastname: '', password: '', repeatPassword: '', birthdate: '', phone: ''})
     const [err, setErr] = useState({ username: false, email: false, firstname: false, lastname: false, password: false, repeatPassword: false, birthdate: false, phone: false})
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
     const userStore = useAuth()
 
     const validateStep = (stepData: RegisterData, validationFunctions: Validators) => {
@@ -40,9 +40,9 @@ const RegisterPage = () => {
             if (!result.valid) {
                 newErrors[field] = true
                 isValid = false
-                setModalTitle(t('Error'))
-                if (result.message) setModalText(t(result.message))
-                openModal()
+                if (result.message) {
+                    openModal(t('Error'), t(result.message))
+                }
             } else {
                 newErrors[field] = false
             }
@@ -70,11 +70,9 @@ const RegisterPage = () => {
             await userStore.register(data.username, data.email, data.password, data.firstname, data.lastname, data.phone, data.birthdate)
         } catch (e: any) {
             console.log(e)
-            setModalTitle(t('Error'))
-
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-            openModal()
+            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+            openModal(t('Error'), errMsg)
         } finally {
             userStore.setLoading(false)
         }

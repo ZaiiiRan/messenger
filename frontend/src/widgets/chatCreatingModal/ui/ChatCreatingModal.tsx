@@ -22,7 +22,7 @@ interface ChatCreatingModalProps {
 
 const ChatCreatingModal: React.FC<ChatCreatingModalProps> = ({ show, setShow, open }) => {
     const { t } = useTranslation('chatCreating')
-    const { openModal, setModalText, setModalTitle } = useModal()
+    const { openModal } = useModal()
     const [chatName, setChatName] = useState<string>('')
     const [chatNameError, setChatNameError] = useState<boolean>(false)
     const [selectedUsers, setSelectedUsers] = useState<(number | string)[]>([])
@@ -30,11 +30,10 @@ const ChatCreatingModal: React.FC<ChatCreatingModalProps> = ({ show, setShow, op
 
     const validate = () => {
         const showError = (message: string | undefined) => {
-            setModalTitle(t('Error'))
             if (message) {
-                setModalText(t(message))
+                openModal(t('Error'), t(message))
             }
-            openModal()
+            
         }
     
         let error = validateChatName(chatName)
@@ -63,11 +62,9 @@ const ChatCreatingModal: React.FC<ChatCreatingModalProps> = ({ show, setShow, op
             setShow(false)
             open(chat.chat.id)
         } catch (e: any) {
-            setModalTitle(t('Error'))
-
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('An unexpected error occurred (maybe one of the users removed you from friends)'))
-            openModal()
+            const errMsg = t(apiErrors[errorKey]) || t('An unexpected error occurred (maybe one of the users removed you from friends)')
+            openModal(t('Error'), errMsg)
         } finally {
             setIsCreating(false)
         }
