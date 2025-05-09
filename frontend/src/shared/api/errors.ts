@@ -93,10 +93,10 @@ const apiErrors = {
     // messages
     "your interlocutor is blocked": "Your interlocutor is blocked",
     "you are blocked by your interlocutor": "You are blocked by your interlocutor",
-    "your interlocutor is blocked by you": "You are blocked by your interlocutor",
+    "your interlocutor is blocked by you": "Your interlocutor is blocked by you",
 
     "invalid send_message payload": "An unexpected error occurred",
-    "invalid payload": "Invalid payload",
+    "invalid payload": "An unexpected error occurred",
     "message content is empty": "Message can't be empty",
 
     // edit message

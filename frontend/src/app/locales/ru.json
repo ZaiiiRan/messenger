@@ -1,0 +1,12 @@
+{
+    "Error": "Ошибка",
+    "Your interlocutor is blocked": "Ваш собеседник заблокирован",
+    "You are blocked by your interlocutor": "Вы заблокированы вашим собеседником",
+    "Your interlocutor is blocked by you": "Ваш собеседник заблокирован вами",
+    "An unexpected error occurred": "Произошла непредвиденная ошибка",
+    "Message can't be empty": "Сообщение не может быть пустым",
+    "You cannot access this message": "Вы не можете получить доступ к этому сообщению",
+    "The message was sent more than 12 hours ago": "Сообщение было отправлено более 12 часов назад, действие недоступно",
+    "Content match": "Содержимое сообщения совпадает",
+    "The message has already been deleted": "Сообщение уже было удалено"
+}
