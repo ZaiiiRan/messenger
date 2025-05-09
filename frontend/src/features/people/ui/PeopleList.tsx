@@ -7,7 +7,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 
 interface PeopleListProps {
     search: string,
-    fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
+    fetchFunction: (search: string, limit: number, offset: number) => Promise<IShortUser[]>,
     setSelectedUser: Dispatch<SetStateAction<IShortUser | null>>,
     minSearchLength: number, 
     userManipulation: boolean,
@@ -31,8 +31,7 @@ const PeopleList: React.FC<PeopleListProps> = ({ search, fetchFunction, setSelec
         const source = axios.CancelToken.source()
 
         try {
-            const response = await fetchFunction(newSearch, newLimit, newOffset)
-            const newUsers = response.data.users
+            const newUsers = await fetchFunction(newSearch, newLimit, newOffset)
             if (newUsers.length < limit) setEnd(true)
             setData((prevUsers) => [...prevUsers, ...newUsers])
             setOffset((prevOffset) => prevOffset + limit)

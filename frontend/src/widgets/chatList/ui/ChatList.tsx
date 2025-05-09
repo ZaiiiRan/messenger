@@ -33,8 +33,7 @@ const ChatList: React.FC<ChatListProps> = ({ open, group, setNewChatModal }) => 
         const source = axios.CancelToken.source()
 
         try {
-            const response = await fetchFunction(newLimit, newOffset)
-            const newChats = response.data.chats
+            const newChats = await fetchFunction(newLimit, newOffset)
 
             if (newChats.length < limit) setEnd(true)
             

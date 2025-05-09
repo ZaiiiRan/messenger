@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { useModal } from '../../modal'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiErrors, ApiErrorsKey } from '../../../shared/api'
-import { ShortUser } from '../../../entities/SocialUser'
+import { IShortUser, ShortUser } from '../../../entities/SocialUser'
 import { Input } from '../../../shared/ui/Input'
 
 interface UserSelectionProps {
     onSelect: (id: string | number) => void,
-    fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
+    fetchFunction: (search: string, limit: number, offset: number) => Promise<IShortUser[]>,
     checkSelected: (userId: string | number) => boolean
 }
 
@@ -30,8 +30,7 @@ const UserSelection: React.FC<UserSelectionProps> = ({ onSelect, fetchFunction, 
         const source = axios.CancelToken.source()
 
         try {
-            const response = await fetchFunction(newSearch, newLimit, newOffset)
-            const newUsers = response.data.users
+            const newUsers = await fetchFunction(newSearch, newLimit, newOffset)
             if (newUsers.length < LIMIT) setEnd(true)
             setUsers((prevUsers) => [...prevUsers, ...newUsers])
             setOffset((prevOffset) => prevOffset + LIMIT)

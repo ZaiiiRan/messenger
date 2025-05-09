@@ -1,4 +1,3 @@
-import { AxiosResponse } from 'axios'
 import { api } from '../../../shared/api'
 import { IChatInfo, IChatMember, normalizeToIChat } from '../../../entities/Chat'
 import chatStore from '../../../entities/Chat/store/ChatStore'
@@ -7,20 +6,20 @@ import { IShortUser } from '../../../entities/SocialUser'
 import { IChat } from '../../../entities/Chat'
 import { runInAction } from 'mobx'
 
-async function fetchGroupChats(limit: number, offset: number): Promise<AxiosResponse<any, any>> {
+async function fetchGroupChats(limit: number, offset: number): Promise<IChat[]> {
     const response = await api.post('/chats/group-list', { limit, offset })
 
-    response.data.chats.forEach((value: any) => saveChat(value))
+    const chats = response.data.chats.map((value: any) => saveChat(value))
 
-    return response
+    return chats
 }
 
-async function fetchPrivateChats(limit: number, offset: number): Promise<AxiosResponse<any, any>> {
+async function fetchPrivateChats(limit: number, offset: number): Promise<IChat[]> {
     const response = await api.post('/chats/private-list', { limit, offset })
 
-    response.data.chats.forEach((value: any) => saveChat(value))
+    const chats = response.data.chats.map((value: any) => saveChat(value))
 
-    return response
+    return chats
 }
 
 async function fetchChat(id: string | number): Promise<IChat> {

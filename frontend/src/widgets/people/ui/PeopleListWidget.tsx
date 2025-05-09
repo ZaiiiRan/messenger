@@ -9,7 +9,7 @@ import { IShortUser } from '../../../entities/SocialUser'
 interface PeopleListWidgetProps {
     title: string,
     goBack: () => void,
-    fetchFunction: (search: string, limit: number, offset: number) => Promise<AxiosResponse<any, any>>,
+    fetchFunction: (search: string, limit: number, offset: number) => Promise<IShortUser[]>,
     setSelectedUser: Dispatch<SetStateAction<IShortUser | null>>,
     minSearchLength?: number,
     className?: string,
