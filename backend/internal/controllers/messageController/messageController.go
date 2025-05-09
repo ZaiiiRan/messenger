@@ -26,8 +26,8 @@ func SendMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.Mes
 		return nil, nil, err
 	}
 
-	if chat.IsGroupChat {
-		sendMessageToPrivateChat(chat, requestSendingMember, req)
+	if !chat.IsGroupChat {
+		return sendMessageToPrivateChat(chat, requestSendingMember, req)
 	}
 
 	message, err := message.NewMessage(chat, requestSendingMember, req.MessageContent)
