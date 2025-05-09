@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { IShortUser, fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList } from '../../../entities/SocialUser'
 import { PeopleMenu, PeopleListWidget, UserWidget } from '../../../widgets/people'
-import { SendMessageModal } from '../../../features/chats'
+import { PrivateMessageSenderDialog } from '../../../features/messageSender'
 
 const PeoplePage = () => {
     const [selected, setSelected] = useState<string | null>(null)
@@ -158,13 +158,16 @@ const PeoplePage = () => {
                     )
                 }
             </AnimatePresence>
-
-            <SendMessageModal 
-                show={selectedUser && messageModalOpen} 
-                setShow={() => setMessageModalOpen(false)} 
-                recipient={selectedUser} 
-            />
             
+            {
+                selectedUser && (
+                    <PrivateMessageSenderDialog 
+                        show={selectedUser && messageModalOpen} 
+                        setShow={() => setMessageModalOpen(false)} 
+                        recipient={selectedUser} 
+                    />
+                )
+            }
         </motion.div>
     )
 }

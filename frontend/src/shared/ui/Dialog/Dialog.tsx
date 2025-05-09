@@ -6,10 +6,12 @@ interface DialogProps {
     show: boolean,
     setShow: (show: boolean) => void,
     title: string,
-    children: React.ReactNode
+    children: React.ReactNode,
+    zIndex?: number,
+    id?: string
 }
 
-const Dialog: React.FC<DialogProps> = ({ show, setShow, title, children }) => {
+const Dialog: React.FC<DialogProps> = ({ show, setShow, title, children, zIndex, id }) => {
 
     return (
             createPortal(
@@ -17,15 +19,16 @@ const Dialog: React.FC<DialogProps> = ({ show, setShow, title, children }) => {
                 {
                     show && (
                         <motion.div 
-                        layoutId="modal"
+                            layoutId={`modal-${id}`}
                             initial={{ opacity: 0, x: 0, y: 0 }}
                             animate={{ opacity: 1, x: 0, y: 0 }}
                             exit={{ opacity: 0, x: 0, y: 0 }}
                             transition={{ duration: 0.3 }}
                             className={`${styles.DialogBG} fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black bg-opacity-50`}
+                            style={{ zIndex: zIndex ?? 50 }}
                         >
                             <motion.div 
-                            layoutId="modal-content"
+                            layoutId={`modal-content-${id}`}
                                 initial={{ opacity: 0, transform: 'scale(0)' }}
                                 animate={{ opacity: 1, transform: 'scale(1)' }}
                                 exit={{ opacity: 0, transform: 'scale(0)' }}

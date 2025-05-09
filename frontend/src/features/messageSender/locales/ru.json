@@ -1,3 +1,15 @@
 {
-    "Enter message": "Введите сообщение"
+    "Enter message": "Введите сообщение",
+
+    "Error": "Ошибка",
+    "Message can't be empty": "Сообщение не может быть пустым",
+    "New message": "Новое сообщение",
+    "Send": "Отправить",
+
+    "Success": "Усшешно",
+    "The message has been sent": "Сообщение было отправлено",
+
+    "You can't have a chat with yourself": "Вы не можете общаться с собой",
+    "You cannot write to the user": "Вы не можете написать пользователю",
+    "Internal server error": "Внутренняя ошибка сервера"
 }

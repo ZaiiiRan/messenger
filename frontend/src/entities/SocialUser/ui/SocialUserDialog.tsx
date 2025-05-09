@@ -8,10 +8,11 @@ import { observer } from 'mobx-react'
 interface SocialUserDialogProps {
     show: boolean,
     setShow: (show: boolean) => void,
-    id: string | number 
+    id: string | number,
+    onMessageClick?: () => void
 }
 
-const SocialUserDialog: React.FC<SocialUserDialogProps> = ({ show, setShow, id }) => {
+const SocialUserDialog: React.FC<SocialUserDialogProps> = ({ show, setShow, id, onMessageClick }) => {
     const [user, setUser] = useState<IShortUser | null>()
 
     useEffect(() => {
@@ -43,6 +44,7 @@ const SocialUserDialog: React.FC<SocialUserDialogProps> = ({ show, setShow, id }
                         <SocialUser 
                             id={id}
                             onError={() => setShow(false)}
+                            onMessageClick={onMessageClick}
                         />
                     </Dialog>
                 )

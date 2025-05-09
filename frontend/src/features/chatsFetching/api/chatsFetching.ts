@@ -29,6 +29,12 @@ async function fetchChat(id: string | number): Promise<IChat> {
     return chat
 }
 
+async function fetchPrivateChat(memberId: string | number): Promise<IChat> {
+    const response = await api.get(`/chats/private/${memberId}`)
+    const chat = saveChat(response.data)
+    return chat
+}
+
 async function deleteChat(id: string | number): Promise<void> {
     const response = await api.delete(`/chats/${id}`)
     const chatInfo = response.data.deletedChat as IChatInfo
@@ -91,4 +97,4 @@ function saveUsers(chat: any) {
     }
 }
 
-export { fetchGroupChats, fetchPrivateChats, fetchChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat }
+export { fetchGroupChats, fetchPrivateChats, fetchChat, fetchPrivateChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat }

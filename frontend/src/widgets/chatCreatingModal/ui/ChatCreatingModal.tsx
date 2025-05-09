@@ -66,7 +66,7 @@ const ChatCreatingModal: React.FC<ChatCreatingModalProps> = ({ show, setShow, op
             setModalTitle(t('Error'))
 
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
+            setModalText(t(apiErrors[errorKey]) || t('An unexpected error occurred (maybe one of the users removed you from friends)'))
             openModal()
         } finally {
             setIsCreating(false)

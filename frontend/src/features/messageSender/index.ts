@@ -5,5 +5,6 @@ i18n.addResourceBundle('en', 'messageSender', en)
 i18n.addResourceBundle('ru', 'messageSender', ru)
 
 import MessageSender from './ui/MessageSender'
+import PrivateMessageSenderDialog from './ui/PrivateMessageSenderDialog'
 
-export { MessageSender }
+export { MessageSender, PrivateMessageSenderDialog }

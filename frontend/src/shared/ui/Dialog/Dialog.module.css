@@ -1,6 +1,3 @@
-.DialogBG {
-    z-index: 50;
-}
 .Dialog {
     background-color: var(--widget-background);
 

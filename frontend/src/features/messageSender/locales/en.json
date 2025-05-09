@@ -1,3 +1,13 @@
 {
-    "Enter message": "Enter message"
+    "Enter message": "Enter message",
+
+    "Error": "Error",
+    "Message can't be empty": "Message can't be empty",
+    "New message": "New message",
+    "Send": "Send",
+
+    "Success": "Success",
+    "The message has been sent": "The message has been sent",
+    "You cannot write to the user": "You cannot write to the user",
+    "Internal server error": "Internal server error"
 }

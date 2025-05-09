@@ -26,6 +26,10 @@ class ChatStore {
         return this.store.has(chatId)
     }
 
+    getPrivateChat(userId: string | number): IChat | undefined {
+        return Array.from(this.store.values()).find((chat) => !chat.chat.isGroupChat && chat.members.some(member => member.userId == userId))
+    }
+
     clear() {
         this.store.clear()
     }

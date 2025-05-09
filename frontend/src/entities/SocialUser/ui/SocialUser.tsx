@@ -13,7 +13,7 @@ interface SocialUserProps {
     id: number | string,
     onError?: () => void,
     setUserManipulation?: React.Dispatch<React.SetStateAction<boolean>>,
-    onMessageClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+    onMessageClick?: () => void
 }
 
 const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulation, onMessageClick }) => {
@@ -58,7 +58,7 @@ const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulatio
                         data={data} 
                         onUpdate={setData} 
                         setUserManipulation={setUserManipulation ? setUserManipulation : () => {}} 
-                        onMessageClick={onMessageClick ? onMessageClick : () => {}} 
+                        onMessageClick={onMessageClick} 
                     />
                 )
             }

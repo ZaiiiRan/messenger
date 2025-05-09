@@ -3,7 +3,7 @@ import styles from './ShortUser.module.css'
 
 interface ShortUserProps {
     user: IShortUser,
-    onClick: (event: React.MouseEvent<HTMLDivElement>) => void,
+    onClick?: (event: React.MouseEvent<HTMLDivElement>) => void,
     isClickable?: boolean,
     isSelectable?: boolean,
     isSelected?: boolean

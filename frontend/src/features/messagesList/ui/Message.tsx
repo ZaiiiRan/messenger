@@ -5,6 +5,7 @@ import { userStore } from '../../../entities/user'
 import { observer } from 'mobx-react'
 import { IShortUser, shortUserStore, SocialUser, SocialUserDialog } from '../../../entities/SocialUser'
 import { Dialog } from '../../../shared/ui/Dialog'
+import { PrivateMessageSenderDialog } from '../../messageSender'
 
 interface MessageProps {
     id: string | number,
@@ -17,6 +18,7 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
     const isMessageFromMe = message.memberId === userStore.user?.userId
     const [sender, setSender] = useState<IShortUser | null>()
     const [showUserModal, setShowUserModal] = useState<boolean>(false)
+    const [showSendMessageModal, setShowSendMessageModal] = useState<boolean>(false)
 
     useEffect(() => {
         let isMounted = true
@@ -50,7 +52,7 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
     
     return (
         <div 
-            className={`${isMessageFromMe ? 'self-end' : 'self-start'} flex-shrink-0 2xl:max-w-[75%] lg:max-w-[90%] md:max-w-[70%] sm:max-w-[90%] 
+            className={`${isMessageFromMe ? 'self-end' : 'self-start'} flex-shrink-0 2xl:max-w-[75%] lg:max-w-[90%] md:max-w-[70%] sm:max-w-[90%] mobile:max-w-[95%]
                 flex items-start md:gap-4 mobile:gap-2 2k:gap-5 4k:gap-6`}
             id={id.toString()}
         >
@@ -76,14 +78,14 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
                 className={`${styles.Message} ${isMessageFromMe ? styles.self : ''} ${className} 
                     ${isMessageFromMe ? 'rounded-bl-3xl' : 'rounded-br-3xl'} rounded-tl-3xl rounded-tr-3xl
                     mobile:px-4 mobile:py-3 md:px-5 md:py-4 2k:px-6 2k:py-5 4k:px-7 4k:py-6
-                    break-words flex flex-col md:gap-2 mobile:gap-1 2k:gap-3 4k:gap-4 lg:min-w-[200px] mobile:min-w-[150px]`}
+                    break-words flex flex-col md:gap-2 mobile:gap-1 2k:gap-3 4k:gap-4 lg:min-w-[230px] mobile:min-w-[150px] md:min-w-[200px]`}
             >
                 <div className='flex flex-col md:gap-2 mobile:gap-1 2k:gap-3 4k:gap-4'>
                     {
                         isGroupChat && !isMessageFromMe && (
                             <div 
                                 className={`${styles.from} self-start lg:text-sm 2k:text-base 4k:text-xl
-                                    md:text-sm sm:text-sm mobile:text-xs cursor-pointer max-w-[70%] w-auto inline-block whitespace-nowrap text-ellipsis overflow-hidden`}
+                                    md:text-sm sm:text-sm mobile:text-xs cursor-pointer max-w-[85%] min-w-[40%] w-auto inline-block text-ellipsis overflow-hidden`}
                                 onClick={openUserModal}
                             >
                                 { sender ? `${sender.firstname} ${sender.lastname}` : '???' }
@@ -111,11 +113,21 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
 
             {
                 isGroupChat && sender &&  (
-                    <SocialUserDialog
-                        show={showUserModal}
-                        setShow={(show: boolean) => setShowUserModal(show)}
-                        id={sender.userId}
-                    />
+                    <>
+                        <SocialUserDialog
+                            show={showUserModal}
+                            setShow={(show: boolean) => setShowUserModal(show)}
+                            id={sender.userId}
+                            onMessageClick={() => setShowSendMessageModal(true) }
+                        />
+                        <PrivateMessageSenderDialog
+                            show={showSendMessageModal}
+                            setShow={(show: boolean) => setShowSendMessageModal(show)}
+                            recipient={sender}
+                            zIndex={51}
+                        />
+                    </>
+                    
                 )
             }
         </div>

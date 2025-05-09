@@ -12,5 +12,6 @@
     "Chat name is empty": "Chat name is empty",
     "Chat name must be at least 5 characters": "Chat name must be at least 5 characters",
     "Need at least 2 members for group chat": "Need at least 2 members for group chat",
-    "Maximum number of chat members: 1000": "Maximum number of chat members: 1000"
+    "Maximum number of chat members: 1000": "Maximum number of chat members: 1000",
+    "An unexpected error occurred (maybe one of the users removed you from friends)": "An unexpected error occurred (maybe one of the users removed you from friends)"
 }
