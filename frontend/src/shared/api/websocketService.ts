@@ -9,11 +9,16 @@ class WebSocketService {
     retries: number = 0
     maxRetries: number = 2
     messageHandler: ((data: any) => void) | null = null
+    isAuth: boolean = false
 
     async connect() {
         if (this.socket) return
 
         const token = localStorage.getItem('token')
+        if (!token) {
+            this.isAuth = false
+            return
+        }
 
         try {
             this.socket = new WebSocket(WS_URL)
@@ -37,6 +42,8 @@ class WebSocketService {
                         throw new Error("Access to WebSocket Denied: Invalid Token")
                     }
                 } else {
+                    this.isAuth = true
+                    this.retries = 0
                     if (this.messageHandler) {
                         this.messageHandler(data)
                     }
@@ -68,6 +75,14 @@ class WebSocketService {
 
     setHandler(handler: (message: any) => void) {
         this.messageHandler = handler
+    }
+
+    isConnected() {
+        return this.socket?.readyState === WebSocket.OPEN
+    }
+
+    isAuthenticated() {
+        return this.isAuth
     }
 }
 

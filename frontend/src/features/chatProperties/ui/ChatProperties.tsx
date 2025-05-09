@@ -8,10 +8,13 @@ import { deleteChat, fetchChat, leaveFromChat, renameChat, returnToChat } from '
 import { Loader } from '../../../shared/ui/Loader'
 import { useModal } from '../../modal'
 import { apiErrors, ApiErrorsKey } from '../../../shared/api'
+import { Dialog } from '../../../shared/ui/Dialog'
 
 interface ChatPropertiesProps {
     chat: IChat,
-    onDelete: () => void
+    onDelete: () => void,
+    show: boolean,
+    setShow: (show: boolean) => void,
 }
 
 interface IsFetchingStates {
@@ -21,7 +24,7 @@ interface IsFetchingStates {
     return: boolean
 }
 
-const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
+const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete, show, setShow }) => {
     const role = chat.you.role
     const { t } = useTranslation('chatProperties')
     const [newChatName, setNewChatName] = useState<string>(chat.chat.name || '')
@@ -134,7 +137,11 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
     }, [])
 
     return (
-        <>
+        <Dialog
+            show={show}
+            setShow={setShow}
+            title={chat.chat.name ? chat.chat.name : '???'}
+        >
             <div className='flex gap-6 h-32 2k:h-48 2k:gap-10 4k:h-56 4k:gap-12'>
                 {/* Avatar */}
                 <div className='md:h-24 mobile:h-16 rounded-3xl aspect-square'>
@@ -227,7 +234,7 @@ const ChatProperties: React.FC<ChatPropertiesProps> = ({ chat, onDelete }) => {
             <div className='flex gap-3 justify-between w-full'>
                 
             </div>
-        </>
+        </Dialog>
     )
 }
 

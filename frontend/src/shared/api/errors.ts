@@ -88,6 +88,7 @@ const apiErrors = {
     "you cannot assign a role to an excluded member": "You cannot assign a role to an excluded member",
     "unknown role": "Unknown role",
     "owner role cannot be assigned": "Owner role cannot be assigned",
+    "you can't have a chat with yourself": "You can't have a chat with yourself"
 } as const
 
 type ApiErrorsKey = keyof typeof apiErrors

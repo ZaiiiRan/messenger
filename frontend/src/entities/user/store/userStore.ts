@@ -40,6 +40,7 @@ class UserStore {
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
         this.setUser(response.data.user)
+        await this.connectToWS()
         return response.data
     }
 
@@ -57,16 +58,26 @@ class UserStore {
         localStorage.removeItem('token')
         this.setAuth(false)
         this.setUser(null)
+        webSocketService.disconnect()
+        this.setOpen(false)
         return response.data
     }
 
     async checkAuth() {
-        const response = await Auth.refresh()
-        localStorage.setItem('token', response.data.accessToken)
-        this.setAuth(true)
-        await webSocketService.connect()
-        this.setUser(response.data.user)
-        return response.data
+        try {
+            const response = await Auth.refresh()
+            localStorage.setItem('token', response.data.accessToken)
+            this.setAuth(true)
+            this.setUser(response.data.user)
+            await this.connectToWS()
+            return response.data
+        } catch (e: any) {
+            if (e.response.status === 401) {
+                this.setAuth(false)
+                this.setUser(null)
+                webSocketService.disconnect()
+            }
+        }
     }
 
     async activate(code: string) {
@@ -75,6 +86,7 @@ class UserStore {
         localStorage.setItem('token', response.data.accessToken)
         this.setAuth(true)
         this.setUser(response.data.user)
+        await this.connectToWS()
         return response.data
     }
 
@@ -82,6 +94,20 @@ class UserStore {
         if (this.user && this.user.isActivated) throw Error('Аккаунт уже активирован')
         const response = await Activation.resend()
         return response.data
+    }
+
+    private async connectToWS() {
+        this.checkConditionsForDisconnectWS()
+        if (this.user && this.user.isActivated && !this.user.isDeleted 
+                && !this.user.isBanned && !webSocketService.isConnected()) {
+            await webSocketService.connect()
+        }
+    }
+
+    private checkConditionsForDisconnectWS() {
+        if (!this.isAuth || !this.user || !this.user.isActivated || this.user.isDeleted || this.user.isBanned) {
+            webSocketService.disconnect()
+        }
     }
 }
 

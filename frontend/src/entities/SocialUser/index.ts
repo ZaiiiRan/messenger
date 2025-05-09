@@ -14,9 +14,10 @@ import useShortUserStore from './hook/useShortUserStore'
 import ShortUserSkeleton from './ui/ShortUserSkeleton'
 import ShortUser from './ui/ShortUser'
 import shortUserStore from './store/ShortUserStore'
+import SocialUserDialog from './ui/SocialUserDialog'
 
 export { SocialUser, ShortUser, ShortUserSkeleton, useShortUserStore, 
     fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList, fetchSocialUserForStore, fetchSocialUsersForStore,
-    shortUserStore
+    shortUserStore, SocialUserDialog
 }
 export type { ISocialUser, ISocialUserData, IShortUser }

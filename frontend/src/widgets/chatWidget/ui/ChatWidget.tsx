@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion'
 import React, { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { chatStore } from '../../../entities/Chat'
+import { chatStore, IChat } from '../../../entities/Chat'
 import { observer } from 'mobx-react'
 import './ChatWidget.css'
-import { shortUserStore } from '../../../entities/SocialUser'
+import { shortUserStore, SocialUser, SocialUserDialog } from '../../../entities/SocialUser'
 import ChatWidgetHeader from './ChatWidgetHeader'
 import { MessageSender } from '../../../features/messageSender'
 import { MessageList } from '../../../features/messagesList'
@@ -69,24 +69,20 @@ const ChatWidget: React.FC<IChatWidgetProps> = ({ goBack, selected }) => {
 
             {
                 isGroupChat ? (
-                    <Dialog
+                    <ChatProperties
+                        chat={chat}
+                        onDelete={() => { setPropertiesShown(false); goBack(); }}
                         show={propertiesShown}
                         setShow={(show: boolean) => setPropertiesShown(show)}
-                        title={chat.chat.name ? chat.chat.name : "???"}
-                    >
-                        <ChatProperties
-                            chat={chat}
-                            onDelete={() => { setPropertiesShown(false); goBack(); }}
-                        />
-                    </Dialog>
+                    />
                 ) : (
-                    <Dialog
-                        show={propertiesShown}
-                        setShow={(show: boolean) => setPropertiesShown(show)}
-                        title={'man'}
-                    >
-                        man
-                    </Dialog>
+                        chat && (
+                            <SocialUserDialog 
+                                show={propertiesShown}
+                                setShow={(show: boolean) => setPropertiesShown(show)}
+                                id={chat.members[0].userId}
+                            />
+                        )
                 )
             }
         </motion.div>

@@ -3,7 +3,7 @@ import { IMessage } from '../../../entities/Chat'
 import styles from './Message.module.css'
 import { userStore } from '../../../entities/user'
 import { observer } from 'mobx-react'
-import { IShortUser, shortUserStore, SocialUser } from '../../../entities/SocialUser'
+import { IShortUser, shortUserStore, SocialUser, SocialUserDialog } from '../../../entities/SocialUser'
 import { Dialog } from '../../../shared/ui/Dialog'
 
 interface MessageProps {
@@ -111,16 +111,11 @@ const Message: React.FC<MessageProps> = ({ className, message, isGroupChat = fal
 
             {
                 isGroupChat && sender &&  (
-                    <Dialog
+                    <SocialUserDialog
                         show={showUserModal}
                         setShow={(show: boolean) => setShowUserModal(show)}
-                        title={sender.username}
-                    >
-                        <SocialUser
-                            id={sender.userId}
-                            onError={() => setShowUserModal(false)}
-                        />
-                    </Dialog>
+                        id={sender.userId}
+                    />
                 )
             }
         </div>

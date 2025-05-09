@@ -9,8 +9,25 @@ const api = axios.create({
     baseURL: API_URL
 })
 
+let isRefreshing = false
+let failedQueue: { resolve: (token: string) => void; reject: (error: any) => void }[] = []
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error)
+        } else if (token) {
+            prom.resolve(token)
+        }
+    })
+    failedQueue = []
+}
+
 api.interceptors.request.use((config) => {
-    config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
     if (config.data) {
         config.data = transformKeysToSnakeCase(config.data)
     }
@@ -24,15 +41,38 @@ api.interceptors.response.use((response) => {
     const originalRequest = error.config
     if (error.response.status === 401 && error.config && !error.config._isRetry) {
         originalRequest._isRetry = true
+
+        if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject })
+            })
+                .then((token) => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`
+                    return api.request(originalRequest)
+                })
+                .catch((err) => Promise.reject(err))
+        }
+
+        isRefreshing = true
+
         try {
             const response = await axios.get(`${API_URL}/auth/refresh`, { withCredentials: true })
-            localStorage.setItem('token', response.data.accessToken)
+            const newToken = response.data.accessToken
+            localStorage.setItem('token', newToken)
+
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+
+            processQueue(null, newToken)
             return api.request(originalRequest)
         } catch (e) {
+            processQueue(e, null)
             if (e instanceof AxiosError && e.status === 401) {
                 localStorage.removeItem('token')
+                window.location.href = '/login'
             }
-            console.log(e)
+            throw e
+        } finally {
+            isRefreshing = false
         }
     }
     throw error
