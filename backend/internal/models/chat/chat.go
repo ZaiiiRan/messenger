@@ -45,7 +45,7 @@ func CreateChat(name string, members []uint64, isGroup bool, ownerDTO *userDTO.U
 	})
 
 	for _, memberID := range members {
-		user, err := getUserForAdding(memberID, ownerDTO.ID)
+		user, err := getUserForAdding(memberID, ownerDTO.ID, isGroup)
 		if err != nil {
 			return nil, nil, err
 		}

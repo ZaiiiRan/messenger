@@ -153,7 +153,7 @@ func (chat *Chat) AddMembers(newMembersIDs []uint64, addingMember *chatMember.Ch
 
 // add 1 member to chat
 func (chat *Chat) addMember(tx *sql.Tx, targetID uint64, addingMember *chatMember.ChatMember) (*chatMember.ChatMember, error) {
-	user, err := getUserForAdding(targetID, addingMember.User.ID)
+	user, err := getUserForAdding(targetID, addingMember.User.ID, chat.IsGroupChat)
 	if err != nil {
 		return nil, err
 	}

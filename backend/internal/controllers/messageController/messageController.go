@@ -3,6 +3,7 @@ package messageController
 import (
 	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
+	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/chat/chatMember/chatMemberDTO"
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
@@ -25,12 +26,39 @@ func SendMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.Mes
 		return nil, nil, err
 	}
 
+	if chat.IsGroupChat {
+		sendMessageToPrivateChat(chat, requestSendingMember, req)
+	}
+
 	message, err := message.NewMessage(chat, requestSendingMember, req.MessageContent)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return createResponse(chat, requestSendingMember, message)
+}
+
+// check if user can send message to private chat
+func sendMessageToPrivateChat(chat *chatModel.Chat, requestSendingMember *chatMember.ChatMember,
+	req *requests.SendMessageRequest) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
+	members, err := chat.GetChatMembers(requestSendingMember)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = checkUserAccess(requestSendingMember.User.ID, members[0].User.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	message, err := message.NewMessage(chat, requestSendingMember, req.MessageContent)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	messageDto := messageDTO.CreateMessageDTO(message)
+	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
+	return messageDto, membersDTOs, nil
 }
 
 // Edit message

@@ -1,11 +1,13 @@
 package messageController
 
 import (
+	appErr "backend/internal/errors/appError"
 	chatModel "backend/internal/models/chat"
 	"backend/internal/models/chat/chatMember"
 	"backend/internal/models/chat/chatMember/chatMemberDTO"
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
+	"backend/internal/models/socialUser"
 )
 
 // verify access and get message
@@ -34,4 +36,29 @@ func createResponse(chat *chatModel.Chat, requestSendingMember *chatMember.ChatM
 	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)
 
 	return messageDto, membersDTOs, nil
+}
+
+// check user access
+func checkUserAccess(requestSenderID, targetID uint64) error {
+	target, err := socialUser.GetTargetByID(requestSenderID, targetID)
+	if err != nil {
+		return err
+	}
+
+	if target.User.IsBanned {
+		return appErr.BadRequest("your interlocutor is blocked")
+	}
+	if !target.User.IsActivated || target.User.IsDeleted {
+		return appErr.NotFound("user not found")
+	}
+
+	if target.FriendStatus != nil && *target.FriendStatus == "blocked by target" {
+		return appErr.BadRequest("you are blocked by your interlocutor")
+	}
+
+	if target.FriendStatus != nil && *target.FriendStatus == "blockedr" {
+		return appErr.BadRequest("your interlocutor is blocked by you")
+	}
+
+	return nil
 }
