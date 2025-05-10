@@ -50,77 +50,90 @@ const SocialUserInfo: React.FC<SocialUserInfoProps> = ({ data, onUpdate, setUser
     }
 
     const removeFriendAction = async (action: string) => {
-        try {
-            setLoading(true)
-            const response = await removeFriend(data.user.userId)
-            if (action === 'decline') {
-                if (data.user.username.length > 15) openModal(t('Success'), t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
-                else openModal(t('Success'), `${t('Friend request from')} ${data.user.username} ${t('was rejected')}`)
-            } else if (action === 'cancel') {
-                openModal(t('Success'), t('Friend request canceled'))
-            } else if (action === 'remove') {
-                if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been removed from friends'))
-                else openModal(t('Success'), `${data.user.username} ${t('has been removed from friends')}`)
-            }
-            onUpdate(response.data.user)
-            setUserManipulation(true)
-        } catch (e: any) {
-            if (e instanceof AxiosError && e.status === 404) {
-                openModal(t('Error'), t('User not found'))
-                return
-            }
+        const removeFriendFunc = async (action: string) => {
+            try {
+                setLoading(true)
+                const response = await removeFriend(data.user.userId)
+                if (action === 'decline') {
+                    if (data.user.username.length > 15) openModal(t('Success'), t('Friend request from') + ' ' + t('user') + ' ' + t('was rejected'))
+                    else openModal(t('Success'), `${t('Friend request from')} ${data.user.username} ${t('was rejected')}`)
+                } else if (action === 'cancel') {
+                    openModal(t('Success'), t('Friend request canceled'))
+                } else if (action === 'remove') {
+                    if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been removed from friends'))
+                    else openModal(t('Success'), `${data.user.username} ${t('has been removed from friends')}`)
+                }
+                onUpdate(response.data.user)
+                setUserManipulation(true)
+            } catch (e: any) {
+                if (e instanceof AxiosError && e.status === 404) {
+                    openModal(t('Error'), t('User not found'))
+                    return
+                }
 
-            const errorKey: ApiErrorsKey = e.response?.data?.error
-            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
-            openModal(t('Error'), errMsg)
-        } finally {
-            setLoading(false)
+                const errorKey: ApiErrorsKey = e.response?.data?.error
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
+            } finally {
+                setLoading(false)
+            }
         }
+        
+        if (action === 'remove') openModal(t('Unfriend'), t('Are you sure you want to unfriend this user?'), () => removeFriendFunc(action))
+        else removeFriendFunc(action)
     }
 
-    const blockUserAction = async () => {
-        try {
-            setLoading(true)
-            const response = await blockUser(data.user.userId)
-            
-            if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been blocked'))
-            else openModal(t('Success'), `${data.user.username} ${t('has been blocked')}`)
-            onUpdate(response.data.user)
-            setUserManipulation(true)
-        } catch (e: any) {
-            if (e instanceof AxiosError && e.status === 404) {
-                openModal(t('Error'), t('User not found'))
-                return
-            }
+    const blockUserAction = () => {
+        const blockUserFunc = async () => {
+            try {
+                setLoading(true)
+                const response = await blockUser(data.user.userId)
+                
+                if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been blocked'))
+                else openModal(t('Success'), `${data.user.username} ${t('has been blocked')}`)
+                onUpdate(response.data.user)
+                setUserManipulation(true)
+            } catch (e: any) {
+                if (e instanceof AxiosError && e.status === 404) {
+                    openModal(t('Error'), t('User not found'))
+                    return
+                }
 
-            const errorKey: ApiErrorsKey = e.response?.data?.error
-            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
-            openModal(t('Error'), errMsg)
-        } finally {
-            setLoading(false)
+                const errorKey: ApiErrorsKey = e.response?.data?.error
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
+            } finally {
+                setLoading(false)
+            }
         }
+        
+        openModal(t('Block'), t('Are you sure you want to block this user?'), blockUserFunc)
     }
 
-    const unblockUserAction = async () => {
-        try {
-            setLoading(true)
-            const response = await unblockUser(data.user.userId)
-            if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been unblocked'))
-            else openModal(t('Success'), `${data.user.username} ${t('has been unblocked')}`)
-            onUpdate(response.data.user)
-            setUserManipulation(true)
-        } catch (e: any) {
-            if (e instanceof AxiosError && e.status === 404) {
-                openModal(t('Error'), t('User not found'))
-                return
-            }
+    const unblockUserAction = () => {
+        const unBlockUserFunc = async () => {
+            try {
+                setLoading(true)
+                const response = await unblockUser(data.user.userId)
+                if (data.user.username.length > 15) openModal(t('Success'), t('The user') + ' ' + t('has been unblocked'))
+                else openModal(t('Success'), `${data.user.username} ${t('has been unblocked')}`)
+                onUpdate(response.data.user)
+                setUserManipulation(true)
+            } catch (e: any) {
+                if (e instanceof AxiosError && e.status === 404) {
+                    openModal(t('Error'), t('User not found'))
+                    return
+                }
 
-            const errorKey: ApiErrorsKey = e.response?.data?.error
-            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
-            openModal(t('Error'), errMsg)
-        } finally {
-            setLoading(false)
+                const errorKey: ApiErrorsKey = e.response?.data?.error
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
+            } finally {
+                setLoading(false)
+            }
         }
+
+        openModal(t('Unblock'), t('Are you sure you want to unblock this user?'), unBlockUserFunc)
     }
 
     return (

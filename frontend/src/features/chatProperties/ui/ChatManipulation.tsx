@@ -34,41 +34,53 @@ const ChatManipulation: React.FC<ChatManipulationProps> = ({ chat, isButtonsDisa
         openModal(t('Error'), errMsg)
     }
 
-    const deleteChatAction = async () => {
-        try {
-            setIsFetching({ ...isFetching, delete: true })
-            await deleteChat(chat.chat.id)
-            onDelete()
-        } catch (e: any) {
-            showErrorModal(e)
-        } finally {
-            setIsFetching({ ...isFetching, delete: false })
-        }
-    }
-
-    const leaveFromChatAction = async () => {
-        try {
-            setIsFetching({ ...isFetching, leave: true })
-            await leaveFromChat(chat.chat.id)
-        } catch (e: any) {
-            showErrorModal(e)
-        } finally {
-            setIsFetching({ ...isFetching, leave: false })
-        }
-    }
-
-    const returnToChatAction = async () => {
-        try {
-            setIsFetching({ ...isFetching, return: true })
-            await returnToChat(chat.chat.id)
-            await fetchChat(chat.chat.id)
-        } catch (e: any) {
-            if (e.response?.data?.error !== 'messages not found') {
+    const deleteChatAction = () => {
+        const deleteChatFunc = async () => {
+            try {
+                setIsFetching({ ...isFetching, delete: true })
+                await deleteChat(chat.chat.id)
+                onDelete()
+            } catch (e: any) {
                 showErrorModal(e)
+            } finally {
+                setIsFetching({ ...isFetching, delete: false })
             }
-        } finally {
-            setIsFetching({ ...isFetching, return: false })
         }
+
+        openModal(t('Delete chat'), t('Are you sure you want to delete the chat?'), deleteChatFunc)
+    }
+
+    const leaveFromChatAction = () => {
+        const leaveFromChatFunc = async () => {
+            try {
+                setIsFetching({ ...isFetching, leave: true })
+                await leaveFromChat(chat.chat.id)
+            } catch (e: any) {
+                showErrorModal(e)
+            } finally {
+                setIsFetching({ ...isFetching, leave: false })
+            }
+        }
+        
+        openModal(t('Leave from chat'), t('Are you sure you want to leave the chat?'), leaveFromChatFunc)
+    }
+
+    const returnToChatAction = () => {
+        const returnToChatFunc = async () => {
+            try {
+                setIsFetching({ ...isFetching, return: true })
+                await returnToChat(chat.chat.id)
+                await fetchChat(chat.chat.id)
+            } catch (e: any) {
+                if (e.response?.data?.error !== 'messages not found') {
+                    showErrorModal(e)
+                }
+            } finally {
+                setIsFetching({ ...isFetching, return: false })
+            }
+        }
+        
+        openModal(t('Return to chat'), t('Are you sure you want to return to the chat?'), returnToChatFunc)
     }
 
     const addMembersAction = async () => {

@@ -72,28 +72,38 @@ const ChatMember: React.FC<MemberProps> = ({ chat, member, isButtonsDisabled, is
         return true
     }
 
-    const removeMemberAction = async () => {
+    const removeMemberAction = () => {
         if (isButtonsDisabled()) return
-        try {
-            setIsFetching({ ...isFetching, removeMember: true })
-            await removeMembersFromChat(chat.chat.id, [member.userId])
-        } catch (e) {
-            showErrorModal(e)
-        } finally {
-            setIsFetching({ ...isFetching, removeMember: false })
+        
+        const removeMemberFunc = async () => {
+            try {
+                setIsFetching({ ...isFetching, removeMember: true })
+                await removeMembersFromChat(chat.chat.id, [member.userId])
+            } catch (e) {
+                showErrorModal(e)
+            } finally {
+                setIsFetching({ ...isFetching, removeMember: false })
+            }
         }
+        
+        openModal(t('Remove member'), `${t('Are you sure you want to remove')} ${member.user.username}?`, removeMemberFunc)
     }
 
-    const changeMemberRoleAction = async (role: string) => {
+    const changeMemberRoleAction = (role: string) => {
         if (isButtonsDisabled()) return
-        try {
-            setIsFetching({ ...isFetching, changeRole: true })
-            await changeChatMemberRole(chat.chat.id, member.userId, role)
-        } catch (e) {
-            showErrorModal(e)
-        } finally {
-            setIsFetching({ ...isFetching, changeRole: false })
+
+        const changeMemberRoleFunc = async () => {
+            try {
+                setIsFetching({ ...isFetching, changeRole: true })
+                await changeChatMemberRole(chat.chat.id, member.userId, role)
+            } catch (e) {
+                showErrorModal(e)
+            } finally {
+                setIsFetching({ ...isFetching, changeRole: false })
+            }
         }
+
+        openModal(t('Change role'), `${t('Are you sure you want to change')} ${member.user.username}${t('\'s role to')} ${t(role)}?`, changeMemberRoleFunc)
     }
     
     return (

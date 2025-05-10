@@ -30,7 +30,7 @@ const ChatRenaming: React.FC<ChatRenamingProps> = ({ chat, isButtonsDisabled, is
         return true
     }
 
-    const renameChatAction = async () => {
+    const renameChatAction = () => {
         const trimmed = newChatName.trim()
 
         let error = validateChatName(trimmed)
@@ -44,16 +44,20 @@ const ChatRenaming: React.FC<ChatRenamingProps> = ({ chat, isButtonsDisabled, is
         }
         setChatNameError(false)
 
-        try {
-            setIsFetching({ ...isFetching, rename: true })
-            await renameChat(chat.chat.id, trimmed)
-        } catch (e: any) {
-            const errorKey: ApiErrorsKey = e.response?.data?.error
-            const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
-            openModal(t('Error'), errMsg)
-        } finally {
-            setIsFetching({ ...isFetching, rename: false })
+        const renameChatFunction = async () => {
+            try {
+                setIsFetching({ ...isFetching, rename: true })
+                await renameChat(chat.chat.id, trimmed)
+            } catch (e: any) {
+                const errorKey: ApiErrorsKey = e.response?.data?.error
+                const errMsg = t(apiErrors[errorKey]) || t('Internal server error')
+                openModal(t('Error'), errMsg)
+            } finally {
+                setIsFetching({ ...isFetching, rename: false })
+            }
         }
+
+        openModal(t('Chat renaming'), `${t('Are you sure you want to rename this chat on')} ${trimmed}?`, renameChatFunction)
     }
     
     return (

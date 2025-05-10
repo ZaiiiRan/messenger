@@ -33,5 +33,9 @@
     "You are blocked by this user": "You are blocked by this user",
     "You blocked this user": "You blocked this user",
     "You are already friends": "You are already friends",
-    "Friend request has already been sent": "Friend request has already been sent"
+    "Friend request has already been sent": "Friend request has already been sent",
+
+    "Are you sure you want to unblock this user?": "Are you sure you want to unblock this user?",
+    "Are you sure you want to block this user?": "Are you sure you want to block this user?",
+    "Are you sure you want to unfriend this user?": "Are you sure you want to unfriend this user?"
 }

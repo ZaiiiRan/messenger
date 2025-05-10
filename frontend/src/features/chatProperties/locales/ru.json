@@ -36,5 +36,18 @@
     "You can't change your role": "Вы не можете изменить свои права",
     "You cannot assign a role to an excluded member": "Вы не можете назначить роль исключенному участнику",
     "Unknown role": "Неизвестная роль",
-    "Owner role cannot be assigned": "Роль владельца не может быть назначена"
+    "Owner role cannot be assigned": "Роль владельца не может быть назначена",
+
+    "Are you sure you want to delete the chat?": "Вы действительно хотите удалить чат?",
+    "Leave from chat": "Выйти из чата",
+    "Are you sure you want to leave the chat?": "Вы действительно хотите выйти из чата?",
+    "Return to chat": "Вернуться в чат",
+    "Are you sure you want to return to the chat?": "Вы действительно хотите вернуться в чат?",
+    "Chat renaming": "Изменение названия чата",
+    "Are you sure you want to rename this chat on": "Вы действительно хотите сменить название этого чата на",
+    "Remove member": "Исключить участника",
+    "Are you sure you want to remove": "Вы действительно хотите исключить из этого чата",
+    "Change role": "Сменить роль",
+    "Are you sure you want to change": "Вы действительно хотите назначить",
+    "'s role to": " на роль"
 }

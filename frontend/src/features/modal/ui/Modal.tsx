@@ -3,8 +3,19 @@ import modalStore from '../store/modalStore'
 import { Button } from '../../../shared/ui/Button'
 import { motion, AnimatePresence } from 'framer-motion'
 import styles from './Modal.module.css'
+import { useTranslation } from 'react-i18next'
+import ModalData from '../models/modalData'
 
 const Modal = observer(() => {
+    const { t } = useTranslation('modal')
+
+    const confirm = (modal: ModalData) => {
+        if (modal.actionFunction) {
+            modal.actionFunction()
+        }
+        modalStore.closeModal(modal.id)
+    }
+
     return (
         <AnimatePresence mode='popLayout'>
             { modalStore.modals.map((modal) => (
@@ -32,13 +43,38 @@ const Modal = observer(() => {
                         <div className='text-xl mobile:text-lg 2k:text-2xl 4k:text-4xl text-center'>
                             {modal.text}
                         </div>
-                        <Button 
-                            className='h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
-                                md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
-                            onClick={() => modalStore.closeModal(modal.id)}
-                        >
-                            ОК
-                        </Button>
+                        <div className='flex w-full gap-5 2k:gap-8 4k:gap-12'>
+                            {
+                                modal.actionFunction ? (
+                                    <>
+                                        <Button 
+                                        className='w-full h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
+                                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                                        onClick={() => modalStore.closeModal(modal.id)}
+                                        >
+                                            { t('No') }
+                                        </Button>
+                                        <Button 
+                                        className='w-full h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
+                                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                                        onClick={() => confirm(modal) }
+                                        >
+                                            { t('Yes') }
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button 
+                                        className='w-full h-14 2k:h-20 4k:h-32 rounded-3xl font-semibold 
+                                            md:text-lg mobile:text-sm 2k:text-2xl 4k:text-4xl'
+                                        onClick={() => modalStore.closeModal(modal.id)}
+                                    >
+                                        ОК
+                                    </Button>
+                                )
+                            }
+                            
+                        </div>
+                        
                     </motion.div>
                 </motion.div>
             ))}

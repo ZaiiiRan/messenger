@@ -33,5 +33,9 @@
     "You are blocked by this user": "Этот пользователь вас заблокировал",
     "You blocked this user": "Вы заблокировали пользователя",
     "You are already friends": "Вы уже друзья",
-    "Friend request has already been sent": "Запрос в друзья уже отправлен"
+    "Friend request has already been sent": "Запрос в друзья уже отправлен",
+
+    "Are you sure you want to unblock this user?": "Вы действительно хотите разблокировать этого пользователя?",
+    "Are you sure you want to block this user?": "Вы действительно хотите заблокировать этого пользователя?",
+    "Are you sure you want to unfriend this user?": "Вы действительно хотите удалить этого пользователя из друзей?"
 }

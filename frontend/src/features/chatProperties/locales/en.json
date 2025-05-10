@@ -36,7 +36,18 @@
     "You can't change your role": "You can't change your role",
     "You cannot assign a role to an excluded member": "You cannot assign a role to an excluded member",
     "Unknown role": "Unknown role",
-    "Owner role cannot be assigned": "Owner role cannot be assigned"
+    "Owner role cannot be assigned": "Owner role cannot be assigned",
 
-
+    "Are you sure you want to delete the chat?": "Are you sure you want to delete the chat?",
+    "Leave from chat": "Leave from chat",
+    "Are you sure you want to leave the chat?": "Are you sure you want to leave the chat?",
+    "Return to chat": "Return to chat",
+    "Are you sure you want to return to the chat?": "Are you sure you want to return to the chat?",
+    "Chat renaming": "Chat renaming",
+    "Are you sure you want to rename this chat on": "Are you sure you want to rename this chat on",
+    "Remove member": "Remove member",
+    "Are you sure you want to remove": "Are you sure you want to remove",
+    "Change role": "Change role",
+    "Are you sure you want to change": "Are you sure you want to change",
+    "'s role to": "'s role to"
 }
