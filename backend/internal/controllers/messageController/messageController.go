@@ -9,6 +9,7 @@ import (
 	"backend/internal/models/chat/message/messageDTO"
 	"backend/internal/models/user/userDTO"
 	"backend/internal/requests"
+	"errors"
 )
 
 // Send message
@@ -41,8 +42,9 @@ func SendMessage(userDto *userDTO.UserDTO, request interface{}) (*messageDTO.Mes
 // check if user can send message to private chat
 func sendMessageToPrivateChat(chat *chatModel.Chat, requestSendingMember *chatMember.ChatMember,
 	req *requests.SendMessageRequest) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
+	var appError *appErr.AppError
 	members, err := chat.GetChatMembers(requestSendingMember)
-	if err != nil {
+	if err != nil && errors.As(err, &appError) && appError.StatusCode != 404  {
 		return nil, nil, err
 	}
 

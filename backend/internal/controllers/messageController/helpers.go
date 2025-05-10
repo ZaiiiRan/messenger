@@ -8,6 +8,7 @@ import (
 	"backend/internal/models/chat/message"
 	"backend/internal/models/chat/message/messageDTO"
 	"backend/internal/models/socialUser"
+	"errors"
 )
 
 // verify access and get message
@@ -29,8 +30,9 @@ func verifyAccessAndGetMessage(chatID, actorID, messageID uint64) (*chatModel.Ch
 func createResponse(chat *chatModel.Chat, requestSendingMember *chatMember.ChatMember, message *message.Message) (*messageDTO.MessageDTO, []*chatMemberDTO.ChatMemberDTO, error) {
 	messageDto := messageDTO.CreateMessageDTO(message)
 
+	var appError *appErr.AppError
 	members, err := chat.GetChatMembers(requestSendingMember)
-	if err != nil {
+	if err != nil && errors.As(err, &appError) && appError.StatusCode != 404 {
 		return nil, nil, err
 	}
 	membersDTOs := chatMemberDTO.CreateChatMembersDTOs(members)

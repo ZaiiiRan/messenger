@@ -356,7 +356,7 @@ func GetFriendsAreNotChatting(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"friends": friends,
+		"users": friends,
 	})
 }
 

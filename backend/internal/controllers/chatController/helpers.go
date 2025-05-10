@@ -23,7 +23,9 @@ func createReponseForChatList(chats []chatModel.Chat, you []*chatMember.ChatMemb
 
 		if !you[index].IsRemoved() && !you[index].IsLeft() {
 			members, err := chat.GetChatMembers(you[index])
-			if err != nil {
+			var appError *appErr.AppError
+
+			if err != nil && errors.As(err, &appError) && appError.StatusCode != 404 {
 				return nil, err
 			}
 			membersDTOs = chatMemberDTO.CreateChatMembersDTOs(members)

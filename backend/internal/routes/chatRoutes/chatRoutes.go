@@ -80,7 +80,7 @@ func SetupRoutes(app *fiber.App) {
 	// Members management
 	chat.Post("/:chat_id/members/friends-are-not-chatting", authMiddleware.AuthMiddleware, getFriendsAreNotChatting)
 	chat.Post("/:chat_id/members", authMiddleware.AuthMiddleware, addMembers)
-	chat.Delete("/:chat_id/members", authMiddleware.AuthMiddleware, removeMembers)
+	chat.Patch("/:chat_id/members", authMiddleware.AuthMiddleware, removeMembers)
 	chat.Patch("/:chat_id/members/:member_id/role", authMiddleware.AuthMiddleware, chatMemberRoleChange)
 
 	// Leave/Return
