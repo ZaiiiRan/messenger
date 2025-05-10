@@ -40,6 +40,7 @@ const SocialUserDialog: React.FC<SocialUserDialogProps> = ({ show, setShow, id, 
                         show={show}
                         setShow={setShow}
                         title={user.username}
+                        id='user-dialog'
                     >
                         <SocialUser 
                             id={id}

@@ -8,7 +8,7 @@ import SocialUser from './ui/SocialUser'
 import ISocialUser from './models/ISocialUser'
 import ISocialUserData from './models/ISocialUserData'
 import IShortUser from './models/IShortUser'
-import { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList} from './api/ShortUsersFetching'
+import { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList, fetchFriendsAreNotChatting } from './api/ShortUsersFetching'
 import { fetchSocialUserForStore, fetchSocialUsersForStore } from './api/SocialUserFetching'
 import useShortUserStore from './hook/useShortUserStore'
 import ShortUserSkeleton from './ui/ShortUserSkeleton'
@@ -18,6 +18,6 @@ import SocialUserDialog from './ui/SocialUserDialog'
 
 export { SocialUser, ShortUser, ShortUserSkeleton, useShortUserStore, 
     fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList, fetchSocialUserForStore, fetchSocialUsersForStore,
-    shortUserStore, SocialUserDialog
+    shortUserStore, SocialUserDialog, fetchFriendsAreNotChatting
 }
 export type { ISocialUser, ISocialUserData, IShortUser }

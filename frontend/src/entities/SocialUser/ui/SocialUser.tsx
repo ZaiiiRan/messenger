@@ -20,21 +20,22 @@ const SocialUser: React.FC<SocialUserProps> = ({ id, onError, setUserManipulatio
     const { t } = useTranslation('socialUser')
     const [data, setData] = useState<ISocialUser | null>(null)
     const [isFetching, setFetching] = useState<boolean>(true)
-    const { openModal, setModalTitle, setModalText } = useModal()
+    const { openModal } = useModal()
 
     const load = async () => {
         try {
             const response = await fetchSocialUser(id)
             setData(response.data)
         } catch (e: any) {
-            setModalTitle(t('Error'))
             if (e instanceof AxiosError && e.status === 404) {
-                setModalText(t('User not found'))
+                openModal(t('Error'), t('User not found'))
+                onError && onError()
+                return
             }
 
             const errorKey: ApiErrorsKey = e.response?.data?.error
-            setModalText(t(apiErrors[errorKey]) || t('Internal server error'))
-            openModal()
+            const errorMsg = t(apiErrors[errorKey]) || t('Internal server error')
+            openModal(t('Error'), errorMsg)
             if (onError) onError()
         } finally {
             setFetching(false)

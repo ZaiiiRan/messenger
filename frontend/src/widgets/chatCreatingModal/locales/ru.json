@@ -13,5 +13,5 @@
     "Chat name must be at least 5 characters": "Название чата должно быть не менее 5 символов",
     "Need at least 2 members for group chat": "Необходимо не менее 2 участников для группового чата",
     "Maximum number of chat members: 1000": "Максимальное количество участников чата: 1000",
-    "An unexpected error occurred (maybe one of the users removed you from friends or left the chat)": "Произошла непредвиденная ошибка (возможно один из пользователей удалил вас из друзей или покинул чат)"
+    "An unexpected error occurred (maybe one of the users removed you from friends or left the chat)": "Произошла непредвиденная ошибка (возможно один из пользователей удалил вас из друзей)"
 }

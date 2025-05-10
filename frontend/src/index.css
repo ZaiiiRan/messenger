@@ -104,6 +104,17 @@ body {
 }
 .Icon svg {
   fill: var(--icon-color);
+  transition: fill 0.3s ease;
+}
+
+.IconClickable {
+  transition: transform 0.3s ease;
+}
+.IconClickable:hover svg {
+  fill: var(--input-placeholder);
+}
+.IconClickable:active svg {
+  transform: scale(0.9);
 }
 
 .Option-Icon {
@@ -147,6 +158,13 @@ body {
   }
   .backBtn:active {
       background-color: var(--main-hover);
+  }
+
+  .IconClickable:hover svg {
+    fill: var(--icon-color);
+  }
+  .IconClickable:active svg {
+    transform: scale(1);
   }
 }
 

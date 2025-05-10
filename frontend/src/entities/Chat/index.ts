@@ -7,6 +7,7 @@ import chatStore from './store/ChatStore'
 import normalizeToIChat from "./models/normalizeToIChat"
 import validateChatName from './validations/validateChatName'
 import validateMembers from './validations/validateMembers'
+import normalizeToIChatMember from './models/normalizeToIChatMember'
 
-export { useChatStore, chatStore, normalizeToIChat, validateChatName, validateMembers }
+export { useChatStore, chatStore, normalizeToIChat, validateChatName, validateMembers, normalizeToIChatMember }
 export type { IChat, IChatInfo, IChatMember, IMessage }

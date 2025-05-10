@@ -5,6 +5,13 @@
     "Leave": "Leave",
     "New chat name": "New chat name",
     "Add members": "Add members",
+    "Add": "Add",
+    "Please select users": "Please select users",
+    "Members": "Members",
+    "owner": "owner",
+    "admin": "admin",
+    "We couldn't find anyone": "We couldn't find anyone",
+    "Username": "Username",
 
     "Error": "Error",
     "Internal server error": "Internal server error",
@@ -20,5 +27,16 @@
     "You cannot access this chat": "You cannot access this chat",
     "Chat not found": "Chat not found",
     "You have been removed from the chat": "You have been removed from the chat",
-    "You are already in chat": "You are already in chat"
+    "You are already in chat": "You are already in chat",
+    "An unexpected error occurred (maybe one of the users removed you from friends or left the chat)": "An unexpected error occurred (maybe one of the users removed you from friends or left the chat)",
+    "Maximum number of chat members: 1000": "Maximum number of chat members: 1000",
+    "You can't add yourself": "You can't add yourself",
+    "You can't remove yourself": "You can't remove yourself",
+    "Trying to delete a member with a higher role": "Trying to delete a member with a higher role",
+    "You can't change your role": "You can't change your role",
+    "You cannot assign a role to an excluded member": "You cannot assign a role to an excluded member",
+    "Unknown role": "Unknown role",
+    "Owner role cannot be assigned": "Owner role cannot be assigned"
+
+
 }

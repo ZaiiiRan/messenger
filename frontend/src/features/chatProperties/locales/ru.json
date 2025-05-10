@@ -5,6 +5,13 @@
     "Leave": "Выйти",
     "New chat name": "Новое название чата",
     "Add members": "Добавить участников",
+    "Add": "Добавить",
+    "Please select users": "Выберите хотя бы одного пользователя",
+    "Members": "Участники",
+    "owner": "Создатель",
+    "admin": "Админ",
+    "We couldn't find anyone": "Мы не смогли никого найти",
+    "Username": "Имя пользователя",
 
     "Error": "Ошибка",
     "Internal server error": "Внутренняя ошибка сервера",
@@ -20,5 +27,14 @@
     "You cannot access this chat": "Вы не можете получить доступ к этому чату",
     "Chat not found": "Чат не найден",
     "You have been removed from the chat": "Вы были исключены из чата",
-    "You are already in chat": "Вы уже в этом чате"
+    "You are already in chat": "Вы уже в этом чате",
+    "Maximum number of chat members: 1000": "Максимальное количество участников чата: 1000",
+    "An unexpected error occurred (maybe one of the users removed you from friends or left the chat)": "Произошла непредвиденная ошибка (возможно один из пользователей удалил вас из друзей или покинул чат)",
+    "You can't add yourself": "Вы не можете добавить себя",
+    "You can't remove yourself": "Вы не можете исключить себя",
+    "Trying to delete a member with a higher role": "Попытка удалить участника с большими правами",
+    "You can't change your role": "Вы не можете изменить свои права",
+    "You cannot assign a role to an excluded member": "Вы не можете назначить роль исключенному участнику",
+    "Unknown role": "Неизвестная роль",
+    "Owner role cannot be assigned": "Роль владельца не может быть назначена"
 }

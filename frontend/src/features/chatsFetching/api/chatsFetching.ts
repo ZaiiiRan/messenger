@@ -1,5 +1,5 @@
 import { api } from '../../../shared/api'
-import { IChatInfo, IChatMember, normalizeToIChat } from '../../../entities/Chat'
+import { IChatInfo, IChatMember, normalizeToIChat, normalizeToIChatMember } from '../../../entities/Chat'
 import chatStore from '../../../entities/Chat/store/ChatStore'
 import shortUserStore from '../../../entities/SocialUser/store/ShortUserStore'
 import { IShortUser } from '../../../entities/SocialUser'
@@ -80,20 +80,72 @@ async function renameChat(id: string | number, newName: string): Promise<void> {
     }
 }
 
+async function addMembersToChat(id: string | number, members: (string | number)[]): Promise<void> {
+    const response = await api.post(`/chats/${id}/members`, { members })
+    const chatInfo = response.data.chat as IChatInfo
+    const newMembers = response.data.newMembers
+
+    const chat = chatStore.get(id)
+    if (chat) {
+        const chatMembers: IChatMember[] = newMembers.map((value: any) => normalizeToIChatMember(value))
+        runInAction(() => {
+            chat.chat = chatInfo
+            const uniqueMembers = chatMembers.filter(
+                (newMember) => !chat.members.some((existingMember) => existingMember.userId === newMember.userId)
+            )
+            chat.members.push(...uniqueMembers)
+        })
+    }
+}
+
+async function removeMembersFromChat(id: string | number, members: (string | number)[]): Promise<void> {
+    const response = await api.patch(`/chats/${id}/members`, { members })
+    const chatInfo = response.data.chat as IChatInfo
+    const removedMembers = response.data.removedMembers
+
+    const chat = chatStore.get(id)
+    if (chat) {
+        runInAction(() => {
+            chat.chat = chatInfo
+            chat.members = chat.members.filter((member) => !removedMembers.some((removedMember: any) => removedMember.user.userId === member.userId))
+        })
+    }
+}
+
+async function changeChatMemberRole(id: string | number, memberId: string | number, role: string): Promise<void> {
+    const response = await api.patch(`/chats/${id}/members/${memberId}/role`, { role })
+    const chatInfo = response.data.chat as IChatInfo
+    const updatedMember = normalizeToIChatMember(response.data.member)
+
+    const chat = chatStore.get(id)
+    if (chat) {
+        runInAction(() => {
+            chat.chat = chatInfo
+            chat.members = chat.members.map((member) => {
+                if (member.userId === updatedMember.userId) {
+                    return updatedMember
+                }
+                return member
+            })
+        })
+    }
+}
+
 function saveChat(data: any) {
     const chat = normalizeToIChat(data)
     chatStore.set(chat)
-    saveUsers(data)
+    saveUsers(data.members)
     return chat
 }
 
-function saveUsers(chat: any) {
-    if (chat.members) {
-        chat.members.forEach((value: any) => {
+function saveUsers(users: any) {
+    if (users) {
+        users.forEach((value: any) => {
             const user = value.user as IShortUser
             shortUserStore.set(user)
         })
     }
 }
 
-export { fetchGroupChats, fetchPrivateChats, fetchChat, fetchPrivateChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat }
+export { fetchGroupChats, fetchPrivateChats, fetchChat, fetchPrivateChat, deleteChat, leaveFromChat, returnToChat, renameChat, saveChat, addMembersToChat,
+    removeMembersFromChat, changeChatMemberRole }

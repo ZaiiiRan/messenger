@@ -33,7 +33,7 @@ async function fetchBlackList(search: string, limit: number, offset: number): Pr
     return users
 }
 
-async function fetchFriendsAreNotChatting(chatId: number, search: string, limit: number, offset: number): Promise<IShortUser[]> {
+async function fetchFriendsAreNotChatting(chatId: number | string, search: string, limit: number, offset: number): Promise<IShortUser[]> {
     const response = await api.post(`/chats/${chatId}/members/friends-are-not-chatting`, { offset, limit, search })
     const users = normalizeShortUserList(response)
     return users
@@ -58,4 +58,4 @@ async function updateStore(user: IShortUser) {
     }
 }
 
-export { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList }
+export { fetchShortUser, fetchFriends, fetchIncomingFriendRequests, fetchOutgoingFriendRequests, fetchBlackList, fetchFriendsAreNotChatting }

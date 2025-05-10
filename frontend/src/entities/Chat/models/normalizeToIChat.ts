@@ -3,6 +3,7 @@ import IChat from './IChat'
 import IChatInfo from './IChatInfo'
 import IChatMember from './IChatMember'
 import IMessage from './IMessage'
+import normalizeToIChatMember from './normalizeToIChatMember'
 
 function normalizeToIChat(object: any): IChat {
     const chatInfo = object.chat as IChatInfo
@@ -11,24 +12,12 @@ function normalizeToIChat(object: any): IChat {
 
     if (object.members) {
         object.members.forEach((value: any) => {
-            const member: IChatMember = {
-                userId: value.user.userId,
-                role: value.role,
-                isRemoved: value.isRemoved,
-                isLeft: value.isLeft,
-                addedBy: value.addedBy
-            } 
+            const member: IChatMember = normalizeToIChatMember(value)
             members.push(member)
         })
     }
 
-    const you: IChatMember = {
-        userId: object.you.user.userId,
-        role: object.you.role,
-        isRemoved: object.you.isRemoved,
-        isLeft: object.you.isLeft,
-        addedBy: object.you.addedBy
-    }
+    const you: IChatMember = normalizeToIChatMember(object.you)
 
     let messages: IMessage[] = []
     const chatCandidate = chatStore.get(chatInfo.id)

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useModal } from '../../modal'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiErrors, ApiErrorsKey } from '../../../shared/api'
-import { IShortUser, ShortUser } from '../../../entities/SocialUser'
+import { IShortUser, ShortUser, ShortUserSkeleton } from '../../../entities/SocialUser'
 import { Input } from '../../../shared/ui/Input'
 
 interface UserSelectionProps {
@@ -105,6 +105,13 @@ const UserSelection: React.FC<UserSelectionProps> = ({ onSelect, fetchFunction, 
                         </div>
                     ))
                 }
+                { isFetching && (
+                    <>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <ShortUserSkeleton key={index} />
+                        ))}
+                    </>
+                )}
                 {
                     end && !isFetching && users.length === 0 && (
                         <div 
