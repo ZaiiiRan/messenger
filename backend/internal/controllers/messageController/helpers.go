@@ -58,7 +58,7 @@ func checkUserAccess(requestSenderID, targetID uint64) error {
 		return appErr.BadRequest("you are blocked by your interlocutor")
 	}
 
-	if target.FriendStatus != nil && *target.FriendStatus == "blockedr" {
+	if target.FriendStatus != nil && *target.FriendStatus == "blocked" {
 		return appErr.BadRequest("your interlocutor is blocked by you")
 	}
 
