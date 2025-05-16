@@ -119,18 +119,7 @@ const ChatManipulation: React.FC<ChatManipulationProps> = ({ chat, isButtonsDisa
     return (
         <>
             <div className='flex gap-10 mobile:gap-6 2k:gap-12 4k:gap-14 justify-between w-full flex-wrap'>
-                <Button
-                    className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-52 md:w-60 sm:w-56 mobile:w-56 2k:w-96
-                        rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
-                    disabled={!isOwner() || chat.you.isLeft || chat.you.isRemoved || isButtonsDisabled()}
-                    onClick={deleteChatAction}
-                >
-                    {
-                        isFetching.delete ? (
-                            <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
-                        ) : t('Delete chat')
-                    }
-                </Button>
+                
                 {
                     chat.you.isLeft ? (
                         <Button
@@ -169,6 +158,23 @@ const ChatManipulation: React.FC<ChatManipulationProps> = ({ chat, isButtonsDisa
                 >
                     { t('Add members') }
                 </Button>
+
+                {
+                    isOwner() && (
+                        <Button
+                            className='h-12 flex items-center justify-center 2k:h-16 4k:h-28 w-72 xl:w-60 lg:w-52 md:w-60 sm:w-56 mobile:w-56 2k:w-96
+                            rounded-3xl font-semibold md:text-base mobile:text-sm 2k:text-xl 4k:text-2xl'
+                            disabled={!isOwner() || chat.you.isLeft || chat.you.isRemoved || isButtonsDisabled()}
+                            onClick={deleteChatAction}
+                        >
+                            {
+                                isFetching.delete ? (
+                                    <Loader className='h-3 w-16 2k:h-4 2k:w-24 4k:h-6 4k:w-36'/>
+                                ) : t('Delete chat')
+                            }
+                        </Button>
+                    )
+                }
             </div>
 
             <Dialog
