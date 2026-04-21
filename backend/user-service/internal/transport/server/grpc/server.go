@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
+	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -20,6 +21,7 @@ type Server struct {
 
 func New(srvSettings settings.GRPCServerSettings, log *zap.SugaredLogger) (*Server, error) {
 	s := grpc.NewServer(
+		newChainUnaryInterceptor(log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
@@ -61,6 +63,14 @@ func (s *Server) Addr() string {
 		return s.lis.Addr().String()
 	}
 	return ""
+}
+
+func newChainUnaryInterceptor(log *zap.SugaredLogger) grpc.ServerOption {
+	return grpc.ChainUnaryInterceptor(
+		commonmiddleware.RequestIdMiddleware(),
+		commonmiddleware.LogMiddleware(log),
+		commonmiddleware.RecoveryMiddleware(log),
+	)
 }
 
 func getGRPCKeepAliveServerParams(c *settings.GRPCServerSettings) keepalive.ServerParameters {
