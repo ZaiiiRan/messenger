@@ -3,11 +3,15 @@ module github.com/ZaiiiRan/messenger/backend/user-service
 go 1.25.4
 
 require (
+	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260421134246-44af16ee128b
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/spf13/viper v1.21.0
+	go.uber.org/zap v1.27.1
+	google.golang.org/grpc v1.79.1
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -30,7 +34,9 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
 )
