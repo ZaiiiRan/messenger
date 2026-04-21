@@ -24,7 +24,7 @@ func LoadServerConfig() (*ServerConfig, error) {
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
-	v.AddConfigPath("./etc/user-service")
+	v.AddConfigPath("/etc/user-service")
 
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
