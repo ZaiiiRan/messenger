@@ -1,0 +1,20 @@
+version: v1
+
+plugins:
+  - name: go
+    out: user-service/gen/go
+    opt: [paths=source_relative]
+  - name: go-grpc
+    out: user-service/gen/go
+    opt: [paths=source_relative]
+
+  - name: go
+    out: api-gateway/gen/go
+    opt:
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/user/v1
+  - name: go-grpc
+    out: api-gateway/gen/go
+    opt:
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/user/v1

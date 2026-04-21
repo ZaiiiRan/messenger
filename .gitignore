@@ -23,6 +23,5 @@ frontend/*.local
 *.sln
 *.sw?
 
-backend/.env
-backend/app.log
-frontend/.env
+.env
+app.log

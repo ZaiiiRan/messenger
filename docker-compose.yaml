@@ -1,33 +1,33 @@
 version: '3.9'
 
 services:
-  db:
-    container_name: messenger_db
-    image: postgres
+  old-db:
+    container_name: old-messenger_db
+    image: postgres:18.3-alpine3.23
     volumes:
-      - messenger_db:/var/lib/postgresql/data/
+      - old-messenger-db:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
     env_file:
-      - ./backend/.env
+      - ./backend/old/.env
     networks:
       - messenger_network
   
-  backend:
-    image: messenger_backend
+  old-backend:
+    container_name: old-messenger_backend
     build:
-      context: ./backend
+      context: ./backend/old
     depends_on:
-      - db
+      - old-db
     ports:
       - "8080:8080"
     env_file:
-      - ./backend/.env
+      - ./backend/old/.env
     networks:
       - messenger_network
 
 volumes:
-  messenger_db:
+  old-messenger-db:
 
 networks:
   messenger_network:
