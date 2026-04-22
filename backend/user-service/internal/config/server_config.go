@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/vault"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
@@ -14,6 +15,7 @@ type ServerConfig struct {
 	Migrate    settings.MigrateSettings    `mapstructure:"migrate"`
 	Redis      settings.RedisSettings      `mapstructure:"redis"`
 	Shutdown   settings.ShutdownSettings   `mapstructure:"shutdown"`
+	Vault      settings.VaultSettings      `mapstructure:"vault"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -35,6 +37,10 @@ func LoadServerConfig() (*ServerConfig, error) {
 
 	setServerDefaults(v)
 
+	if err := vault.LoadVaultSecrets(v, "vault"); err != nil {
+		return nil, err
+	}
+
 	var cfg ServerConfig
 
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -50,4 +56,5 @@ func setServerDefaults(v *viper.Viper) {
 	settings.SetMigrateDefaults(v, "migrate")
 	settings.SetRedisDefaults(v, "redis")
 	settings.SetShutdownDefaults(v, "shutdown")
+	settings.SetVaultDefaults(v, "vault")
 }
