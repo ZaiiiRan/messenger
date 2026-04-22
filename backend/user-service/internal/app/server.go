@@ -22,6 +22,8 @@ type ServerApp struct {
 	redisClient    *redis.RedisClient
 
 	grpcServer *grpcserver.Server
+
+	isGRPCStarted chan bool
 }
 
 func NewServerApp() (*ServerApp, error) {
@@ -38,6 +40,7 @@ func NewServerApp() (*ServerApp, error) {
 	return &ServerApp{
 		cfg: cfg,
 		log: log,
+		isGRPCStarted: make(chan bool),
 	}, nil
 }
 
@@ -53,7 +56,8 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		return err
 	}
 	a.startGrpcServer()
-	
+
+	<- a.isGRPCStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -119,6 +123,7 @@ func (a *ServerApp) initGrpcServer() error {
 func (a *ServerApp) startGrpcServer() {
 	go func() {
 		a.log.Infow("app.grpc_serve_start", "port", a.cfg.GRPCServer.Port)
+		a.isGRPCStarted <- true
 		if err := a.grpcServer.Start(); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			a.log.Fatalw("app.grpc_serve_error", "err", err)
 		}
