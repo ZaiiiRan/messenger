@@ -3,7 +3,7 @@ module github.com/ZaiiiRan/messenger/backend/user-service
 go 1.25.4
 
 require (
-	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260421143115-7af90240a367
+	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260423175402-8a094f29b371
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
