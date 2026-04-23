@@ -24,7 +24,7 @@ func NewUserRepository(conn *pgxpool.Conn) interfaces.UserRepository {
 func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
 	userDal := models.V1UserDalFromDomain(u)
 
-	insertedUser, err := r.insertUser(ctx, userDal)i
+	insertedUser, err := r.insertUser(ctx, userDal)
 	if err != nil {
 		return err
 	}
