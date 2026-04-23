@@ -20,7 +20,11 @@ func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, e
 	}
 
 	pgCfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-		names := []string{}
+		names := []string{
+			"v1_user", "_v1_user",
+			"v1_profile", "_v1_profile",
+			"v1_status", "_v1_status",
+		}
 
 		types, err := conn.LoadTypes(ctx, names)
 		if err != nil {
