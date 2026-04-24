@@ -23,16 +23,16 @@ func New(
 	verr := make(validationerror.ValidationError)
 	p := &Profile{}
 	if err := p.SetFirstName(firstName); err != nil {
-		verr["first_name"] = err.Error()
+		verr["profile.first_name"] = err.Error()
 	}
 	if err := p.SetLastName(lastName); err != nil {
-		verr["last_name"] = err.Error()
+		verr["profile.last_name"] = err.Error()
 	}
 	if err := p.SetPhone(phone); err != nil {
-		verr["phone"] = err.Error()
+		verr["profile.phone"] = err.Error()
 	}
 	if err := p.SetBirthdate(birthdate); err != nil {
-		verr["birthdate"] = err.Error()
+		verr["profile.birthdate"] = err.Error()
 	}
 	p.SetBio(bio)
 
