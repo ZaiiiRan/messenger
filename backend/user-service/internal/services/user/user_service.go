@@ -21,6 +21,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error)
+	ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error)
 }
 
 type service struct {
@@ -122,6 +123,56 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
 	return &pb.CreateUserResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {
+	l := s.log.With("op", "confirm_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.UserId == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, req.UserId, uow)
+	if err != nil {
+		l.Errorw("user.confirm_user_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+	if u == nil {
+		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+	}
+
+	if u.GetStatus().IsConfirmed() {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, "user is already confirmed")
+	}
+	if u.GetStatus().IsDeleted() {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, "deleted user cannot be confirmed")
+	}
+	bannedUntil := u.GetStatus().GetBannedUntil()
+	if u.GetStatus().IsPermanentlyBanned() || (bannedUntil != nil && bannedUntil.After(time.Now())) {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, "banned user cannot be confirmed")
+	}
+
+	u.GetStatus().SetConfirmed(true)
+	u.SetUpdatedAt(utils.TimePtr(time.Now()))
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("user.confirm_user_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.confirm_user_failed.save_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.confirm_user_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+
+	l.Infow("user.confirm_user_success", "user_id", u.GetID())
+	return &pb.ConfirmUserResponse{User: userToProto(u)}, nil
 }
 
 func isUniqueHolder(u *user.User) bool {

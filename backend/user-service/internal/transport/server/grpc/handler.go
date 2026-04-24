@@ -33,7 +33,7 @@ func (h *userHandler) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*p
 
 func (h *userHandler) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {
 	utils.SanitizeConfirmUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "ConfirmUser not implemented")
+	return h.userService.ConfirmUser(ctx, req)
 }
 
 func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
