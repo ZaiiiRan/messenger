@@ -10,6 +10,7 @@ type Status struct {
 	isPermanentlyBanned bool
 	bannedUntil         *time.Time
 	isDeleted           bool
+	deletedAt           *time.Time
 }
 
 func New() *Status {
@@ -18,6 +19,7 @@ func New() *Status {
 		isPermanentlyBanned: false,
 		bannedUntil:         nil,
 		isDeleted:           false,
+		deletedAt:           nil,
 	}
 }
 
@@ -26,12 +28,14 @@ func FromStorage(
 	isPermanentlyBanned bool,
 	bannedUntil *time.Time,
 	isDeleted bool,
+	deletedAt *time.Time,
 ) *Status {
 	return &Status{
 		isConfirmed:         isConfirmed,
 		isPermanentlyBanned: isPermanentlyBanned,
 		bannedUntil:         bannedUntil,
 		isDeleted:           isDeleted,
+		deletedAt:           deletedAt,
 	}
 }
 
@@ -39,6 +43,7 @@ func (s *Status) IsConfirmed() bool          { return s.isConfirmed }
 func (s *Status) IsPermanentlyBanned() bool  { return s.isPermanentlyBanned }
 func (s *Status) GetBannedUntil() *time.Time { return s.bannedUntil }
 func (s *Status) IsDeleted() bool            { return s.isDeleted }
+func (s *Status) GetDeletedAt() *time.Time   { return s.deletedAt }
 
 func (s *Status) SetConfirmed(confirmed bool) {
 	s.isConfirmed = confirmed
@@ -58,4 +63,10 @@ func (s *Status) SetBannedUntil(bannedUntil *time.Time) error {
 
 func (s *Status) SetDeleted(deleted bool) {
 	s.isDeleted = deleted
+	if deleted {
+		now := time.Now()
+		s.deletedAt = &now
+	} else {
+		s.deletedAt = nil
+	}
 }
