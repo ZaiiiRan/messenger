@@ -7,13 +7,13 @@ import (
 )
 
 type V1StatusDal struct {
-	Id                  int64      `db:"id"`
-	UserId              string     `db:"user_id"`
-	IsConfirmed         bool       `db:"is_confirmed"`
-	IsPermanentlyBanned bool       `db:"is_permanently_banned"`
-	BannedUntil         *time.Time `db:"banned_until"`
-	IsDeleted           bool       `db:"is_deleted"`
-	DeletedAt           *time.Time `db:"deleted_at"`
+	Id                  int64      `db:"id" json:"id"`
+	UserId              string     `db:"user_id" json:"user_id"`
+	IsConfirmed         bool       `db:"is_confirmed" json:"is_confirmed"`
+	IsPermanentlyBanned bool       `db:"is_permanently_banned" json:"is_permanently_banned"`
+	BannedUntil         *time.Time `db:"banned_until" json:"banned_until"`
+	IsDeleted           bool       `db:"is_deleted" json:"is_deleted"`
+	DeletedAt           *time.Time `db:"deleted_at" json:"deleted_at"`
 }
 
 func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {

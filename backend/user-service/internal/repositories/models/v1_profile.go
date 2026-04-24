@@ -7,13 +7,13 @@ import (
 )
 
 type V1ProfileDal struct {
-	Id        int64      `db:"id"`
-	UserId    string     `db:"user_id"`
-	FirstName string     `db:"first_name"`
-	LastName  string     `db:"last_name"`
-	Phone     *string    `db:"phone"`
-	Birthdate *time.Time `db:"birthdate"`
-	Bio       *string    `db:"bio"`
+	Id        int64      `db:"id" json:"id"`
+	UserId    string     `db:"user_id" json:"user_id"`
+	FirstName string     `db:"first_name" json:"first_name"`
+	LastName  string     `db:"last_name" json:"last_name"`
+	Phone     *string    `db:"phone" json:"phone"`
+	Birthdate *time.Time `db:"birthdate" json:"birthdate"`
+	Bio       *string    `db:"bio" json:"bio"`
 }
 
 func V1ProfileDalFromDomain(userId string, p *profile.Profile) V1ProfileDal {

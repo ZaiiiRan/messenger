@@ -5,56 +5,48 @@ import (
 	"time"
 )
 
+type UserFilterDal struct {
+	Ids              []string `db:"ids" json:"ids"`
+	Usernames        []string `db:"usernames" json:"usernames"`
+	PartialUsernames []string `db:"partial_usernames" json:"partial_usernames"`
+	Emails           []string `db:"emails" json:"emails"`
+	PartialEmails    []string `db:"partial_emails" json:"partial_emails"`
+
+	PhoneNumbers []string `db:"phone_numbers" json:"phone_numbers"`
+	PartialNames []string `db:"partial_names" json:"partial_names"`
+
+	IsConfirmed         *bool `db:"is_confirmed" json:"is_confirmed"`
+	IsDeleted           *bool `db:"is_deleted" json:"is_deleted"`
+	IsPermanentlyBanned *bool `db:"is_permanently_banned" json:"is_permanently_banned"`
+	IsTemporarilyBanned *bool `db:"is_temporarily_banned" json:"is_temporarily_banned"`
+
+	DeletedFrom *time.Time `db:"deleted_from" json:"deleted_from"`
+	DeletedTo   *time.Time `db:"deleted_to" json:"deleted_to"`
+	CreatedFrom *time.Time `db:"created_from" json:"created_from"`
+	CreatedTo   *time.Time `db:"created_to" json:"created_to"`
+	UpdatedFrom *time.Time `db:"updated_from" json:"updated_from"`
+	UpdatedTo   *time.Time `db:"updated_to" json:"updated_to"`
+}
+
 type QueryUsersDal struct {
-	Ids              []string `db:"ids"`
-	Usernames        []string `db:"usernames"`
-	PartialUsernames []string `db:"partial_usernames"`
-	Emails           []string `db:"emails"`
-	PartialEmails    []string `db:"partial_emails"`
+	Filter UserFilterDal `db:"filter" json:"filter"`
 
-	PhoneNumbers []string `db:"phone_numbers"`
-	PartialNames []string `db:"partial_names"`
-
-	IsConfirmed         *bool `db:"is_confirmed"`
-	IsDeleted           *bool `db:"is_deleted"`
-	IsPermanentlyBanned *bool `db:"is_permanently_banned"`
-	IsTemporarilyBanned *bool `db:"is_temporarily_banned"`
-
-	DeletedFrom *time.Time `db:"deleted_from"`
-	DeletedTo   *time.Time `db:"deleted_to"`
-	CreatedFrom *time.Time `db:"created_from"`
-	CreatedTo   *time.Time `db:"created_to"`
-	UpdatedFrom *time.Time `db:"updated_from"`
-	UpdatedTo   *time.Time `db:"updated_to"`
-
-	Limit  int `db:"limit"`
-	Offset int `db:"offset"`
+	Limit  int `db:"limit" json:"limit"`
+	Offset int `db:"offset" json:"offset"`
 }
 
 func NewQueryUsersDal(
-	ids []string,
-	usernames []string,
-	partialUsernames []string,
-	emails []string,
-	partialEmails []string,
-	phoneNumbers []string,
-	partialNames []string,
-	isConfirmed *bool,
-	isDeleted *bool,
-	isPermanentlyBanned *bool,
-	isTemporarilyBanned *bool,
-	deletedFrom, deletedTo *time.Time,
-	createdFrom, createdTo *time.Time,
-	updatedFrom, updatedTo *time.Time,
+	filter UserFilterDal,
 	page, pageSize int,
 ) *QueryUsersDal {
-	slices.Sort(ids)
-	slices.Sort(usernames)
-	slices.Sort(partialUsernames)
-	slices.Sort(emails)
-	slices.Sort(partialEmails)
-	slices.Sort(phoneNumbers)
-	slices.Sort(partialNames)
+
+	slices.Sort(filter.Ids)
+	slices.Sort(filter.Usernames)
+	slices.Sort(filter.PartialUsernames)
+	slices.Sort(filter.Emails)
+	slices.Sort(filter.PartialEmails)
+	slices.Sort(filter.PhoneNumbers)
+	slices.Sort(filter.PartialNames)
 
 	if pageSize <= 0 {
 		pageSize = 50
@@ -64,24 +56,8 @@ func NewQueryUsersDal(
 	}
 
 	return &QueryUsersDal{
-		Ids:                 ids,
-		Usernames:           usernames,
-		PartialUsernames:    partialUsernames,
-		Emails:              emails,
-		PartialEmails:       partialEmails,
-		PhoneNumbers:        phoneNumbers,
-		PartialNames:        partialNames,
-		IsConfirmed:         isConfirmed,
-		IsDeleted:           isDeleted,
-		IsPermanentlyBanned: isPermanentlyBanned,
-		IsTemporarilyBanned: isTemporarilyBanned,
-		DeletedFrom:         deletedFrom,
-		DeletedTo:           deletedTo,
-		CreatedFrom:         createdFrom,
-		CreatedTo:           createdTo,
-		UpdatedFrom:         updatedFrom,
-		UpdatedTo:           updatedTo,
-		Limit:               pageSize,
-		Offset:              (page - 1) * pageSize,
+		Filter: filter,
+		Limit:  pageSize,
+		Offset: (page - 1) * pageSize,
 	}
 }
