@@ -19,10 +19,6 @@ func SanitizeGetUsersRequest(req *pb.GetUsersRequest) {
 	if req == nil {
 		return
 	}
-	if req.BannedUntil != nil {
-		trimmed := strings.TrimSpace(*req.BannedUntil)
-		req.BannedUntil = &trimmed
-	}
 
 	req.Ids = sanitizeStringArray(req.Ids)
 	req.FullUsernames = sanitizeStringArray(req.FullUsernames)
@@ -31,6 +27,13 @@ func SanitizeGetUsersRequest(req *pb.GetUsersRequest) {
 	req.PartialEmails = sanitizeStringArray(req.PartialEmails)
 	req.PhoneNumbers = sanitizeStringArray(req.PhoneNumbers)
 	req.PartialNames = sanitizeStringArray(req.PartialNames)
+
+	req.DeletedFrom = sanitizeStringPtr(req.DeletedFrom)
+	req.DeletedTo = sanitizeStringPtr(req.DeletedTo)
+	req.CreatedFrom = sanitizeStringPtr(req.CreatedFrom)
+	req.CreatedTo = sanitizeStringPtr(req.CreatedTo)
+	req.UpdatedFrom = sanitizeStringPtr(req.UpdatedFrom)
+	req.UpdatedTo = sanitizeStringPtr(req.UpdatedTo)
 }
 
 func SanitizeConfirmUserRequest(req *pb.ConfirmUserRequest) {
@@ -45,10 +48,7 @@ func SanitizeBanUserRequest(req *pb.BanUserRequest) {
 		return
 	}
 	req.UserId = strings.TrimSpace(req.UserId)
-	if req.BannedUntil != nil {
-		trimmed := strings.TrimSpace(*req.BannedUntil)
-		req.BannedUntil = &trimmed
-	}
+	req.BannedUntil = sanitizeStringPtr(req.BannedUntil)
 }
 
 func SanitizeUnbanUserRequest(req *pb.UnbanUserRequest) {
@@ -71,19 +71,9 @@ func sanitizeProfile(p *pb.Profile) {
 	}
 	p.FirstName = strings.TrimSpace(p.FirstName)
 	p.LastName = strings.TrimSpace(p.LastName)
-
-	if p.Phone != nil {
-		trimmed := strings.TrimSpace(*p.Phone)
-		p.Phone = &trimmed
-	}
-	if p.Birthdate != nil {
-		trimmed := strings.TrimSpace(*p.Birthdate)
-		p.Birthdate = &trimmed
-	}
-	if p.Bio != nil {
-		trimmed := strings.TrimSpace(*p.Bio)
-		p.Bio = &trimmed
-	}
+	p.Phone = sanitizeStringPtr(p.Phone)
+	p.Birthdate = sanitizeStringPtr(p.Birthdate)
+	p.Bio = sanitizeStringPtr(p.Bio)
 }
 
 func sanitizeStringArray(arr []string) []string {
@@ -95,4 +85,12 @@ func sanitizeStringArray(arr []string) []string {
 		}
 	}
 	return sanitized
+}
+
+func sanitizeStringPtr(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*s)
+	return &trimmed
 }
