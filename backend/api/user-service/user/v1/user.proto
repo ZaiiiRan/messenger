@@ -26,6 +26,7 @@ message UserStatus {
     bool is_permanently_banned = 2;
     optional string banned_until = 3;
     bool is_deleted = 4;
+    optional string deleted_at = 5;
 }
 
 message User {
@@ -58,10 +59,17 @@ message GetUsersRequest {
     optional bool is_confirmed = 8;
     optional bool is_deleted = 9;
     optional bool is_permanently_banned = 10;
-    optional string banned_until = 11;
+    optional bool is_temporarily_banned = 11;
 
     int32 page = 12;
     int32 page_size = 13;
+
+    optional string deleted_from = 14;
+    optional string deleted_to = 15;
+    optional string created_from = 16;
+    optional string created_to = 17;
+    optional string updated_from = 18;
+    optional string updated_to = 19;
 }
 
 message GetUsersResponse {
