@@ -6,8 +6,12 @@ option go_package = "user-service/gen/go/user;user";
 
 service UserService {
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-    rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
     rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserResponse);
+    rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDResponse);
+    rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse);
+    rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+    rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+
     rpc BanUser(BanUserRequest) returns (BanUserResponse);
     rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
@@ -47,6 +51,38 @@ message CreateUserResponse {
     User user = 1;
 }
 
+message ConfirmUserRequest {
+    string user_id = 1;
+}
+
+message ConfirmUserResponse {
+    User user = 1;
+}
+
+message GetUserByIDRequest {
+    string user_id = 1;
+}
+
+message GetUserByIDResponse {
+    User user = 1;
+}
+
+message GetUserByUsernameRequest {
+    string username = 1;
+}
+
+message GetUserByUsernameResponse {
+    User user = 1;
+}
+
+message GetUserByEmailRequest {
+    string email = 1;
+}
+
+message GetUserByEmailResponse {
+    User user = 1;
+}
+
 message GetUsersRequest {
     repeated string ids = 1;
     repeated string full_usernames = 2;
@@ -74,14 +110,6 @@ message GetUsersRequest {
 
 message GetUsersResponse {
     repeated User users = 1;
-}
-
-message ConfirmUserRequest {
-    string user_id = 1;
-}
-
-message ConfirmUserResponse {
-    User user = 1;
 }
 
 message BanUserRequest {
