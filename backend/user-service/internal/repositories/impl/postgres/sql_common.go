@@ -119,6 +119,17 @@ func appendBool(sb *strings.Builder, col string, val *bool, args *[]any, argPos 
 	*argPos++
 }
 
+func appendIsNotNull(sb *strings.Builder, col string, val *bool) {
+	if val == nil {
+		return
+	}
+	if *val {
+		fmt.Fprintf(sb, " AND %s IS NOT NULL", col)
+	} else {
+		fmt.Fprintf(sb, " AND %s IS NULL", col)
+	}
+}
+
 func appendOrder(sb *strings.Builder, col string, asc bool) {
 	dir := "ASC"
 	if !asc {

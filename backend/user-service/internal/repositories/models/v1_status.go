@@ -13,6 +13,7 @@ type V1StatusDal struct {
 	IsPermanentlyBanned bool       `db:"is_permanently_banned"`
 	BannedUntil         *time.Time `db:"banned_until"`
 	IsDeleted           bool       `db:"is_deleted"`
+	DeletedAt           *time.Time `db:"deleted_at"`
 }
 
 func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
@@ -25,6 +26,7 @@ func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
 		IsPermanentlyBanned: s.IsPermanentlyBanned(),
 		BannedUntil:         s.GetBannedUntil(),
 		IsDeleted:           s.IsDeleted(),
+		DeletedAt:           s.GetDeletedAt(),
 	}
 }
 
@@ -43,6 +45,8 @@ func (s V1StatusDal) Index(i int) any {
 		return s.BannedUntil
 	case 5:
 		return s.IsDeleted
+	case 6:
+		return s.DeletedAt
 	default:
 		return nil
 	}
@@ -54,5 +58,6 @@ func (s V1StatusDal) ToDomain() *status.Status {
 		s.IsPermanentlyBanned,
 		s.BannedUntil,
 		s.IsDeleted,
+		s.DeletedAt,
 	)
 }

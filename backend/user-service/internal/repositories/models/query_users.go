@@ -15,10 +15,17 @@ type QueryUsersDal struct {
 	PhoneNumbers []string `db:"phone_numbers"`
 	PartialNames []string `db:"partial_names"`
 
-	IsConfirmed         *bool      `db:"is_confirmed"`
-	IsDeleted           *bool      `db:"is_deleted"`
-	IsPermanentlyBanned *bool      `db:"is_permanently_banned"`
-	BannedUntil         *time.Time `db:"banned_until"`
+	IsConfirmed         *bool `db:"is_confirmed"`
+	IsDeleted           *bool `db:"is_deleted"`
+	IsPermanentlyBanned *bool `db:"is_permanently_banned"`
+	IsTemporarilyBanned *bool `db:"is_temporarily_banned"`
+
+	DeletedFrom *time.Time `db:"deleted_from"`
+	DeletedTo   *time.Time `db:"deleted_to"`
+	CreatedFrom *time.Time `db:"created_from"`
+	CreatedTo   *time.Time `db:"created_to"`
+	UpdatedFrom *time.Time `db:"updated_from"`
+	UpdatedTo   *time.Time `db:"updated_to"`
 
 	Limit  int `db:"limit"`
 	Offset int `db:"offset"`
@@ -35,7 +42,10 @@ func NewQueryUsersDal(
 	isConfirmed *bool,
 	isDeleted *bool,
 	isPermanentlyBanned *bool,
-	bannedUntil *time.Time,
+	isTemporarilyBanned *bool,
+	deletedFrom, deletedTo *time.Time,
+	createdFrom, createdTo *time.Time,
+	updatedFrom, updatedTo *time.Time,
 	page, pageSize int,
 ) *QueryUsersDal {
 	slices.Sort(ids)
@@ -64,7 +74,13 @@ func NewQueryUsersDal(
 		IsConfirmed:         isConfirmed,
 		IsDeleted:           isDeleted,
 		IsPermanentlyBanned: isPermanentlyBanned,
-		BannedUntil:         bannedUntil,
+		IsTemporarilyBanned: isTemporarilyBanned,
+		DeletedFrom:         deletedFrom,
+		DeletedTo:           deletedTo,
+		CreatedFrom:         createdFrom,
+		CreatedTo:           createdTo,
+		UpdatedFrom:         updatedFrom,
+		UpdatedTo:           updatedTo,
 		Limit:               pageSize,
 		Offset:              (page - 1) * pageSize,
 	}

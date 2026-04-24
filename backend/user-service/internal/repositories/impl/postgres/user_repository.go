@@ -84,7 +84,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 		SELECT
 			u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted
+			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at
 		FROM users u
 		JOIN profile p ON p.user_id = u.id
 		JOIN status  s ON s.user_id = u.id
@@ -101,7 +101,10 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	appendBool(&sb, "s.is_confirmed", query.IsConfirmed, &args, &argPos)
 	appendBool(&sb, "s.is_deleted", query.IsDeleted, &args, &argPos)
 	appendBool(&sb, "s.is_permanently_banned", query.IsPermanentlyBanned, &args, &argPos)
-	appendRange(&sb, "s.banned_until", query.BannedUntil, nil, &args, &argPos)
+	appendIsNotNull(&sb, "s.banned_until", query.IsTemporarilyBanned)
+	appendRange(&sb, "s.deleted_at", query.DeletedFrom, query.DeletedTo, &args, &argPos)
+	appendRange(&sb, "u.created_at", query.CreatedFrom, query.CreatedTo, &args, &argPos)
+	appendRange(&sb, "u.updated_at", query.UpdatedFrom, query.UpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.id", true)
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
@@ -121,7 +124,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 		if err := rows.Scan(
 			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
 			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
-			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted,
+			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
@@ -180,10 +183,10 @@ func (r *UserRepository) insertProfile(ctx context.Context, dal models.V1Profile
 
 func (r *UserRepository) insertStatus(ctx context.Context, dal models.V1StatusDal) (models.V1StatusDal, error) {
 	sql := `
-		INSERT INTO status (user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted)
-		SELECT (i).user_id, (i).is_confirmed, (i).is_permanently_banned, (i).banned_until, (i).is_deleted
+		INSERT INTO status (user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at)
+		SELECT (i).user_id, (i).is_confirmed, (i).is_permanently_banned, (i).banned_until, (i).is_deleted, (i).deleted_at
 		FROM UNNEST($1::v1_status[]) i
-		RETURNING id, user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted
+		RETURNING id, user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at
 	`
 	var res models.V1StatusDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1StatusDal{dal}).Scan(
@@ -193,6 +196,7 @@ func (r *UserRepository) insertStatus(ctx context.Context, dal models.V1StatusDa
 		&res.IsPermanentlyBanned,
 		&res.BannedUntil,
 		&res.IsDeleted,
+		&res.DeletedAt,
 	); err != nil {
 		return models.V1StatusDal{}, fmt.Errorf("insert status: %w", err)
 	}
@@ -258,10 +262,11 @@ func (r *UserRepository) updateStatus(ctx context.Context, dal models.V1StatusDa
 			is_confirmed          = u.is_confirmed,
 			is_permanently_banned = u.is_permanently_banned,
 			banned_until          = u.banned_until,
-			is_deleted            = u.is_deleted
+			is_deleted            = u.is_deleted,
+			deleted_at            = u.deleted_at
 		FROM UNNEST($1::v1_status[]) AS u
 		WHERE t.user_id = u.user_id
-		RETURNING t.id, t.user_id, t.is_confirmed, t.is_permanently_banned, t.banned_until, t.is_deleted
+		RETURNING t.id, t.user_id, t.is_confirmed, t.is_permanently_banned, t.banned_until, t.is_deleted, t.deleted_at
 	`
 	var res models.V1StatusDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1StatusDal{dal}).Scan(
@@ -271,6 +276,7 @@ func (r *UserRepository) updateStatus(ctx context.Context, dal models.V1StatusDa
 		&res.IsPermanentlyBanned,
 		&res.BannedUntil,
 		&res.IsDeleted,
+		&res.DeletedAt,
 	); err != nil {
 		return models.V1StatusDal{}, fmt.Errorf("update status: %w", err)
 	}
