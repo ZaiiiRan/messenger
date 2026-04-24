@@ -4,6 +4,7 @@ import (
 	"context"
 
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
+	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,15 +12,18 @@ import (
 
 type userHandler struct {
 	pb.UnimplementedUserServiceServer
+	userService userservice.UserService
 }
 
-func newUserHandler() *userHandler {
-	return &userHandler{}
+func newUserHandler(userService userservice.UserService) *userHandler {
+	return &userHandler{
+		userService: userService,
+	}
 }
 
 func (h *userHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
 	utils.SanitizeCreateUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "CreateUser not implemented")
+	return h.userService.CreateUser(ctx, req)
 }
 
 func (h *userHandler) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {

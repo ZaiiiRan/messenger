@@ -7,6 +7,7 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
+	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/server/grpc"
@@ -20,6 +21,8 @@ type ServerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+
+	userService userservice.UserService
 
 	grpcServer *grpcserver.Server
 
@@ -38,8 +41,8 @@ func NewServerApp() (*ServerApp, error) {
 	}
 
 	return &ServerApp{
-		cfg: cfg,
-		log: log,
+		cfg:           cfg,
+		log:           log,
 		isGRPCStarted: make(chan bool),
 	}, nil
 }
@@ -52,12 +55,14 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		return err
 	}
 
+	a.initUserService()
+
 	if err := a.initGrpcServer(); err != nil {
 		return err
 	}
 	a.startGrpcServer()
 
-	<- a.isGRPCStarted
+	<-a.isGRPCStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -109,8 +114,12 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 	return nil
 }
 
+func (a *ServerApp) initUserService() {
+	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.log)
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.userService, a.log)
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err

@@ -6,9 +6,10 @@ import (
 	"net"
 	"time"
 
+	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
-	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
+	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -19,14 +20,14 @@ type Server struct {
 	lis net.Listener
 }
 
-func New(srvSettings settings.GRPCServerSettings, log *zap.SugaredLogger) (*Server, error) {
+func New(srvSettings settings.GRPCServerSettings, userService userservice.UserService, log *zap.SugaredLogger) (*Server, error) {
 	s := grpc.NewServer(
 		newChainUnaryInterceptor(log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterUserServiceServer(s, newUserHandler())
+	pb.RegisterUserServiceServer(s, newUserHandler(userService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {
