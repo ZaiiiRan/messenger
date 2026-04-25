@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
+	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -19,14 +20,14 @@ type Server struct {
 	lis net.Listener
 }
 
-func New(srvSettings settings.GRPCServerSettings, log *zap.SugaredLogger) (*Server, error) {
+func New(srvSettings settings.GRPCServerSettings, authService authservice.AuthService, log *zap.SugaredLogger) (*Server, error) {
 	s := grpc.NewServer(
 		newChainUnaryInterceptor(log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterAuthServiceServer(s, newAuthHandler())
+	pb.RegisterAuthServiceServer(s, newAuthHandler(authService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {

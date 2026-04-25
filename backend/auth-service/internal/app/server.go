@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
+	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
@@ -26,6 +27,7 @@ type ServerApp struct {
 	userGrpcClient *usergrpcclient.Client
 
 	userService userservice.UserService
+	authService authservice.AuthService
 
 	grpcServer *grpcserver.Server
 
@@ -62,6 +64,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	}
 
 	a.initUserService()
+	a.initAuthService()
 
 	if err := a.initGrpcServer(); err != nil {
 		return err
@@ -141,8 +144,12 @@ func (a *ServerApp) initUserService() {
 	a.userService = userservice.New(a.userGrpcClient, a.log)
 }
 
+func (a *ServerApp) initAuthService() {
+	a.authService = authservice.New(a.userService, a.log)
+}
+
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.log)
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.authService, a.log)
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
