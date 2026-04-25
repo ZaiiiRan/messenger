@@ -1,0 +1,6 @@
+grpc_server:
+  port: ":50051"
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/auth-service"
