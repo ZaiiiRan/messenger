@@ -142,12 +142,11 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 func (r *UserRepository) insertUser(ctx context.Context, dal models.V1UserDal) (models.V1UserDal, error) {
 	sql := `
 		INSERT INTO users (username, email)
-		SELECT (i).username, (i).email
-		FROM UNNEST($1::v1_user[]) i
+		VALUES ($1, $2)
 		RETURNING id, username, email, created_at, updated_at
 	`
 	var res models.V1UserDal
-	if err := r.conn.QueryRow(ctx, sql, []models.V1UserDal{dal}).Scan(
+	if err := r.conn.QueryRow(ctx, sql, dal.Username, dal.Email).Scan(
 		&res.Id,
 		&res.Username,
 		&res.Email,
