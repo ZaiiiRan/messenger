@@ -81,7 +81,7 @@ func (p *Profile) SetLastName(lastName string) error {
 }
 
 func (p *Profile) SetPhone(phone *string) error {
-	if phone != nil && *phone == "" {
+	if phone == nil || *phone == "" {
 		return nil
 	}
 	if err := validatePhone(*phone); err != nil {
@@ -92,10 +92,10 @@ func (p *Profile) SetPhone(phone *string) error {
 }
 
 func (p *Profile) SetBirthdate(birthdate *time.Time) error {
-	if birthdate != nil && birthdate.IsZero() {
+	if birthdate == nil || birthdate.IsZero() {
 		return nil
 	}
-	if err := validateBirthdate(birthdate); err != nil {
+	if err := validateBirthdate(*birthdate); err != nil {
 		return err
 	}
 	p.birthdate = birthdate

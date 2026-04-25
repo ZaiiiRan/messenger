@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 func validateEmail(email string) error {
@@ -27,7 +28,7 @@ func validateUsername(username string) error {
 		return fmt.Errorf("username cannot contain spaces")
 	}
 
-	if len(username) < 5 {
+	if utf8.RuneCountInString(username) < 5 {
 		return fmt.Errorf("username must be at least 5 characters")
 	}
 	return nil
