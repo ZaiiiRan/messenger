@@ -22,6 +22,9 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error)
 	ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error)
+	GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error)
+	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
+	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 }
 
 type service struct {
@@ -52,6 +55,9 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	)
 	st := status.New()
 	u, verr := user.New(req.Username, req.Email, prof, st)
+	if verr == nil {
+		verr = make(validationerror.ValidationError)
+	}
 	verr.Merge(pverr)
 	if berr != nil {
 		verr["profile.birthdate"] = berr.Error()
@@ -123,6 +129,82 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
 	return &pb.CreateUserResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error) {
+	l := s.log.With("op", "get_user_by_id", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.UserId == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, req.UserId, uow)
+	if err != nil {
+		l.Errorw("user.get_user_by_id_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+
+	if u == nil {
+		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+	}
+
+	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
+	return &pb.GetUserByIDResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error) {
+	l := s.log.With("op", "get_user_by_username", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Username == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, "username is required")
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
+		Usernames: []string{req.Username},
+	}, uow)
+	if err != nil {
+		l.Errorw("user.get_user_by_username_failed.get_by_username_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+
+	if u == nil {
+		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+	}
+
+	l.Infow("user.get_user_by_username_success", "user_id", u.GetID())
+	return &pb.GetUserByUsernameResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error) {
+	l := s.log.With("op", "get_user_by_email", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Email == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, "email is required")
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
+		Emails: []string{req.Email},
+	}, uow)
+	if err != nil {
+		l.Errorw("user.get_user_by_email_failed.get_by_email_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+
+	if u == nil {
+		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+	}
+
+	l.Infow("user.get_user_by_email_success", "user_id", u.GetID())
+	return &pb.GetUserByEmailResponse{User: userToProto(u)}, nil
 }
 
 func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {

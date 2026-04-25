@@ -139,5 +139,10 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	cacheRepo.SetUser(ctx, u)
 
+	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)
+	cacheRepo.InvalidateUserList(ctx, emailQuery)
+	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, 1, 1)
+	cacheRepo.InvalidateUserList(ctx, usernameQuery)
+
 	return nil
 }
