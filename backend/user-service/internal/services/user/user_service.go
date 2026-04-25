@@ -98,8 +98,8 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	case byEmail != nil && byUsername != nil &&
 		byEmail.GetID() == byUsername.GetID() &&
 		!byEmail.GetStatus().IsConfirmed():
-		l.Infow("user.create_user.restoring_inactive_user", "user_id", byEmail.GetID())
-		u.SetID(byEmail.GetID())
+		l.Infow("user.create_user.user_already_pending", "user_id", byEmail.GetID())
+		return &pb.CreateUserResponse{User: userToProto(byEmail)}, nil
 
 	default:
 		vErr := make(validationerror.ValidationError)
