@@ -4,6 +4,7 @@ go 1.25.7
 
 require (
 	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260423175402-8a094f29b371
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
