@@ -170,7 +170,7 @@ func (a *ServerApp) initAuthService() {
 }
 
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.authService, a.log)
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.authService, a.log)
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err

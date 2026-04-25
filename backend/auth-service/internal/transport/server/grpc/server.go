@@ -10,6 +10,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
+	middleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -20,9 +21,9 @@ type Server struct {
 	lis net.Listener
 }
 
-func New(srvSettings settings.GRPCServerSettings, authService authservice.AuthService, log *zap.SugaredLogger) (*Server, error) {
+func New(srvSettings settings.GRPCServerSettings, jwtSettings settings.JWTSettings, authService authservice.AuthService, log *zap.SugaredLogger) (*Server, error) {
 	s := grpc.NewServer(
-		newChainUnaryInterceptor(log),
+		newChainUnaryInterceptor(&jwtSettings, log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
@@ -66,11 +67,20 @@ func (s *Server) Addr() string {
 	return ""
 }
 
-func newChainUnaryInterceptor(log *zap.SugaredLogger) grpc.ServerOption {
+func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, log *zap.SugaredLogger) grpc.ServerOption {
 	return grpc.ChainUnaryInterceptor(
 		commonmiddleware.RequestIdMiddleware(),
 		commonmiddleware.LogMiddleware(log),
 		commonmiddleware.RecoveryMiddleware(log),
+
+		commonmiddleware.UserAuthMiddleware(
+			[]byte(jwtSettings.AccessTokenSecret),
+			middleware.MiddlewareOnly(
+				"/auth.v1.AuthService/GetNewConfirmationCode",
+				"/auth.v1.AuthService/Confirm",
+				"/auth.v1.AuthService/ChangePassword",
+			),
+		),
 	)
 }
 
