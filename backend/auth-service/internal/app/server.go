@@ -7,6 +7,9 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
 	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
+	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
+	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
+	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
@@ -26,8 +29,11 @@ type ServerApp struct {
 
 	userGrpcClient *usergrpcclient.Client
 
-	userService userservice.UserService
-	authService authservice.AuthService
+	userService     userservice.UserService
+	codeService     codeservice.CodeService
+	passwordService passwordservice.PasswordService
+	tokenService    tokenservice.TokenService
+	authService     authservice.AuthService
 
 	grpcServer *grpcserver.Server
 
@@ -64,6 +70,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	}
 
 	a.initUserService()
+	a.initCodeService()
+	a.initPasswordService()
+	a.initTokenService()
 	a.initAuthService()
 
 	if err := a.initGrpcServer(); err != nil {
@@ -144,8 +153,20 @@ func (a *ServerApp) initUserService() {
 	a.userService = userservice.New(a.userGrpcClient, a.log)
 }
 
+func (a *ServerApp) initCodeService() {
+	a.codeService = codeservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
+func (a *ServerApp) initPasswordService() {
+	a.passwordService = passwordservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
+func (a *ServerApp) initTokenService() {
+	a.tokenService = tokenservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
 func (a *ServerApp) initAuthService() {
-	a.authService = authservice.New(a.userService, a.log)
+	a.authService = authservice.New(a.codeService, a.passwordService, a.tokenService, a.userService, a.postgresClient, a.log)
 }
 
 func (a *ServerApp) initGrpcServer() error {
