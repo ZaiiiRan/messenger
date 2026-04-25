@@ -2,5 +2,10 @@ grpc_server:
   port: ":50051"
 shutdown:
   shutdown_timeout: 5
+jwt:
+  access_token_ttl: 900
+  refresh_token_ttl: 86400
+user_service_grpc_client:
+  auto_connect: true
 vault:
   path: "secret/data/auth-service"
