@@ -154,6 +154,9 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      JWT_REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
     volumes:
       - ./backend/configs/auth-service:/etc/auth-service
     ports:
