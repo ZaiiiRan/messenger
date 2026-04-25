@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
+	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/server/grpc"
@@ -20,6 +21,8 @@ type ServerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+
+	userGrpcClient *usergrpcclient.GRPCClient
 
 	grpcServer *grpcserver.Server
 
@@ -49,6 +52,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		return err
 	}
 	if err := a.initRedisClient(ctx); err != nil {
+		return err
+	}
+	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
 
@@ -106,6 +112,22 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 	a.redisClient = redisClient
 
 	a.log.Infow("app.redis_connected")
+	return nil
+}
+
+func (a *ServerApp) initUserGrpcClient(ctx context.Context) error {
+	userClient, err := usergrpcclient.New(ctx, a.cfg.UserServiceGRPCClient, nil, nil)
+	if err != nil {
+		a.log.Errorw("app.user_grpc_client_init_failed", "err", err)
+		return err
+	}
+	a.userGrpcClient = userClient
+
+	if a.cfg.UserServiceGRPCClient.AutoConnect {
+		a.log.Infow("app.user_grpc_client_connected")
+	} else {
+		a.log.Infow("app.user_grpc_client_initialized")
+	}
 	return nil
 }
 
