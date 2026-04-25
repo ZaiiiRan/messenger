@@ -58,17 +58,17 @@ func FromStorage(
 	}
 }
 
-func (t *Token) Id() int64            { return t.id }
-func (t *Token) UserId() string       { return t.userId }
-func (t *Token) Token() string        { return t.token }
-func (t *Token) TokenType() string    { return t.tokenType }
-func (t *Token) Version() int         { return t.version }
-func (t *Token) ExpiresAt() time.Time { return t.expiresAt }
-func (t *Token) CreatedAt() time.Time { return t.createdAt }
-func (t *Token) UpdatedAt() time.Time { return t.updatedAt }
+func (t *Token) GetID() int64            { return t.id }
+func (t *Token) GetUserID() string       { return t.userId }
+func (t *Token) GetToken() string        { return t.token }
+func (t *Token) GetTokenType() string    { return t.tokenType }
+func (t *Token) GetVersion() int         { return t.version }
+func (t *Token) GetExpiresAt() time.Time { return t.expiresAt }
+func (t *Token) GetCreatedAt() time.Time { return t.createdAt }
+func (t *Token) GetUpdatedAt() time.Time { return t.updatedAt }
 
 func (t *Token) SetId(id int64) {
-	if t.Id() == 0 {
+	if t.GetID() == 0 {
 		t.id = id
 	}
 }

@@ -36,11 +36,11 @@ func FromStorage(
 	}
 }
 
-func (uv *UserVersion) Id() int64            { return uv.id }
-func (uv *UserVersion) UserId() string       { return uv.userId }
-func (uv *UserVersion) Version() int         { return uv.version }
-func (uv *UserVersion) CreatedAt() time.Time { return uv.createdAt }
-func (uv *UserVersion) UpdatedAt() time.Time { return uv.updatedAt }
+func (uv *UserVersion) GetID() int64            { return uv.id }
+func (uv *UserVersion) GetUserID() string       { return uv.userId }
+func (uv *UserVersion) GetVersion() int         { return uv.version }
+func (uv *UserVersion) GetCreatedAt() time.Time { return uv.createdAt }
+func (uv *UserVersion) GetUpdatedAt() time.Time { return uv.updatedAt }
 
 func (uv *UserVersion) SetId(id int64) {
 	if uv.id == 0 {

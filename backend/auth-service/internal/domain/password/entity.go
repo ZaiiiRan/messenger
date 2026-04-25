@@ -18,6 +18,10 @@ func New(userId, password string) (*Password, error) {
 	p := &Password{}
 	p.userId = userId
 
+	if err := p.SetPassword(password); err != nil {
+		return nil, err
+	}
+
 	now := time.Now()
 	p.createdAt = now
 	p.updatedAt = now
