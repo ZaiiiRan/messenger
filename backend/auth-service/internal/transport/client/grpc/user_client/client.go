@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
+	clientmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/client"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -126,7 +127,10 @@ func buildClientDialOptions(
 
 	dialOpts = append(dialOpts,
 		grpc.WithChainUnaryInterceptor(
-			append(unaryExtra, grpc_retry.UnaryClientInterceptor(retryOpts...))...,
+			append(
+				[]grpc.UnaryClientInterceptor{clientmiddleware.PropagateClientMetaUnary()},
+				append(unaryExtra, grpc_retry.UnaryClientInterceptor(retryOpts...))...,
+			)...,
 		),
 		grpc.WithChainStreamInterceptor(
 			append(streamExtra, grpc_retry.StreamClientInterceptor(retryOpts...))...,
