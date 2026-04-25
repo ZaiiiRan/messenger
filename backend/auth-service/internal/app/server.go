@@ -74,6 +74,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 	shCtx, cancel := context.WithTimeout(ctx, time.Duration(a.cfg.Shutdown.ShutdownTimeout)*time.Second)
 	defer cancel()
 
+	a.userGrpcClient.Close()
 	a.postgresClient.Close()
 	a.redisClient.Close()
 	a.grpcServer.Stop(shCtx)
