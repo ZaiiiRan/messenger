@@ -25,6 +25,7 @@ type UserService interface {
 	GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error)
 	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
+	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
 }
 
 type service struct {
@@ -205,6 +206,80 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 
 	l.Infow("user.get_user_by_email_success", "user_id", u.GetID())
 	return &pb.GetUserByEmailResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
+	l := s.log.With("op", "get_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	verr := make(validationerror.ValidationError)
+
+	deletedFrom, err := utils.ParseTimestampPtr(req.DeletedFrom)
+	if err != nil {
+		verr["deleted_from"] = "invalid timestamp format, use RFC3339"
+	}
+	deletedTo, err := utils.ParseTimestampPtr(req.DeletedTo)
+	if err != nil {
+		verr["deleted_to"] = "invalid timestamp format, use RFC3339"
+	}
+	createdFrom, err := utils.ParseTimestampPtr(req.CreatedFrom)
+	if err != nil {
+		verr["created_from"] = "invalid timestamp format, use RFC3339"
+	}
+	createdTo, err := utils.ParseTimestampPtr(req.CreatedTo)
+	if err != nil {
+		verr["created_to"] = "invalid timestamp format, use RFC3339"
+	}
+	updatedFrom, err := utils.ParseTimestampPtr(req.UpdatedFrom)
+	if err != nil {
+		verr["updated_from"] = "invalid timestamp format, use RFC3339"
+	}
+	updatedTo, err := utils.ParseTimestampPtr(req.UpdatedTo)
+	if err != nil {
+		verr["updated_to"] = "invalid timestamp format, use RFC3339"
+	}
+
+	if len(verr) > 0 {
+		l.Warnw("user.get_users_failed.validation_error", "err", verr)
+		return nil, verr.ToStatus()
+	}
+
+	filter := models.UserFilterDal{
+		Ids:                 req.Ids,
+		Usernames:           req.FullUsernames,
+		PartialUsernames:    req.PartialUsernames,
+		Emails:              req.FullEmails,
+		PartialEmails:       req.PartialEmails,
+		PhoneNumbers:        req.PhoneNumbers,
+		PartialNames:        req.PartialNames,
+		IsConfirmed:         req.IsConfirmed,
+		IsDeleted:           req.IsDeleted,
+		IsPermanentlyBanned: req.IsPermanentlyBanned,
+		IsTemporarilyBanned: req.IsTemporarilyBanned,
+		DeletedFrom:         deletedFrom,
+		DeletedTo:           deletedTo,
+		CreatedFrom:         createdFrom,
+		CreatedTo:           createdTo,
+		UpdatedFrom:         updatedFrom,
+		UpdatedTo:           updatedTo,
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	query := models.NewQueryUsersDal(filter, int(req.Page), int(req.PageSize))
+	users, err := s.dataProvider.getUserList(ctx, query, uow)
+	if err != nil {
+		l.Errorw("user.get_users_failed.query_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+	}
+
+	pbUsers := make([]*pb.User, len(users))
+	for i, u := range users {
+		pbUsers[i] = userToProto(u)
+	}
+
+	l.Infow("user.get_users_success", "count", len(pbUsers))
+	return &pb.GetUsersResponse{Users: pbUsers}, nil
 }
 
 func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {

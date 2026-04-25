@@ -1,8 +1,6 @@
 package userservice
 
 import (
-	"time"
-
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
@@ -37,21 +35,11 @@ func statusToProto(s *status.Status) *pb.UserStatus {
 	if s == nil {
 		return nil
 	}
-	var bannedUntil *string
-	if bu := s.GetBannedUntil(); bu != nil {
-		formatted := bu.Format(time.RFC3339)
-		bannedUntil = &formatted
-	}
-	var deletedAt *string
-	if da := s.GetDeletedAt(); da != nil {
-		formatted := da.Format(time.RFC3339)
-		deletedAt = &formatted
-	}
 	return &pb.UserStatus{
 		IsConfirmed:         s.IsConfirmed(),
 		IsPermanentlyBanned: s.IsPermanentlyBanned(),
-		BannedUntil:         bannedUntil,
+		BannedUntil:         utils.FormatTimestampPtr(s.GetBannedUntil()),
 		IsDeleted:           s.IsDeleted(),
-		DeletedAt:           deletedAt,
+		DeletedAt:           utils.FormatTimestampPtr(s.GetDeletedAt()),
 	}
 }

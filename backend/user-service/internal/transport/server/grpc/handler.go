@@ -48,7 +48,7 @@ func (h *userHandler) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmail
 
 func (h *userHandler) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
 	utils.SanitizeGetUsersRequest(req)
-	return nil, status.Error(codes.Unimplemented, "GetUsers not implemented")
+	return h.userService.GetUsers(ctx, req)
 }
 
 func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
