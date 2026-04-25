@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
+	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
@@ -22,7 +23,9 @@ type ServerApp struct {
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
 
-	userGrpcClient *usergrpcclient.GRPCClient
+	userGrpcClient *usergrpcclient.Client
+
+	userService userservice.UserService
 
 	grpcServer *grpcserver.Server
 
@@ -57,6 +60,8 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
+
+	a.initUserService()
 
 	if err := a.initGrpcServer(); err != nil {
 		return err
@@ -130,6 +135,10 @@ func (a *ServerApp) initUserGrpcClient(ctx context.Context) error {
 		a.log.Infow("app.user_grpc_client_initialized")
 	}
 	return nil
+}
+
+func (a *ServerApp) initUserService() {
+	a.userService = userservice.New(a.userGrpcClient, a.log)
 }
 
 func (a *ServerApp) initGrpcServer() error {
