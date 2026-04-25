@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "auth-service/gen/go/auth;auth";
+
+import "user/v1/user.proto";
+
+service AuthService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+}
+
+message RegisterRequest {
+    string username = 1;
+    string email = 2;
+    user.v1.Profile profile = 3;
+    string password = 4;
+}
+
+message RegisterResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
