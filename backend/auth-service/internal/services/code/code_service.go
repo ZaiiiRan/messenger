@@ -50,6 +50,10 @@ func (s *codeService) CheckConfirmationCode(ctx context.Context, uow *uow.UnitOf
 	}
 	if !valid {
 		l.Warnw("code.check_confirmation_code_failed", "err", "invalid code")
+		if err := s.codeDataProvider.save(ctx, code, uow); err != nil {
+			l.Errorw("code.check_confirmation_code_failed", "err", err)
+			return false, err
+		}
 		return false, nil
 	}
 

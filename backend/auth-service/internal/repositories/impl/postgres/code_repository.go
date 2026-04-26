@@ -23,14 +23,14 @@ func NewCodeRepository(conn *pgxpool.Conn) interfaces.CodeRepository {
 func (r *CodeRepository) CreateCode(ctx context.Context, c *code.Code) error {
 	dal := models.V1CodeDalFromDomain(c)
 	sql := `
-		INSERT INTO confirmation_codes (user_id, code, generations_left, expires_at)
-		SELECT (i).user_id, (i).code, (i).generations_left, (i).expires_at
+		INSERT INTO confirmation_codes (user_id, code, generations_left, verifications_left, expires_at)
+		SELECT (i).user_id, (i).code, (i).generations_left, (i).verifications_left, (i).expires_at
 		FROM UNNEST($1::v1_confirmation_code[]) i
-		RETURNING id, user_id, code, generations_left, expires_at, created_at, updated_at
+		RETURNING id, user_id, code, generations_left, verifications_left, expires_at, created_at, updated_at
 	`
 	var res models.V1CodeDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1CodeDal{dal}).Scan(
-		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
+		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.VerificationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
 	); err != nil {
 		return fmt.Errorf("create code: %w", err)
 	}
@@ -43,17 +43,18 @@ func (r *CodeRepository) UpdateCode(ctx context.Context, c *code.Code) error {
 	sql := `
 		UPDATE confirmation_codes AS t
 		SET
-			code             = u.code,
-			generations_left = u.generations_left,
-			expires_at       = u.expires_at,
-			updated_at       = u.updated_at
+			code               = u.code,
+			generations_left   = u.generations_left,
+			verifications_left = u.verifications_left,
+			expires_at         = u.expires_at,
+			updated_at         = u.updated_at
 		FROM UNNEST($1::v1_confirmation_code[]) AS u
 		WHERE t.id = u.id
-		RETURNING t.id, t.user_id, t.code, t.generations_left, t.expires_at, t.created_at, t.updated_at
+		RETURNING t.id, t.user_id, t.code, t.generations_left, t.verifications_left, t.expires_at, t.created_at, t.updated_at
 	`
 	var res models.V1CodeDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1CodeDal{dal}).Scan(
-		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
+		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.VerificationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
 	); err != nil {
 		return fmt.Errorf("update code: %w", err)
 	}
@@ -86,7 +87,7 @@ func (r *CodeRepository) QueryCode(ctx context.Context, query *models.QueryCodeD
 		argPos = 1
 	)
 	sb.WriteString(`
-		SELECT id, user_id, code, generations_left, expires_at, created_at, updated_at
+		SELECT id, user_id, code, generations_left, verifications_left, expires_at, created_at, updated_at
 		FROM confirmation_codes
 		WHERE 1=1
 	`)
@@ -99,7 +100,7 @@ func (r *CodeRepository) QueryCode(ctx context.Context, query *models.QueryCodeD
 
 	var res models.V1CodeDal
 	err := r.conn.QueryRow(ctx, sb.String(), args...).Scan(
-		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
+		&res.Id, &res.UserId, &res.Code, &res.GenerationsLeft, &res.VerificationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
