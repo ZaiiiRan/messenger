@@ -54,6 +54,18 @@ func (cdp *codeDataProvider) getByUserID(ctx context.Context, userID string, uow
 	return code, nil
 }
 
+func (cdp *codeDataProvider) getByUserIDLocked(ctx context.Context, userID string, uow *uow.UnitOfWork) (*code.Code, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbRepo := postgresimpl.NewCodeRepository(pgConn)
+	query := models.NewQueryCodeDal(nil, &userID)
+	query.ForUpdate = true
+	return dbRepo.QueryCode(ctx, query)
+}
+
 func (cdp *codeDataProvider) save(ctx context.Context, code *code.Code, uow *uow.UnitOfWork) error {
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {

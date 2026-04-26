@@ -93,6 +93,9 @@ func (r *CodeRepository) QueryCode(ctx context.Context, query *models.QueryCodeD
 	appendEqual(&sb, "id", query.Id, &args, &argPos)
 	appendEqual(&sb, "user_id::text", query.UserId, &args, &argPos)
 	sb.WriteString(" LIMIT 1")
+	if query.ForUpdate {
+		sb.WriteString(" FOR UPDATE")
+	}
 
 	var res models.V1CodeDal
 	err := r.conn.QueryRow(ctx, sb.String(), args...).Scan(

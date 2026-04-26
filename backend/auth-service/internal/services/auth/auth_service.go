@@ -128,12 +128,23 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
+	_, err = uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("auth.get_new_confirmation_code_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
 	c, err := s.codeService.GenerateConfiramtionCode(ctx, uow, user)
 	if err != nil {
 		var cve *code.CodeValidationError
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.get_new_confirmation_code_failed", "err", err)
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 

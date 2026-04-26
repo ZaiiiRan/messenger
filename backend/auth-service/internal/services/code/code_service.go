@@ -66,7 +66,7 @@ func (s *codeService) GenerateConfiramtionCode(ctx context.Context, uow *uow.Uni
 	l := s.log.With("op", "generate_confirmation_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	var c *codedomain.Code
-	existedCode, err := s.codeDataProvider.getByUserID(ctx, user.Id, uow)
+	existedCode, err := s.codeDataProvider.getByUserIDLocked(ctx, user.Id, uow)
 	if err != nil {
 		l.Errorw("code.generate_confirmation_code_failed", "err", err)
 		return nil, err
