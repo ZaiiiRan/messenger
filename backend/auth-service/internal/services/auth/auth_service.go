@@ -13,6 +13,7 @@ import (
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/jwt"
 	"go.uber.org/zap"
@@ -342,7 +343,7 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 	if user == nil || user.Status.IsDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
-	if user.Status.IsPermanentlyBanned || user.Status.BannedUntil != nil || !user.Status.IsConfirmed {
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 

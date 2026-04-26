@@ -12,6 +12,7 @@ import (
 	uow "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
 	commonjwt "github.com/ZaiiiRan/messenger/backend/go-common/pkg/jwt"
 	"github.com/golang-jwt/jwt/v5"
@@ -69,7 +70,7 @@ func (s *tokenService) GenerateToken(
 		IsConfirmed:         user.Status.IsConfirmed,
 		IsDeleted:           user.Status.IsDeleted,
 		IsPermanentlyBanned: user.Status.IsPermanentlyBanned,
-		IsTemporarilyBanned: user.Status.BannedUntil != nil,
+		IsTemporarilyBanned: utils.IsActiveTemporaryBan(user.Status.BannedUntil),
 		Version:             version,
 	}
 

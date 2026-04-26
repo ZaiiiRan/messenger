@@ -49,3 +49,14 @@ func FormatTimestampPtr(t *time.Time) *string {
 	s := t.Format(time.RFC3339)
 	return &s
 }
+
+func IsActiveTemporaryBan(bannedUntil *string) bool {
+	if bannedUntil == nil {
+		return false
+	}
+	t, err := time.Parse(time.RFC3339, *bannedUntil)
+	if err != nil {
+		return false
+	}
+	return t.After(time.Now())
+}
