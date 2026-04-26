@@ -259,7 +259,7 @@ func (s *service) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.Refr
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
 
-	refreshTokenStr := md.Get("x-refresh_token")
+	refreshTokenStr := md.Get("x-refresh-token")
 	if len(refreshTokenStr) == 0 {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
@@ -315,7 +315,7 @@ func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Logout
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
 
-	refreshTokenStr := md.Get("x-refresh_token")
+	refreshTokenStr := md.Get("x-refresh-token")
 	if len(refreshTokenStr) == 0 {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
