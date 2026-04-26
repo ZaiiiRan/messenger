@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/vault"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
@@ -14,6 +15,7 @@ type ServerConfig struct {
 	Migrate    settings.MigrateSettings    `mapstructure:"migrate"`
 	Redis      settings.RedisSettings      `mapstructure:"redis"`
 	Shutdown   settings.ShutdownSettings   `mapstructure:"shutdown"`
+	Vault      settings.VaultSettings      `mapstructure:"vault"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -24,7 +26,7 @@ func LoadServerConfig() (*ServerConfig, error) {
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
-	v.AddConfigPath("./etc/user-service")
+	v.AddConfigPath("/etc/user-service")
 
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
@@ -34,6 +36,10 @@ func LoadServerConfig() (*ServerConfig, error) {
 	v.AutomaticEnv()
 
 	setServerDefaults(v)
+
+	if err := vault.LoadVaultSecrets(v, "vault"); err != nil {
+		return nil, err
+	}
 
 	var cfg ServerConfig
 
@@ -45,9 +51,10 @@ func LoadServerConfig() (*ServerConfig, error) {
 }
 
 func setServerDefaults(v *viper.Viper) {
-	settings.SetGRPCServerDefaults(v, "grpc_server", ":50052")
+	settings.SetGRPCServerDefaults(v, "grpc_server", ":50051")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetMigrateDefaults(v, "migrate")
 	settings.SetRedisDefaults(v, "redis")
 	settings.SetShutdownDefaults(v, "shutdown")
+	settings.SetVaultDefaults(v, "vault")
 }
