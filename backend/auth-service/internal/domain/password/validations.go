@@ -2,10 +2,11 @@ package password
 
 import (
 	"unicode"
+	"unicode/utf8"
 )
 
 func ValidatePassword(password string) error {
-	if len(password) < 8 {
+	if utf8.RuneCountInString(password) < 8 {
 		return NewPasswordValidationError("password must be at least 8 characters long")
 	}
 

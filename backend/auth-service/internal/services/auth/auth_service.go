@@ -3,6 +3,8 @@ package authservice
 import (
 	"context"
 	"errors"
+	"strings"
+	"unicode/utf8"
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
@@ -163,6 +165,11 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 		return nil, err
 	}
 
+	if utf8.RuneCountInString(req.Code) != 6 {
+		l.Errorw("auth.confirm_failed", "err", "invalid code")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid code")
+	}
+
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 	_, err = uow.BeginTransaction(ctx)
@@ -218,6 +225,8 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 	if req.Login == "" {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid login or password")
 	}
+	req.Login = strings.ToLower(req.Login)
+
 	user, err := s.userService.GetUserByUsername(ctx, req.Login)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
