@@ -73,7 +73,7 @@ func (cdp *codeDataProvider) save(ctx context.Context, code *code.Code, uow *uow
 	}
 
 	cachRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
-	if err := cachRepo.SetCodeById(ctx, code); err != nil {
+	if err := cachRepo.SetCodeByUserId(ctx, code); err != nil {
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (cdp *codeDataProvider) save(ctx context.Context, code *code.Code, uow *uow
 
 func (cdp *codeDataProvider) delete(ctx context.Context, code *code.Code, uow *uow.UnitOfWork) error {
 	cacheRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
-	if err := cacheRepo.DelCodeById(ctx, code.GetID()); err != nil {
+	if err := cacheRepo.DelCodeByUserId(ctx, code.GetUserID()); err != nil {
 		return err
 	}
 

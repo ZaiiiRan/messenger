@@ -67,12 +67,10 @@ func (c *Code) SetID(id int64) {
 }
 
 func (c *Code) GenerateCode() error {
-	if c.GetID() == 0 {
-		if c.generationsLeft <= 0 && time.Since(c.updatedAt) < 5*time.Minute {
-			return NewCodeValidationError("the number of code resends has been exhausted")
-		} else if c.generationsLeft <= 0 {
-			c.generationsLeft = maxGenerationsLeft
-		}
+	if c.generationsLeft <= 0 && time.Since(c.updatedAt) < 5*time.Minute {
+		return NewCodeValidationError("the number of code resends has been exhausted")
+	} else if c.generationsLeft <= 0 {
+		c.generationsLeft = maxGenerationsLeft
 	}
 	c.generationsLeft--
 
