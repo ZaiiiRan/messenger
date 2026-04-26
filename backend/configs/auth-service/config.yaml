@@ -9,3 +9,8 @@ user_service_grpc_client:
   auto_connect: true
 vault:
   path: "secret/data/auth-service"
+email_codes_tasks_producer:
+  topic: "email-codes-tasks"
+  client_id: "auth-service"
+  batch_size: 100
+  write_timeout: 10

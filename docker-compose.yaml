@@ -142,6 +142,8 @@ services:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
+      email-kafka:
+        condition: service_healthy
       vault:
         condition: service_healthy
       user-service:
@@ -157,6 +159,9 @@ services:
       JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       JWT_REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "email-kafka:9092"
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
     volumes:
       - ./backend/configs/auth-service:/etc/auth-service
     ports:

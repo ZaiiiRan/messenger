@@ -12,6 +12,7 @@ import (
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/server/grpc"
@@ -24,8 +25,9 @@ type ServerApp struct {
 	cfg *config.ServerConfig
 	log *zap.SugaredLogger
 
-	postgresClient *postgres.PostgresClient
-	redisClient    *redis.RedisClient
+	postgresClient            *postgres.PostgresClient
+	redisClient               *redis.RedisClient
+	emailCodeTasksKafkaClient *kafka.KafkaClient
 
 	userGrpcClient *usergrpcclient.Client
 
@@ -65,6 +67,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initRedisClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initEmailCodesTasksKafkaClient(ctx); err != nil {
+		return err
+	}
 	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
@@ -94,6 +99,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 	a.userGrpcClient.Close()
 	a.postgresClient.Close()
 	a.redisClient.Close()
+	a.emailCodeTasksKafkaClient.Close()
 	a.grpcServer.Stop(shCtx)
 
 	a.log.Infow("app.stopped")
@@ -130,6 +136,18 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 	a.redisClient = redisClient
 
 	a.log.Infow("app.redis_connected")
+	return nil
+}
+
+func (a *ServerApp) initEmailCodesTasksKafkaClient(ctx context.Context) error {
+	kafkaClient, err := kafka.New(a.cfg.EmailCodesTasksProducer.KafkaSettings)
+	if err != nil {
+		a.log.Errorw("app.email_codes_tasks_kafka_client_init_failed", "err", err)
+		return err
+	}
+	a.emailCodeTasksKafkaClient = kafkaClient
+
+	a.log.Infow("app.email_codes_tasks_kafka_connected")
 	return nil
 }
 
