@@ -8,6 +8,7 @@ import (
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/password"
+	producerinteraces "github.com/ZaiiiRan/messenger/backend/auth-service/internal/producers/interfaces"
 	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
 	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
@@ -33,12 +34,13 @@ type AuthService interface {
 }
 
 type service struct {
-	codeService      codeservice.CodeService
-	passwordService  passwordservice.PasswordService
-	tokenService     tokenservice.TokenService
-	userService      userservice.UserService
-	authDataProvider *authDataProvider
-	log              *zap.SugaredLogger
+	codeService            codeservice.CodeService
+	passwordService        passwordservice.PasswordService
+	tokenService           tokenservice.TokenService
+	userService            userservice.UserService
+	emailCodeTasksProducer producerinteraces.EmailCodeTasksProducer
+	authDataProvider       *authDataProvider
+	log                    *zap.SugaredLogger
 }
 
 func New(
@@ -46,16 +48,18 @@ func New(
 	passwordSvc passwordservice.PasswordService,
 	tokenSvc tokenservice.TokenService,
 	userSvc userservice.UserService,
+	emailCodeTasksProducer producerinteraces.EmailCodeTasksProducer,
 	pgClient *postgres.PostgresClient,
 	log *zap.SugaredLogger,
 ) AuthService {
 	return &service{
-		codeService:      codeSvc,
-		passwordService:  passwordSvc,
-		tokenService:     tokenSvc,
-		userService:      userSvc,
-		authDataProvider: newAuthDataProvider(pgClient),
-		log:              log,
+		codeService:            codeSvc,
+		passwordService:        passwordSvc,
+		tokenService:           tokenSvc,
+		userService:            userSvc,
+		emailCodeTasksProducer: emailCodeTasksProducer,
+		authDataProvider:       newAuthDataProvider(pgClient),
+		log:                    log,
 	}
 }
 
@@ -89,7 +93,7 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	_, err = s.codeService.GenerateConfiramtionCode(ctx, uow, user)
+	c, err := s.codeService.GenerateConfiramtionCode(ctx, uow, user)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
@@ -104,7 +108,7 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	// send message with code to kafka
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
 
 	return &pb.RegisterResponse{
 		User:         user,
@@ -124,7 +128,7 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
-	_, err = s.codeService.GenerateConfiramtionCode(ctx, uow, user)
+	c, err := s.codeService.GenerateConfiramtionCode(ctx, uow, user)
 	if err != nil {
 		var cve *code.CodeValidationError
 		if errors.As(err, &cve) {
@@ -133,7 +137,7 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	// send message with code to kafka
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
 
 	l.Infow("auth.get_new_confirmation_code.success")
 

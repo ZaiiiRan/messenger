@@ -202,7 +202,7 @@ func (a *ServerApp) initTokenService() {
 }
 
 func (a *ServerApp) initAuthService() {
-	a.authService = authservice.New(a.codeService, a.passwordService, a.tokenService, a.userService, a.postgresClient, a.log)
+	a.authService = authservice.New(a.codeService, a.passwordService, a.tokenService, a.userService, a.emailCodeTasksProducer, a.postgresClient, a.log)
 }
 
 func (a *ServerApp) initGrpcServer() error {
