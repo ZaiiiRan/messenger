@@ -83,7 +83,7 @@ func (s *passwordService) CheckPassword(ctx context.Context, uow *uow.UnitOfWork
 }
 
 func (s *passwordService) UpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error) {
-	l := s.log.With("op", "update_employer_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+	l := s.log.With("op", "update_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	p, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
 	if err != nil {
