@@ -73,7 +73,9 @@ func (pdp *passwordDataProvider) save(ctx context.Context, p *password.Password,
 	}
 
 	cacheRepo := redisimpl.NewPasswordCacheRepository(pdp.redis)
-	cacheRepo.SetPasswordByUserId(ctx, p)
+	if err := cacheRepo.SetPasswordByUserId(ctx, p); err != nil {
+		return err
+	}
 
 	return nil
 }
