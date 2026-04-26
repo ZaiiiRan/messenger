@@ -162,7 +162,7 @@ func (a *ServerApp) initPasswordService() {
 }
 
 func (a *ServerApp) initTokenService() {
-	a.tokenService = tokenservice.New(a.postgresClient, a.redisClient, a.log)
+	a.tokenService = tokenservice.New(a.cfg.JWT, a.postgresClient, a.redisClient, a.log)
 }
 
 func (a *ServerApp) initAuthService() {
