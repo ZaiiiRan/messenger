@@ -334,7 +334,10 @@ func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Logout
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
-	s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr[0])
+	err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr[0])
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
 
 	l.Infow("auth.logout.success")
 	return &pb.LogoutResponse{}, nil
@@ -429,15 +432,15 @@ func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.U
 
 	user, err := s.userService.GetUserByID(ctx, claims.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
-	if claims.IsConfirmed {
+	if user.Status.IsConfirmed {
 		return nil, status.Errorf(codes.FailedPrecondition, "user is already activated")
 	}
-	if claims.IsDeleted {
+	if user.Status.IsDeleted {
 		return nil, status.Errorf(codes.PermissionDenied, "user is deleted")
 	}
 	return user, nil
