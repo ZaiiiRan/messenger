@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
+	implkafkaproducer "github.com/ZaiiiRan/messenger/backend/auth-service/internal/producers/impl/kafka"
 	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
 	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
 	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
@@ -30,6 +31,8 @@ type ServerApp struct {
 	emailCodeTasksKafkaClient *kafka.KafkaClient
 
 	userGrpcClient *usergrpcclient.Client
+
+	emailCodeTasksProducer *implkafkaproducer.Producer
 
 	userService     userservice.UserService
 	codeService     codeservice.CodeService
@@ -70,6 +73,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initEmailCodesTasksKafkaClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initEmailCodeTasksProducer(); err != nil {
+		return err
+	}
 	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
@@ -97,6 +103,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 	defer cancel()
 
 	a.userGrpcClient.Close()
+	a.emailCodeTasksProducer.Close()
 	a.postgresClient.Close()
 	a.redisClient.Close()
 	a.emailCodeTasksKafkaClient.Close()
@@ -148,6 +155,17 @@ func (a *ServerApp) initEmailCodesTasksKafkaClient(ctx context.Context) error {
 	a.emailCodeTasksKafkaClient = kafkaClient
 
 	a.log.Infow("app.email_codes_tasks_kafka_connected")
+	return nil
+}
+
+func (a *ServerApp) initEmailCodeTasksProducer() error {
+	producer, err := implkafkaproducer.New(a.cfg.EmailCodesTasksProducer, a.emailCodeTasksKafkaClient, a.log)
+	if err != nil {
+		a.log.Errorw("app.email_code_tasks_producer_init_failed", "err", err)
+		return err
+	}
+	a.emailCodeTasksProducer = producer
+	a.log.Infow("app.email_code_tasks_producer_started")
 	return nil
 }
 
