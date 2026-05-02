@@ -10,6 +10,7 @@ type V1CodeDal struct {
 	Id                int64     `db:"id" json:"id"`
 	UserId            string    `db:"user_id" json:"user_id"`
 	Code              string    `db:"code" json:"code"`
+	LinkToken         string    `db:"link_token" json:"link_token"`
 	GenerationsLeft   int       `db:"generations_left" json:"generations_left"`
 	VerificationsLeft int       `db:"verifications_left" json:"verifications_left"`
 	ExpiresAt         time.Time `db:"expires_at" json:"expires_at"`
@@ -26,6 +27,7 @@ func V1CodeDalFromDomain(c *code.Code) V1CodeDal {
 		Id:                c.GetID(),
 		UserId:            c.GetUserID(),
 		Code:              c.GetCode(),
+		LinkToken:         c.GetLinkToken(),
 		GenerationsLeft:   c.GetGenerationsLeft(),
 		VerificationsLeft: c.GetVerificationsLeft(),
 		ExpiresAt:         c.GetExpiresAt(),
@@ -44,14 +46,16 @@ func (c V1CodeDal) Index(i int) any {
 	case 2:
 		return c.Code
 	case 3:
-		return c.GenerationsLeft
+		return c.LinkToken
 	case 4:
-		return c.VerificationsLeft
+		return c.GenerationsLeft
 	case 5:
-		return c.ExpiresAt
+		return c.VerificationsLeft
 	case 6:
-		return c.CreatedAt
+		return c.ExpiresAt
 	case 7:
+		return c.CreatedAt
+	case 8:
 		return c.UpdatedAt
 	default:
 		return nil
@@ -61,7 +65,8 @@ func (c V1CodeDal) Index(i int) any {
 func (c V1CodeDal) ToDomain() *code.Code {
 	return code.FromStorage(
 		c.Id, c.UserId,
-		c.Code, c.GenerationsLeft, c.VerificationsLeft,
+		c.Code, c.LinkToken,
+		c.GenerationsLeft, c.VerificationsLeft,
 		c.ExpiresAt, c.CreatedAt, c.UpdatedAt,
 	)
 }

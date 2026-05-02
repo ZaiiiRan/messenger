@@ -16,6 +16,7 @@ type Code struct {
 	id                int64
 	userId            string
 	code              string
+	linkToken         string
 	generationsLeft   int
 	verificationsLeft int
 	expiresAt         time.Time
@@ -42,7 +43,7 @@ func New(userId string) (*Code, error) {
 
 func FromStorage(
 	id int64,
-	userId, code string,
+	userId, code, linkToken string,
 	generationsLeft, verificationsLeft int,
 	expiresAt, createdAt, updatedAt time.Time,
 ) *Code {
@@ -50,6 +51,7 @@ func FromStorage(
 		id:                id,
 		userId:            userId,
 		code:              code,
+		linkToken:         linkToken,
 		generationsLeft:   generationsLeft,
 		verificationsLeft: verificationsLeft,
 		expiresAt:         expiresAt,
@@ -61,6 +63,7 @@ func FromStorage(
 func (c *Code) GetID() int64               { return c.id }
 func (c *Code) GetUserID() string          { return c.userId }
 func (c *Code) GetCode() string            { return c.code }
+func (c *Code) GetLinkToken() string       { return c.linkToken }
 func (c *Code) GetGenerationsLeft() int    { return c.generationsLeft }
 func (c *Code) GetVerificationsLeft() int  { return c.verificationsLeft }
 func (c *Code) GetExpiresAt() time.Time    { return c.expiresAt }
@@ -100,6 +103,13 @@ func (c *Code) GenerateCode() error {
 		return err
 	}
 	c.code = code
+
+	linkToken, err := generateLinkToken()
+	if err != nil {
+		return err
+	}
+	c.linkToken = linkToken
+
 	c.expiresAt = time.Now().Add(codeTTL)
 	c.updatedAt = time.Now()
 	return nil

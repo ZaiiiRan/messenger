@@ -33,6 +33,11 @@ func (h *authHandler) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.
 	return h.authService.Confirm(ctx, req)
 }
 
+func (h *authHandler) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error) {
+	utils.SanitizeConfirmByLinkRequest(req)
+	return h.authService.ConfirmByLink(ctx, req)
+}
+
 func (h *authHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	utils.SanitizeLoginRequest(req)
 	return h.authService.Login(ctx, req)

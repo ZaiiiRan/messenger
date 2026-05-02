@@ -3,6 +3,7 @@ package codeservice
 import (
 	"context"
 	"errors"
+	"time"
 
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
 	codedomain "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
@@ -15,6 +16,7 @@ import (
 
 type CodeService interface {
 	CheckConfirmationCode(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawCode string) (bool, error)
+	CheckConfirmationCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string) (userID string, valid bool, err error)
 	GenerateConfiramtionCode(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*codedomain.Code, error)
 }
 
@@ -64,6 +66,31 @@ func (s *codeService) CheckConfirmationCode(ctx context.Context, uow *uow.UnitOf
 
 	l.Infow("code.check_confirmation_code.success")
 	return true, nil
+}
+
+func (s *codeService) CheckConfirmationCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string) (string, bool, error) {
+	l := s.log.With("op", "check_confirmation_code_by_link_token", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	c, err := s.codeDataProvider.getByLinkTokenLocked(ctx, linkToken, uow)
+	if err != nil {
+		l.Errorw("code.check_confirmation_code_by_link_token_failed", "err", err)
+		return "", false, err
+	}
+	if c == nil {
+		return "", false, nil
+	}
+
+	if time.Now().After(c.GetExpiresAt()) {
+		return "", false, codedomain.NewCodeValidationError("activation link has expired")
+	}
+
+	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {
+		l.Errorw("code.check_confirmation_code_by_link_token_failed", "err", err)
+		return "", false, err
+	}
+
+	l.Infow("code.check_confirmation_code_by_link_token.success")
+	return c.GetUserID(), true, nil
 }
 
 func (s *codeService) GenerateConfiramtionCode(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*codedomain.Code, error) {

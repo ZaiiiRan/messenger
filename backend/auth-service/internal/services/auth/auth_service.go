@@ -29,6 +29,7 @@ type AuthService interface {
 	Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error)
 	GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConfirmationCodeRequest) (*pb.GetNewConfirmationCodeResponse, error)
 	Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.ConfirmResponse, error)
+	ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error)
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error)
 	Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error)
@@ -213,6 +214,73 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	l.Infow("auth.confirm.success")
 
 	return &pb.ConfirmResponse{
+		User:         user,
+		AccessToken:  access.GetToken(),
+		RefreshToken: refresh.GetToken(),
+	}, nil
+}
+
+func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error) {
+	l := s.log.With("op", "confirm_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if strings.TrimSpace(req.Token) == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid token")
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	_, err := uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("auth.confirm_by_link_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	userID, valid, err := s.codeService.CheckConfirmationCodeByLinkToken(ctx, uow, req.Token)
+	if err != nil {
+		var cve *code.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if !valid {
+		return nil, status.Errorf(codes.NotFound, "invalid or expired activation link")
+	}
+
+	user, err := s.userService.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if user == nil || user.Status.IsDeleted {
+		return nil, status.Errorf(codes.PermissionDenied, "user is deleted")
+	}
+	if user.Status.IsConfirmed {
+		return nil, status.Errorf(codes.FailedPrecondition, "user is already activated")
+	}
+
+	user, err = s.userService.ConfirmUser(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.confirm_by_link_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	l.Infow("auth.confirm_by_link.success")
+
+	return &pb.ConfirmByLinkResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
 		RefreshToken: refresh.GetToken(),

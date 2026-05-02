@@ -14,6 +14,10 @@ func SanitizeConfirmRequest(req *pb.ConfirmRequest) {
 	req.Code = strings.TrimSpace(req.Code)
 }
 
+func SanitizeConfirmByLinkRequest(req *pb.ConfirmByLinkRequest) {
+	req.Token = strings.TrimSpace(req.Token)
+}
+
 func SanitizeLoginRequest(req *pb.LoginRequest) {
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
