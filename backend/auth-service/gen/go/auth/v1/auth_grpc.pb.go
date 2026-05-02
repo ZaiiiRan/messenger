@@ -22,6 +22,7 @@ const (
 	AuthService_Register_FullMethodName               = "/auth.v1.AuthService/Register"
 	AuthService_GetNewConfirmationCode_FullMethodName = "/auth.v1.AuthService/GetNewConfirmationCode"
 	AuthService_Confirm_FullMethodName                = "/auth.v1.AuthService/Confirm"
+	AuthService_ConfirmByLink_FullMethodName          = "/auth.v1.AuthService/ConfirmByLink"
 	AuthService_Login_FullMethodName                  = "/auth.v1.AuthService/Login"
 	AuthService_Refresh_FullMethodName                = "/auth.v1.AuthService/Refresh"
 	AuthService_Logout_FullMethodName                 = "/auth.v1.AuthService/Logout"
@@ -35,6 +36,7 @@ type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	GetNewConfirmationCode(ctx context.Context, in *GetNewConfirmationCodeRequest, opts ...grpc.CallOption) (*GetNewConfirmationCodeResponse, error)
 	Confirm(ctx context.Context, in *ConfirmRequest, opts ...grpc.CallOption) (*ConfirmResponse, error)
+	ConfirmByLink(ctx context.Context, in *ConfirmByLinkRequest, opts ...grpc.CallOption) (*ConfirmByLinkResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
@@ -73,6 +75,16 @@ func (c *authServiceClient) Confirm(ctx context.Context, in *ConfirmRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConfirmResponse)
 	err := c.cc.Invoke(ctx, AuthService_Confirm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ConfirmByLink(ctx context.Context, in *ConfirmByLinkRequest, opts ...grpc.CallOption) (*ConfirmByLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmByLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_ConfirmByLink_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +138,7 @@ type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	GetNewConfirmationCode(context.Context, *GetNewConfirmationCodeRequest) (*GetNewConfirmationCodeResponse, error)
 	Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error)
+	ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
@@ -148,6 +161,9 @@ func (UnimplementedAuthServiceServer) GetNewConfirmationCode(context.Context, *G
 }
 func (UnimplementedAuthServiceServer) Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Confirm not implemented")
+}
+func (UnimplementedAuthServiceServer) ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmByLink not implemented")
 }
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
@@ -232,6 +248,24 @@ func _AuthService_Confirm_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).Confirm(ctx, req.(*ConfirmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ConfirmByLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmByLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ConfirmByLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ConfirmByLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ConfirmByLink(ctx, req.(*ConfirmByLinkRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -326,6 +360,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Confirm",
 			Handler:    _AuthService_Confirm_Handler,
+		},
+		{
+			MethodName: "ConfirmByLink",
+			Handler:    _AuthService_ConfirmByLink_Handler,
 		},
 		{
 			MethodName: "Login",
