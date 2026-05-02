@@ -16,8 +16,8 @@ service AuthService {
     rpc Logout(LogoutRequest) returns (LogoutResponse);
     rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
     rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
-    rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordResponse);
-    rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordResponse);
+    rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordByCodeResponse);
+    rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordByLinkResponse);
 }
 
 message RegisterRequest {
@@ -104,7 +104,13 @@ message ResetPasswordByLinkRequest {
     string new_password = 2;
 }
 
-message ResetPasswordResponse {
+message ResetPasswordByCodeResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
+    string refresh_token = 3;
+}
+
+message ResetPasswordByLinkResponse {
     user.v1.User user    = 1;
     string access_token  = 2;
     string refresh_token = 3;
