@@ -1,4 +1,4 @@
-syntax = "proto3";
+﻿syntax = "proto3";
 
 package auth.v1;
 
@@ -15,6 +15,9 @@ service AuthService {
     rpc Refresh(RefreshRequest) returns (RefreshResponse);
     rpc Logout(LogoutRequest) returns (LogoutResponse);
     rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+    rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+    rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordResponse);
+    rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordResponse);
 }
 
 message RegisterRequest {
@@ -82,5 +85,27 @@ message ChangePasswordRequest {
 message ChangePasswordResponse {
     user.v1.User user = 1;
     string access_token = 2;
+    string refresh_token = 3;
+}
+
+message ForgotPasswordRequest {
+    string login = 1;
+}
+message ForgotPasswordResponse {}
+
+message ResetPasswordByCodeRequest {
+    string login        = 1;
+    string code         = 2;
+    string new_password = 3;
+}
+
+message ResetPasswordByLinkRequest {
+    string token        = 1;
+    string new_password = 2;
+}
+
+message ResetPasswordResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
     string refresh_token = 3;
 }
