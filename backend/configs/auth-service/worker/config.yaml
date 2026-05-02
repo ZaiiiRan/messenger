@@ -1,0 +1,8 @@
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/auth-service"
+expired_token_clearing_worker:
+  interval_ms: 1000
+  batch_size: 1000
+  count: 5
