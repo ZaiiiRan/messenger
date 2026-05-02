@@ -101,3 +101,19 @@ func (tdp *tokenDataProvider) deleteFromCache(ctx context.Context, token string)
 	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	return cacheRepo.DelToken(ctx, token)
 }
+
+func (tdp *tokenDataProvider) deleteExpiredTokens(ctx context.Context, batchSize uint, uow *uow.UnitOfWork) ([]*token.Token, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbRepo := postgresimpl.NewTokenRepository(pgConn)
+
+	tokens, err := dbRepo.DeleteExpiredTokens(ctx, models.NewQueryExpiredTokensDal(int(batchSize)))
+	if err != nil {
+		return nil, err
+	}
+
+	return tokens, nil
+}

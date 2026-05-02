@@ -104,3 +104,41 @@ func (r *TokenRepository) QueryToken(ctx context.Context, query *models.QueryTok
 	}
 	return res.ToDomain(), nil
 }
+
+func (r *TokenRepository) DeleteExpiredTokens(ctx context.Context, query *models.QueryExpiredTokensDal) ([]*token.Token, error) {
+	querySql := `
+		DELETE FROM refresh_tokens AS rt
+		WHERE rt.id IN (
+			SELECT rt.id
+			FROM refresh_tokens rt
+			JOIN user_versions uv ON uv.user_id = rt.user_id
+			WHERE uv.version != rt.version
+			OR rt.expires_at < NOW()
+			FOR UPDATE SKIP LOCKED
+			LIMIT $1
+		)
+		RETURNING rt.id, rt.user_id, rt.token, rt.version, rt.expires_at, rt.created_at, rt.updated_at
+	`
+
+	rows, err := r.conn.Query(ctx, querySql, query.PageSize)
+	if err != nil {
+		return nil, fmt.Errorf("delete expired tokens: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*token.Token
+	for rows.Next() {
+		var res models.V1RefreshTokenDal
+		if err := rows.Scan(
+			&res.Id, &res.UserId, &res.Token, &res.Version, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan expired tokens: %w", err)
+		}
+		result = append(result, res.ToDomain())
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows expired tokens: %w", err)
+	}
+
+	return result, nil
+}

@@ -26,6 +26,7 @@ type TokenService interface {
 	InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
+	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
 }
 
 type tokenService struct {
@@ -205,6 +206,18 @@ func (s *tokenService) UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWor
 
 	l.Infow("token.update_user_version.success")
 	return uv, nil
+}
+
+func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error {
+	l := s.log.With("op", "delete_expired_tokens", "worker_id", workerID)
+
+	tokens, err := s.tokenDataProvider.deleteExpiredTokens(ctx, batchSize, uow)
+	if err != nil {
+		l.Errorw("token.delete_expired_tokens_failed", "err", err)
+		return err
+	}
+	l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
+	return nil
 }
 
 func signToken(c commonjwt.UserClaims, key []byte, ttl time.Duration) (string, time.Time, error) {
