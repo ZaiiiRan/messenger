@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "auth-service/gen/go/auth;auth";
+
+import "user/v1/user.proto";
+
+service AuthService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc GetNewConfirmationCode(GetNewConfirmationCodeRequest) returns (GetNewConfirmationCodeResponse);
+    rpc Confirm(ConfirmRequest) returns (ConfirmResponse);
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc Refresh(RefreshRequest) returns (RefreshResponse);
+    rpc Logout(LogoutRequest) returns (LogoutResponse);
+    rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+}
+
+message RegisterRequest {
+    string username = 1;
+    string email = 2;
+    user.v1.Profile profile = 3;
+    string password = 4;
+}
+
+message RegisterResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
+
+message GetNewConfirmationCodeRequest {}
+message GetNewConfirmationCodeResponse {}
+
+message ConfirmRequest {
+    string code = 1;
+}
+
+message ConfirmResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
+
+message LoginRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
+
+message RefreshRequest {}
+message RefreshResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
+
+message LogoutRequest {}
+message LogoutResponse {}
+
+message ChangePasswordRequest {
+    string old_password = 1;
+    string new_password = 2;
+}
+
+message ChangePasswordResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}

@@ -1,34 +1,227 @@
 version: '3.9'
 
 services:
-  old-db:
-    container_name: old-messenger_db
-    image: postgres:18.3-alpine3.23
-    volumes:
-      - old-messenger-db:/var/lib/postgresql/data/
-    ports:
-      - "5432:5432"
-    env_file:
-      - ./backend/old/.env
-    networks:
-      - messenger_network
+  # old-db:
+  #   container_name: old-messenger_db
+  #   image: postgres:18.3-alpine3.23
+  #   volumes:
+  #     - old-messenger-db:/var/lib/postgresql/data/
+  #   ports:
+  #     - "5432:5432"
+  #   env_file:
+  #     - ./backend/old/.env
+  #   networks:
+  #     - messenger-network
   
-  old-backend:
-    container_name: old-messenger_backend
-    build:
-      context: ./backend/old
-    depends_on:
-      - old-db
+  # old-backend:
+  #   container_name: old-messenger_backend
+  #   build:
+  #     context: ./backend/old
+  #   depends_on:
+  #     - old-db
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - ./backend/old/.env
+  #   networks:
+  #     - messenger-network
+
+  vault:
+    image: hashicorp/vault:1.19
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     ports:
-      - "8080:8080"
-    env_file:
-      - ./backend/old/.env
+      - "8200:8200"
     networks:
-      - messenger_network
+      - messenger-network
+  
+  user-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - user-db-data:/var/lib/postgresql/data/
+    networks:
+      - messenger-network
+  
+  user-redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - messenger-network
+  
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    depends_on:
+      user-db:
+        condition: service_healthy
+      user-redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    environment:
+      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@user-db:5432/postgres?sslmode=disable
+      MIGRATE_NEED_TO_MIGRATE: true
+      REDIS_ADDRESS: user-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+    volumes:
+      - ./backend/configs/user-service:/etc/user-service
+    ports:
+      - "50051:50051"
+    networks:
+      - messenger-network
+  
+  auth-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data/
+    networks:
+      - messenger-network
+  
+  auth-redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - messenger-network
+  
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      auth-redis:
+        condition: service_healthy
+      email-kafka:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    environment:
+      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/postgres?sslmode=disable
+      MIGRATE_NEED_TO_MIGRATE: true
+      REDIS_ADDRESS: auth-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      JWT_REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "email-kafka:9092"
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
+    volumes:
+      - ./backend/configs/auth-service:/etc/auth-service
+    ports:
+      - "50052:50051"
+    networks:
+      - messenger-network
+
+  email-kafka:
+    image: public.ecr.aws/bitnami/kafka:3.9
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@email-kafka:9093
+      KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://email-kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_CLIENT_USERS: ${KAFKA_USER}
+      KAFKA_CLIENT_PASSWORDS: ${KAFKA_PASSWORD}
+      KAFKA_INTER_BROKER_USER: ${KAFKA_USER}
+      KAFKA_INTER_BROKER_PASSWORD: ${KAFKA_PASSWORD}
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "printf \"security.protocol=SASL_PLAINTEXT\\nsasl.mechanism=PLAIN\\nsasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\\\"$$KAFKA_CLIENT_USERS\\\" password=\\\"$$KAFKA_CLIENT_PASSWORDS\\\";\\n\" > /tmp/client.properties && kafka-topics.sh --bootstrap-server localhost:9092 --command-config /tmp/client.properties --list"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - email-kafka-data:/bitnami/kafka
+    networks:
+      - messenger-network
+
+  email-kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    depends_on:
+      email-kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: email-codes-tasks
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: email-kafka:9092
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_USER}\" password=\"${KAFKA_PASSWORD}\";"
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    networks:
+      - messenger-network
 
 volumes:
-  old-messenger-db:
+  # old-messenger-db:
+  user-db-data:
+  auth-db-data:
+  email-kafka-data:
 
 networks:
-  messenger_network:
+  messenger-network:
     driver: bridge

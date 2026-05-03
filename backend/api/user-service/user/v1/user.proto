@@ -5,16 +5,135 @@ package user.v1;
 option go_package = "user-service/gen/go/user;user";
 
 service UserService {
-    rpc GetUser(GetUserRequest) returns (GetUserResponse);
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserResponse);
+    rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDResponse);
+    rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse);
+    rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+    rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+
+    rpc BanUser(BanUserRequest) returns (BanUserResponse);
+    rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
+    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
-message GetUserRequest {
-    string user_id = 1;
-    string email = 2;
+message Profile {
+    string first_name = 1;
+    string last_name = 2;
+    optional string phone = 3;
+    optional string birthdate = 4;
+    optional string bio = 5;
 }
 
-message GetUserResponse {
-    string user_id = 1;
-    string name = 2;
+message UserStatus {
+    bool is_confirmed = 1;
+    bool is_permanently_banned = 2;
+    optional string banned_until = 3;
+    bool is_deleted = 4;
+    optional string deleted_at = 5;
+}
+
+message User {
+    string id = 1;
+    string username = 2;
     string email = 3;
+    Profile profile = 4;
+    UserStatus status = 5;
+}
+
+message CreateUserRequest {
+    string username = 1;
+    string email = 2;
+    Profile profile = 3;
+}
+
+message CreateUserResponse {
+    User user = 1;
+}
+
+message ConfirmUserRequest {
+    string user_id = 1;
+}
+
+message ConfirmUserResponse {
+    User user = 1;
+}
+
+message GetUserByIDRequest {
+    string user_id = 1;
+}
+
+message GetUserByIDResponse {
+    User user = 1;
+}
+
+message GetUserByUsernameRequest {
+    string username = 1;
+}
+
+message GetUserByUsernameResponse {
+    User user = 1;
+}
+
+message GetUserByEmailRequest {
+    string email = 1;
+}
+
+message GetUserByEmailResponse {
+    User user = 1;
+}
+
+message GetUsersRequest {
+    repeated string ids = 1;
+    repeated string full_usernames = 2;
+    repeated string partial_usernames = 3;
+    repeated string full_emails = 4;
+    repeated string partial_emails = 5;
+    repeated string phone_numbers = 6;
+    repeated string partial_names = 7;
+
+    optional bool is_confirmed = 8;
+    optional bool is_deleted = 9;
+    optional bool is_permanently_banned = 10;
+    optional bool is_temporarily_banned = 11;
+
+    int32 page = 12;
+    int32 page_size = 13;
+
+    optional string deleted_from = 14;
+    optional string deleted_to = 15;
+    optional string created_from = 16;
+    optional string created_to = 17;
+    optional string updated_from = 18;
+    optional string updated_to = 19;
+}
+
+message GetUsersResponse {
+    repeated User users = 1;
+}
+
+message BanUserRequest {
+    string user_id = 1;
+    optional string banned_until = 2;
+    optional bool permanently_ban = 3;
+}
+
+message BanUserResponse {
+    User user = 1;
+}
+
+message UnbanUserRequest {
+    string user_id = 1;
+}
+
+message UnbanUserResponse {
+    User user = 1;
+}
+
+message DeleteUserRequest {
+    string user_id = 1;
+}
+
+message DeleteUserResponse {
+    User user = 1;
 }

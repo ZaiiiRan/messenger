@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+
 func UserPermissionMiddleware(shouldProtect MethodMatcher) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
