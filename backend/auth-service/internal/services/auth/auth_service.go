@@ -102,7 +102,11 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 
 	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypeActivation)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "internal server error")
+		var cve *codedomain.CodeValidationError
+		if !errors.As(err, &cve) {
+			return nil, status.Errorf(codes.Internal, "internal server error")
+		}
+		c = nil
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
@@ -117,7 +121,9 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 
 	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
 
-	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c, lang)
+	if c != nil {
+		s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c, lang)
+	}
 
 	return &pb.RegisterResponse{
 		User:         user,
