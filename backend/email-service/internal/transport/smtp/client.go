@@ -53,7 +53,7 @@ func (c *SMTPClient) Close() error {
 }
 
 func (c *SMTPClient) sendWithRetry(m *gomail.Message) error {
-	delay := time.Millisecond * time.Duration(c.cfg.MaxRetries)
+	delay := time.Millisecond * time.Duration(c.cfg.RetryDelayMS)
 
 	for attempt := 1; attempt <= int(c.cfg.MaxRetries); attempt++ {
 		err := c.trySend(m)
@@ -67,9 +67,9 @@ func (c *SMTPClient) sendWithRetry(m *gomail.Message) error {
 
 		time.Sleep(delay)
 
-		d := c.cfg.RetryDelayMS * 2
-		if d < c.cfg.RetryMaxDelayMS {
-			delay = time.Millisecond * time.Duration(d)
+		newDelay := delay * 2
+		if newDelay < time.Millisecond*time.Duration(c.cfg.RetryMaxDelayMS) {
+			delay = newDelay
 		} else {
 			delay = time.Millisecond * time.Duration(c.cfg.RetryMaxDelayMS)
 		}

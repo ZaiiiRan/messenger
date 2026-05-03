@@ -23,7 +23,6 @@ func Init() {
 	initOnce.Do(func() {
 		bundle = i18n.NewBundle(language.English)
 		bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-		SupportedLanguages = SupportedLanguages[:0]
 
 		files, _ := fs.ReadDir("translations")
 		for _, file := range files {
@@ -38,8 +37,6 @@ func Init() {
 }
 
 func NewLocalizer(lang string) *i18n.Localizer {
-	Init()
-
 	if lang == "" || !isSupported(lang) {
 		lang = "en"
 	}

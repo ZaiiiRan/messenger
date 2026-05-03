@@ -37,6 +37,11 @@ func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaCl
 		for _, message := range messages {
 			var codeMessageModel *models.CodeMessage
 			if err := json.Unmarshal([]byte(message.Body), &codeMessageModel); err != nil {
+				w.log.Warnw("email_sender_handler.unmarshal_failed", "err", err, "body", message.Body)
+				continue
+			}
+			if codeMessageModel == nil {
+				w.log.Warnw("email_sender_handler.unmarshal_failed", "err", "null message body")
 				continue
 			}
 
@@ -49,7 +54,7 @@ func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaCl
 
 	consumer, err := kafkaconsumer.NewConsumer(cfg, kafkaClient, workerLog, handlerFunc)
 	if err != nil {
-		return nil, fmt.Errorf("email sender worker %d: %w", id, err)
+		return nil, fmt.Errorf("email sender worker %s: %w", id, err)
 	}
 	w.consumer = consumer
 	return w, nil
