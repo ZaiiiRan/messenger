@@ -36,6 +36,8 @@ type AuthService interface {
 	ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error)
 	ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error)
 	ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error)
+	GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error)
+	InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error)
 }
 
 type service struct {

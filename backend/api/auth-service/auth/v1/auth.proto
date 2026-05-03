@@ -18,6 +18,8 @@ service AuthService {
     rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
     rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordByCodeResponse);
     rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordByLinkResponse);
+    rpc GetActiveSessions(GetActiveSessionsRequest) returns (GetActiveSessionsResponse);
+    rpc InvalidateSessions(InvalidateSessionsRequest) returns (InvalidateSessionsResponse);
 }
 
 message RegisterRequest {
@@ -115,3 +117,30 @@ message ResetPasswordByLinkResponse {
     string access_token  = 2;
     string refresh_token = 3;
 }
+
+message Session {
+    int64 id = 1;
+    optional string ip = 2;
+    optional string country = 3;
+    optional string city = 4;
+    optional string os = 5;
+    optional string browser = 6;
+    string created_at = 7;
+}
+
+message GetActiveSessionsRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+}
+
+message GetActiveSessionsResponse {
+    repeated Session sessions = 1;
+    Session current_session = 2;
+}
+
+message InvalidateSessionsRequest {
+    repeated int64 ids = 1;
+    optional bool all = 2;
+}
+
+message InvalidateSessionsResponse {}

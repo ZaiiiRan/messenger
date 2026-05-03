@@ -79,12 +79,16 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, log *zap.Sugare
 				"/auth.v1.AuthService/GetNewConfirmationCode",
 				"/auth.v1.AuthService/Confirm",
 				"/auth.v1.AuthService/ChangePassword",
+				"/auth.v1.AuthService/GetActiveSessions",
+				"/auth.v1.AuthService/InvalidateSessions",
 			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
 			middleware.MiddlewareOnly(
 				"/auth.v1.AuthService/ChangePassword",
+				"/auth.v1.AuthService/GetActiveSessions",
+				"/auth.v1.AuthService/InvalidateSessions",
 			),
 		),
 	)

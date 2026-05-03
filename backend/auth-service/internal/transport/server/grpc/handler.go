@@ -70,3 +70,11 @@ func (h *authHandler) ResetPasswordByLink(ctx context.Context, req *pb.ResetPass
 	utils.SanitizeResetPasswordByLinkRequest(req)
 	return h.authService.ResetPasswordByLink(ctx, req)
 }
+
+func (h *authHandler) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error) {
+	return h.authService.GetActiveSessions(ctx, req)
+}
+
+func (h *authHandler) InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error) {
+	return h.authService.InvalidateSessions(ctx, req)
+}
