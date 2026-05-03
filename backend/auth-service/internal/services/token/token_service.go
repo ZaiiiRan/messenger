@@ -87,7 +87,7 @@ func (s *tokenService) GenerateToken(
 		return nil, nil, err
 	}
 
-	accessToken := token.New(user.Id, access, token.AccessTokenType, version, accessExp)
+	accessToken := token.New(user.Id, access, token.AccessTokenType, version, "", "", "", "", "", accessExp)
 
 	var refreshToken *token.Token
 	if existedRefreshToken != nil {
@@ -98,7 +98,8 @@ func (s *tokenService) GenerateToken(
 		refreshToken = existedRefreshToken
 		refreshToken.SetToken(refresh, refreshExp)
 	} else {
-		refreshToken = token.New(user.Id, refresh, token.RefreshTokenType, version, refreshExp)
+		ip, country, city, os, browser := extractSessionInfo(ctx)
+		refreshToken = token.New(user.Id, refresh, token.RefreshTokenType, version, ip, country, city, os, browser, refreshExp)
 	}
 
 	if err := s.tokenDataProvider.save(ctx, refreshToken, uow); err != nil {
@@ -231,12 +232,26 @@ func signToken(c commonjwt.UserClaims, key []byte, ttl time.Duration) (string, t
 		NotBefore: jwt.NewNumericDate(safeNbf),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
 
-	str, err := token.SignedString(key)
+	str, err := t.SignedString(key)
 	if err != nil {
 		return "", expiresAt, err
 	}
 
 	return str, expiresAt, nil
+}
+
+func extractSessionInfo(ctx context.Context) (ip, country, city, os, browser string) {
+	ip, _ = ctxmetadata.GetRealIPFromIncomingContext(ctx)
+	country, _ = ctxmetadata.GetCountryNameFromIncomingContext(ctx)
+	city, _ = ctxmetadata.GetCityFromIncomingContext(ctx)
+
+	ua, err := ctxmetadata.GetUAFromIncomingContext(ctx)
+	if err == nil && ua != "" {
+		parsed := utils.ParseUserAgent(ua)
+		os = parsed.OS
+		browser = parsed.Browser
+	}
+	return
 }
