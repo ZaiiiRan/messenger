@@ -9,8 +9,8 @@ import (
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
-	middleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -73,9 +73,11 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, log *zap.Sugare
 		commonmiddleware.LogMiddleware(log),
 		commonmiddleware.RecoveryMiddleware(log),
 
+		commonmiddleware.I18nMiddleware(utils.CreateLocalizer),
+
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),
-			middleware.MiddlewareOnly(
+			commonmiddleware.MiddlewareOnly(
 				"/auth.v1.AuthService/GetNewConfirmationCode",
 				"/auth.v1.AuthService/Confirm",
 				"/auth.v1.AuthService/ChangePassword",
@@ -85,7 +87,7 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, log *zap.Sugare
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
-			middleware.MiddlewareOnly(
+			commonmiddleware.MiddlewareOnly(
 				"/auth.v1.AuthService/ChangePassword",
 				"/auth.v1.AuthService/GetActiveSessions",
 				"/auth.v1.AuthService/InvalidateSessions",

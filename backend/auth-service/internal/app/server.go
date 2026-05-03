@@ -13,6 +13,7 @@ import (
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
@@ -85,6 +86,8 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	a.initPasswordService()
 	a.initTokenService()
 	a.initAuthService()
+
+	a.initI18n()
 
 	if err := a.initGrpcServer(); err != nil {
 		return err
@@ -214,6 +217,10 @@ func (a *ServerApp) initGrpcServer() error {
 
 	a.grpcServer = srv
 	return nil
+}
+
+func (a *ServerApp) initI18n() {
+	i18n.Init()
 }
 
 func (a *ServerApp) startGrpcServer() {
