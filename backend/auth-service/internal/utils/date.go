@@ -42,6 +42,10 @@ func ParseTimestampPtr(s *string) (*time.Time, error) {
 	return &t, nil
 }
 
+func FormatTimestamp(t time.Time) string {
+	return t.Format(time.RFC3339)
+}
+
 func FormatTimestampPtr(t *time.Time) *string {
 	if t == nil {
 		return nil

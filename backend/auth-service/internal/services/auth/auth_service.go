@@ -225,7 +225,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error) {
 	l := s.log.With("op", "confirm_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	if strings.TrimSpace(req.Token) == "" {
+	if req.Token == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid token")
 	}
 
@@ -615,7 +615,7 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error) {
 	l := s.log.With("op", "reset_password_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	if strings.TrimSpace(req.Token) == "" {
+	if req.Token == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid token")
 	}
 
@@ -678,6 +678,46 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 		AccessToken:  access.GetToken(),
 		RefreshToken: refresh.GetToken(),
 	}, nil
+}
+
+func (s *service) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error) {
+	l := s.log.With("op", "get_active_sessions", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
+	if refreshTokenStr == "" {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+
+	refreshToken, uv, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
+	if err != nil {
+		if errors.Is(err, jwt.ErrInvalidToken) {
+			return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	otherTokens, err := s.tokenService.GetRefreshTokens(ctx, uow, refreshToken, uv, req)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	sessions := make([]*pb.Session, 0, len(otherTokens))
+	for _, t := range otherTokens {
+		sessions = append(sessions, toSessionPb(t))
+	}
+
+	l.Infow("auth.get_active_sessions.success", "count", len(sessions))
+	return &pb.GetActiveSessionsResponse{
+		CurrentSession: toSessionPb(refreshToken),
+		Sessions:       sessions,
+	}, nil
+}
+
+func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error) {
+	return &pb.InvalidateSessionsResponse{}, nil
 }
 
 func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.User, error) {

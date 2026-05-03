@@ -75,31 +75,55 @@ func (tdp *tokenDataProvider) save(ctx context.Context, t *token.Token, uow *uow
 
 	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	cacheRepo.SetToken(ctx, t)
+	cacheRepo.DelTokenListsByUserId(ctx, t.GetUserID())
 
 	return nil
 }
 
-func (tdp *tokenDataProvider) delete(ctx context.Context, token string, uow *uow.UnitOfWork) error {
+func (tdp *tokenDataProvider) delete(ctx context.Context, tokenStr string, uow *uow.UnitOfWork) error {
+	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
 	}
 
-	dbRepo := postgresimpl.NewTokenRepository(pgConn)
+	token, _ := tdp.getByToken(ctx, tokenStr, uow)
 
-	err = dbRepo.DeleteToken(ctx, token)
-	if err != nil {
+	dbRepo := postgresimpl.NewTokenRepository(pgConn)
+	if err := dbRepo.DeleteToken(ctx, tokenStr); err != nil {
 		return err
 	}
 
-	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
-	cacheRepo.DelToken(ctx, token)
+	cacheRepo.DelToken(ctx, tokenStr)
+	if token != nil {
+		cacheRepo.DelTokenListsByUserId(ctx, token.GetUserID())
+	}
 	return nil
 }
 
 func (tdp *tokenDataProvider) deleteFromCache(ctx context.Context, token string) error {
 	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	return cacheRepo.DelToken(ctx, token)
+}
+
+func (tdp *tokenDataProvider) getActiveByUserId(ctx context.Context, query *models.QueryTokensDal, uow *uow.UnitOfWork) ([]*token.Token, error) {
+	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
+	if cached, err := cacheRepo.GetTokenList(ctx, query); err == nil && cached != nil {
+		return cached, nil
+	}
+
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	dbRepo := postgresimpl.NewTokenRepository(pgConn)
+	tokens, err := dbRepo.QueryActiveTokens(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheRepo.SetTokenList(ctx, query, tokens)
+	return tokens, nil
 }
 
 func (tdp *tokenDataProvider) deleteExpiredTokens(ctx context.Context, batchSize uint, uow *uow.UnitOfWork) ([]*token.Token, error) {

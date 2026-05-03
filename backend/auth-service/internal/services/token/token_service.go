@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/token"
 	userversion "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/user_version"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/models"
 	uow "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
@@ -27,6 +29,7 @@ type TokenService interface {
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
 	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
+	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
 }
 
 type tokenService struct {
@@ -207,6 +210,26 @@ func (s *tokenService) UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWor
 
 	l.Infow("token.update_user_version.success")
 	return uv, nil
+}
+
+func (s *tokenService) GetRefreshTokens(
+	ctx context.Context,
+	uow *uow.UnitOfWork,
+	refreshToken *token.Token,
+	userVersion *userversion.UserVersion,
+	req *pb.GetActiveSessionsRequest,
+) ([]*token.Token, error) {
+	l := s.log.With("op", "get_refresh_tokens", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", refreshToken.GetUserID())
+
+	query := models.NewQueryTokensDal(refreshToken.GetUserID(), refreshToken.GetToken(), userVersion.GetVersion(), int(req.Page), int(req.PageSize))
+
+	tokens, err := s.tokenDataProvider.getActiveByUserId(ctx, query, uow)
+	if err != nil {
+		l.Errorw("token.get_refresh_tokens_failed", "err", err)
+		return nil, err
+	}
+	l.Infow("token.get_refresh_tokens.success", "count", len(tokens))
+	return tokens, nil
 }
 
 func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error {
