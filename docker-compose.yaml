@@ -166,6 +166,7 @@ services:
       - ./backend/configs/auth-service/server:/etc/auth-service
     ports:
       - "50052:50051"
+      - "8002:8080"
     networks:
       - messenger-network
   
