@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func UserPermissionMiddleware(secretKey []byte, shouldProtect MethodMatcher) grpc.UnaryServerInterceptor {
+
+func UserPermissionMiddleware(shouldProtect MethodMatcher) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
