@@ -18,6 +18,11 @@ func PropagateClientMetaUnary() grpc.UnaryClientInterceptor {
 	) error {
 		ctx = ctxmetadata.ForwardReqIdToOutgoingContext(ctx)
 		ctx = ctxmetadata.ForwardAuthToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardRefreshTokenToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardRealIPToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardCountryNameToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardCityToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardUAToOutgoingContext(ctx)
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
