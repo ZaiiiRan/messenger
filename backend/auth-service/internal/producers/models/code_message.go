@@ -13,12 +13,13 @@ type CodeMessage struct {
 	Code      string    `json:"code"`
 	LinkToken string    `json:"link_token"`
 	CodeType  string    `json:"code_type"`
+	Language  string    `json:"language"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func CodeMessageFromDomain(c *code.Code, email string) CodeMessage {
+func CodeMessageFromDomain(c *code.Code, email string, language string) CodeMessage {
 	if c == nil {
 		return CodeMessage{}
 	}
@@ -30,6 +31,7 @@ func CodeMessageFromDomain(c *code.Code, email string) CodeMessage {
 		Code:      c.GetCode(),
 		LinkToken: c.GetLinkToken(),
 		CodeType:  string(c.GetCodeType()),
+		Language:  language,
 		ExpiresAt: c.GetExpiresAt(),
 		CreatedAt: c.GetCreatedAt(),
 		UpdatedAt: c.GetUpdatedAt(),

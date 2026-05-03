@@ -115,7 +115,9 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
+	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
+
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c, lang)
 
 	return &pb.RegisterResponse{
 		User:         user,
@@ -155,7 +157,9 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
+	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
+
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c, lang)
 
 	l.Infow("auth.get_new_confirmation_code.success")
 	return &pb.GetNewConfirmationCodeResponse{}, nil
@@ -530,7 +534,9 @@ func (s *service) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequ
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
+	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
+
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c, lang)
 
 	l.Infow("auth.forgot_password.success")
 	return &pb.ForgotPasswordResponse{}, nil
