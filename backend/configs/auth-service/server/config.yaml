@@ -1,5 +1,7 @@
 grpc_server:
   port: ":50051"
+metrics_server:
+  port: ":8080"
 shutdown:
   shutdown_timeout: 5
 jwt:
@@ -14,3 +16,4 @@ email_codes_tasks_producer:
   client_id: "auth-service"
   batch_size: 100
   write_timeout: 10
+

@@ -11,6 +11,9 @@ import (
 	authservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/auth"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
+	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -21,9 +24,18 @@ type Server struct {
 	lis net.Listener
 }
 
-func New(srvSettings settings.GRPCServerSettings, jwtSettings settings.JWTSettings, authService authservice.AuthService, log *zap.SugaredLogger) (*Server, error) {
+func New(
+	srvSettings settings.GRPCServerSettings,
+	jwtSettings settings.JWTSettings,
+	authService authservice.AuthService,
+	log *zap.SugaredLogger,
+	reg *prometheus.Registry,
+) (*Server, error) {
+	grpcMetrics := grpc_prom.NewServerMetrics()
+	reg.MustRegister(grpcMetrics)
+
 	s := grpc.NewServer(
-		newChainUnaryInterceptor(&jwtSettings, log),
+		newChainUnaryInterceptor(&jwtSettings, grpcMetrics, log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
@@ -34,6 +46,11 @@ func New(srvSettings settings.GRPCServerSettings, jwtSettings settings.JWTSettin
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen: %w", err)
 	}
+
+	grpcMetrics.InitializeMetrics(s)
+
+	hs := newHealthServer()
+	healthpb.RegisterHealthServer(s, hs)
 
 	return &Server{
 		srv: s,
@@ -67,8 +84,9 @@ func (s *Server) Addr() string {
 	return ""
 }
 
-func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, log *zap.SugaredLogger) grpc.ServerOption {
+func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *grpc_prom.ServerMetrics, log *zap.SugaredLogger) grpc.ServerOption {
 	return grpc.ChainUnaryInterceptor(
+		grpcMetrics.UnaryServerInterceptor(),
 		commonmiddleware.RequestIdMiddleware(),
 		commonmiddleware.LogMiddleware(log),
 		commonmiddleware.RecoveryMiddleware(log),

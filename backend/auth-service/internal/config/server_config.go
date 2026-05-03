@@ -18,6 +18,7 @@ type ServerConfig struct {
 	Redis                   settings.RedisSettings         `mapstructure:"redis"`
 	EmailCodesTasksProducer settings.KafkaProducerSettings `mapstructure:"email_codes_tasks_producer"`
 	Shutdown                settings.ShutdownSettings      `mapstructure:"shutdown"`
+	MetricsServer           settings.MetricsServerSettings `mapstructure:"metrics_server"`
 	Vault                   settings.VaultSettings         `mapstructure:"vault"`
 }
 
@@ -62,5 +63,6 @@ func setServerDefaults(v *viper.Viper) {
 	settings.SetRedisDefaults(v, "redis")
 	settings.SetKafkaProducerDefaults(v, "email_codes_tasks_producer", "email-codes-tasks")
 	settings.SetShutdownDefaults(v, "shutdown")
+	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetVaultDefaults(v, "vault")
 }
