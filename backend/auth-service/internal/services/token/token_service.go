@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/token"
 	userversion "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/user_version"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/models"
 	uow "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
@@ -23,9 +25,13 @@ type TokenService interface {
 	GenerateToken(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, userVersion *userversion.UserVersion, existedRefreshToken *token.Token) (*token.Token, *token.Token, error)
 	ValidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) (*token.Token, *userversion.UserVersion, error)
 	ValidateAccessToken(ctx context.Context, accessToken string) (*commonjwt.UserClaims, error)
+	ParseRefreshToken(tokenStr string) error
 	InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
+	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
+	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
+	InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error
 }
 
 type tokenService struct {
@@ -86,7 +92,7 @@ func (s *tokenService) GenerateToken(
 		return nil, nil, err
 	}
 
-	accessToken := token.New(user.Id, access, token.AccessTokenType, version, accessExp)
+	accessToken := token.New(user.Id, access, token.AccessTokenType, version, "", "", "", "", "", accessExp)
 
 	var refreshToken *token.Token
 	if existedRefreshToken != nil {
@@ -97,7 +103,8 @@ func (s *tokenService) GenerateToken(
 		refreshToken = existedRefreshToken
 		refreshToken.SetToken(refresh, refreshExp)
 	} else {
-		refreshToken = token.New(user.Id, refresh, token.RefreshTokenType, version, refreshExp)
+		ip, country, city, os, browser := extractSessionInfo(ctx)
+		refreshToken = token.New(user.Id, refresh, token.RefreshTokenType, version, ip, country, city, os, browser, refreshExp)
 	}
 
 	if err := s.tokenDataProvider.save(ctx, refreshToken, uow); err != nil {
@@ -142,6 +149,13 @@ func (s *tokenService) ValidateRefreshToken(ctx context.Context, uow *uow.UnitOf
 	return t, userVersion, nil
 }
 
+func (s *tokenService) ParseRefreshToken(tokenStr string) error {
+	if _, err := commonjwt.ParseUserToken(tokenStr, []byte(s.jwtSettings.RefreshTokenSecret)); err != nil {
+		return commonjwt.ErrInvalidToken
+	}
+	return nil
+}
+
 func (s *tokenService) ValidateAccessToken(ctx context.Context, accessToken string) (*commonjwt.UserClaims, error) {
 	l := s.log.With("op", "validate_access_token", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
@@ -165,6 +179,17 @@ func (s *tokenService) InvalidateRefreshToken(ctx context.Context, uow *uow.Unit
 	}
 
 	l.Infow("token.invalidate_refresh_token.success")
+	return nil
+}
+
+func (s *tokenService) InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error {
+	l := s.log.With("op", "invalidate_refresh_tokens_by_ids", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", currentToken.GetUserID())
+
+	if err := s.tokenDataProvider.deleteByIds(ctx, currentToken.GetUserID(), ids, currentToken.GetID(), uow); err != nil {
+		l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
+		return err
+	}
+	l.Infow("token.invalidate_refresh_tokens_by_ids.success", "count", len(ids))
 	return nil
 }
 
@@ -207,6 +232,42 @@ func (s *tokenService) UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWor
 	return uv, nil
 }
 
+func (s *tokenService) GetRefreshTokens(
+	ctx context.Context,
+	uow *uow.UnitOfWork,
+	refreshToken *token.Token,
+	userVersion *userversion.UserVersion,
+	req *pb.GetActiveSessionsRequest,
+) ([]*token.Token, error) {
+	l := s.log.With("op", "get_refresh_tokens", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", refreshToken.GetUserID())
+
+	query := models.NewQueryTokensDal(refreshToken.GetUserID(), refreshToken.GetToken(), userVersion.GetVersion(), int(req.Page), int(req.PageSize))
+
+	tokens, err := s.tokenDataProvider.getActiveByUserId(ctx, query, uow)
+	if err != nil {
+		l.Errorw("token.get_refresh_tokens_failed", "err", err)
+		return nil, err
+	}
+	l.Infow("token.get_refresh_tokens.success", "count", len(tokens))
+	return tokens, nil
+}
+
+func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error {
+	l := s.log.With("op", "delete_expired_tokens", "worker_id", workerID)
+
+	tokens, err := s.tokenDataProvider.deleteExpiredTokens(ctx, batchSize, uow)
+	if err != nil {
+		l.Errorw("token.delete_expired_tokens_failed", "err", err)
+		return err
+	}
+
+	if len(tokens) > 0 {
+		l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
+	}
+
+	return nil
+}
+
 func signToken(c commonjwt.UserClaims, key []byte, ttl time.Duration) (string, time.Time, error) {
 	now := time.Now()
 	expiresAt := now.Add(ttl)
@@ -218,12 +279,26 @@ func signToken(c commonjwt.UserClaims, key []byte, ttl time.Duration) (string, t
 		NotBefore: jwt.NewNumericDate(safeNbf),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
 
-	str, err := token.SignedString(key)
+	str, err := t.SignedString(key)
 	if err != nil {
 		return "", expiresAt, err
 	}
 
 	return str, expiresAt, nil
+}
+
+func extractSessionInfo(ctx context.Context) (ip, country, city, os, browser string) {
+	ip, _ = ctxmetadata.GetRealIPFromIncomingContext(ctx)
+	country, _ = ctxmetadata.GetCountryNameFromIncomingContext(ctx)
+	city, _ = ctxmetadata.GetCityFromIncomingContext(ctx)
+
+	ua, err := ctxmetadata.GetUAFromIncomingContext(ctx)
+	if err == nil && ua != "" {
+		parsed := utils.ParseUserAgent(ua)
+		os = parsed.OS
+		browser = parsed.Browser
+	}
+	return
 }

@@ -33,6 +33,11 @@ func (h *authHandler) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.
 	return h.authService.Confirm(ctx, req)
 }
 
+func (h *authHandler) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error) {
+	utils.SanitizeConfirmByLinkRequest(req)
+	return h.authService.ConfirmByLink(ctx, req)
+}
+
 func (h *authHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	utils.SanitizeLoginRequest(req)
 	return h.authService.Login(ctx, req)
@@ -49,4 +54,27 @@ func (h *authHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Lo
 func (h *authHandler) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequest) (*pb.ChangePasswordResponse, error) {
 	utils.SanitizeChangePasswordRequest(req)
 	return h.authService.ChangePassword(ctx, req)
+}
+
+func (h *authHandler) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error) {
+	utils.SanitizeForgotPasswordRequest(req)
+	return h.authService.ForgotPassword(ctx, req)
+}
+
+func (h *authHandler) ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error) {
+	utils.SanitizeResetPasswordByCodeRequest(req)
+	return h.authService.ResetPasswordByCode(ctx, req)
+}
+
+func (h *authHandler) ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error) {
+	utils.SanitizeResetPasswordByLinkRequest(req)
+	return h.authService.ResetPasswordByLink(ctx, req)
+}
+
+func (h *authHandler) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error) {
+	return h.authService.GetActiveSessions(ctx, req)
+}
+
+func (h *authHandler) InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error) {
+	return h.authService.InvalidateSessions(ctx, req)
 }

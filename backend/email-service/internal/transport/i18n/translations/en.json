@@ -1,0 +1,17 @@
+[
+  { "id": "email.code_label",                  "translation": "Confirmation Code" },
+  { "id": "email.divider",                      "translation": "or via link" },
+
+  { "id": "email.activation.subtitle",          "translation": "Account Activation" },
+  { "id": "email.activation.body",              "translation": "Enter the confirmation code below to activate your account. Or just click the button — we'll handle the rest." },
+  { "id": "email.activation.button",            "translation": "Activate Account" },
+  { "id": "email.activation.footer",            "translation": "If you did not request account activation, please ignore this email.<br>The code is valid for&nbsp;<strong>10&nbsp;minutes</strong>." },
+  { "id": "email.activation.subject",           "translation": "Account Activation" },
+
+  { "id": "email.password_reset.subtitle",      "translation": "Password Reset" },
+  { "id": "email.password_reset.warning",       "translation": "If you did not request a password reset — change your account password immediately." },
+  { "id": "email.password_reset.body",          "translation": "Enter the confirmation code below to reset your password. Or just click the button — we'll handle the rest." },
+  { "id": "email.password_reset.button",        "translation": "Reset Password" },
+  { "id": "email.password_reset.footer",        "translation": "The code is valid for&nbsp;<strong>5&nbsp;minutes</strong>." },
+  { "id": "email.password_reset.subject",       "translation": "Password Reset" }
+]

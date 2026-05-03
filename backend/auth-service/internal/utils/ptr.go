@@ -9,3 +9,10 @@ func BoolPtr(b bool) *bool {
 func TimePtr(t time.Time) *time.Time {
 	return &t
 }
+
+func StringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

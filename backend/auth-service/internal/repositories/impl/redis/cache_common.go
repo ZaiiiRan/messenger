@@ -2,6 +2,8 @@ package redisimpl
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -36,4 +38,13 @@ func get[T any](ctx context.Context, redisClient *rediscl.RedisClient, key strin
 
 func del(ctx context.Context, redisClient *rediscl.RedisClient, key string) error {
 	return redisClient.GetClient().Del(ctx, key).Err()
+}
+
+func queryHash(query any) (string, error) {
+	b, err := json.Marshal(query)
+	if err != nil {
+		return "", fmt.Errorf("marshal query: %w", err)
+	}
+	h := sha1.Sum(b)
+	return hex.EncodeToString(h[:]), nil
 }

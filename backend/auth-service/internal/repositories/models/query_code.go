@@ -3,6 +3,7 @@ package models
 type QueryCodeDal struct {
 	Id        *int64  `json:"id"`
 	UserId    *string `json:"user_id"`
+	LinkToken *string `json:"link_token"`
 	ForUpdate bool
 }
 

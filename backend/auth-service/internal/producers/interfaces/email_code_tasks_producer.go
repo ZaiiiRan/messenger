@@ -7,5 +7,5 @@ import (
 )
 
 type EmailCodeTasksProducer interface {
-	ProduceEmailCodeTask(ctx context.Context, email string, code *code.Code) error
+	ProduceEmailCodeTask(ctx context.Context, email string, code *code.Code, language string) error
 }

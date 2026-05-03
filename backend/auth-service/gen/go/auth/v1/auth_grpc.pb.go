@@ -22,10 +22,16 @@ const (
 	AuthService_Register_FullMethodName               = "/auth.v1.AuthService/Register"
 	AuthService_GetNewConfirmationCode_FullMethodName = "/auth.v1.AuthService/GetNewConfirmationCode"
 	AuthService_Confirm_FullMethodName                = "/auth.v1.AuthService/Confirm"
+	AuthService_ConfirmByLink_FullMethodName          = "/auth.v1.AuthService/ConfirmByLink"
 	AuthService_Login_FullMethodName                  = "/auth.v1.AuthService/Login"
 	AuthService_Refresh_FullMethodName                = "/auth.v1.AuthService/Refresh"
 	AuthService_Logout_FullMethodName                 = "/auth.v1.AuthService/Logout"
 	AuthService_ChangePassword_FullMethodName         = "/auth.v1.AuthService/ChangePassword"
+	AuthService_ForgotPassword_FullMethodName         = "/auth.v1.AuthService/ForgotPassword"
+	AuthService_ResetPasswordByCode_FullMethodName    = "/auth.v1.AuthService/ResetPasswordByCode"
+	AuthService_ResetPasswordByLink_FullMethodName    = "/auth.v1.AuthService/ResetPasswordByLink"
+	AuthService_GetActiveSessions_FullMethodName      = "/auth.v1.AuthService/GetActiveSessions"
+	AuthService_InvalidateSessions_FullMethodName     = "/auth.v1.AuthService/InvalidateSessions"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -35,10 +41,16 @@ type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	GetNewConfirmationCode(ctx context.Context, in *GetNewConfirmationCodeRequest, opts ...grpc.CallOption) (*GetNewConfirmationCodeResponse, error)
 	Confirm(ctx context.Context, in *ConfirmRequest, opts ...grpc.CallOption) (*ConfirmResponse, error)
+	ConfirmByLink(ctx context.Context, in *ConfirmByLinkRequest, opts ...grpc.CallOption) (*ConfirmByLinkResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error)
+	ResetPasswordByCode(ctx context.Context, in *ResetPasswordByCodeRequest, opts ...grpc.CallOption) (*ResetPasswordByCodeResponse, error)
+	ResetPasswordByLink(ctx context.Context, in *ResetPasswordByLinkRequest, opts ...grpc.CallOption) (*ResetPasswordByLinkResponse, error)
+	GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error)
+	InvalidateSessions(ctx context.Context, in *InvalidateSessionsRequest, opts ...grpc.CallOption) (*InvalidateSessionsResponse, error)
 }
 
 type authServiceClient struct {
@@ -73,6 +85,16 @@ func (c *authServiceClient) Confirm(ctx context.Context, in *ConfirmRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConfirmResponse)
 	err := c.cc.Invoke(ctx, AuthService_Confirm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ConfirmByLink(ctx context.Context, in *ConfirmByLinkRequest, opts ...grpc.CallOption) (*ConfirmByLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmByLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_ConfirmByLink_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +141,56 @@ func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswo
 	return out, nil
 }
 
+func (c *authServiceClient) ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForgotPasswordResponse)
+	err := c.cc.Invoke(ctx, AuthService_ForgotPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResetPasswordByCode(ctx context.Context, in *ResetPasswordByCodeRequest, opts ...grpc.CallOption) (*ResetPasswordByCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetPasswordByCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResetPasswordByCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResetPasswordByLink(ctx context.Context, in *ResetPasswordByLinkRequest, opts ...grpc.CallOption) (*ResetPasswordByLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetPasswordByLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResetPasswordByLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveSessionsResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetActiveSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) InvalidateSessions(ctx context.Context, in *InvalidateSessionsRequest, opts ...grpc.CallOption) (*InvalidateSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InvalidateSessionsResponse)
+	err := c.cc.Invoke(ctx, AuthService_InvalidateSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -126,10 +198,16 @@ type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	GetNewConfirmationCode(context.Context, *GetNewConfirmationCodeRequest) (*GetNewConfirmationCodeResponse, error)
 	Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error)
+	ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error)
+	ResetPasswordByCode(context.Context, *ResetPasswordByCodeRequest) (*ResetPasswordByCodeResponse, error)
+	ResetPasswordByLink(context.Context, *ResetPasswordByLinkRequest) (*ResetPasswordByLinkResponse, error)
+	GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error)
+	InvalidateSessions(context.Context, *InvalidateSessionsRequest) (*InvalidateSessionsResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -149,6 +227,9 @@ func (UnimplementedAuthServiceServer) GetNewConfirmationCode(context.Context, *G
 func (UnimplementedAuthServiceServer) Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Confirm not implemented")
 }
+func (UnimplementedAuthServiceServer) ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmByLink not implemented")
+}
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
@@ -160,6 +241,21 @@ func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*
 }
 func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedAuthServiceServer) ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForgotPassword not implemented")
+}
+func (UnimplementedAuthServiceServer) ResetPasswordByCode(context.Context, *ResetPasswordByCodeRequest) (*ResetPasswordByCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetPasswordByCode not implemented")
+}
+func (UnimplementedAuthServiceServer) ResetPasswordByLink(context.Context, *ResetPasswordByLinkRequest) (*ResetPasswordByLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetPasswordByLink not implemented")
+}
+func (UnimplementedAuthServiceServer) GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActiveSessions not implemented")
+}
+func (UnimplementedAuthServiceServer) InvalidateSessions(context.Context, *InvalidateSessionsRequest) (*InvalidateSessionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InvalidateSessions not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -236,6 +332,24 @@ func _AuthService_Confirm_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ConfirmByLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmByLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ConfirmByLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ConfirmByLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ConfirmByLink(ctx, req.(*ConfirmByLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LoginRequest)
 	if err := dec(in); err != nil {
@@ -308,6 +422,96 @@ func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ForgotPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForgotPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ForgotPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ForgotPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ForgotPassword(ctx, req.(*ForgotPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResetPasswordByCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordByCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResetPasswordByCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResetPasswordByCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResetPasswordByCode(ctx, req.(*ResetPasswordByCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResetPasswordByLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordByLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResetPasswordByLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResetPasswordByLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResetPasswordByLink(ctx, req.(*ResetPasswordByLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetActiveSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetActiveSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetActiveSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetActiveSessions(ctx, req.(*GetActiveSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_InvalidateSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InvalidateSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).InvalidateSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_InvalidateSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).InvalidateSessions(ctx, req.(*InvalidateSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -328,6 +532,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_Confirm_Handler,
 		},
 		{
+			MethodName: "ConfirmByLink",
+			Handler:    _AuthService_ConfirmByLink_Handler,
+		},
+		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
 		},
@@ -342,6 +550,26 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangePassword",
 			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "ForgotPassword",
+			Handler:    _AuthService_ForgotPassword_Handler,
+		},
+		{
+			MethodName: "ResetPasswordByCode",
+			Handler:    _AuthService_ResetPasswordByCode_Handler,
+		},
+		{
+			MethodName: "ResetPasswordByLink",
+			Handler:    _AuthService_ResetPasswordByLink_Handler,
+		},
+		{
+			MethodName: "GetActiveSessions",
+			Handler:    _AuthService_GetActiveSessions_Handler,
+		},
+		{
+			MethodName: "InvalidateSessions",
+			Handler:    _AuthService_InvalidateSessions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

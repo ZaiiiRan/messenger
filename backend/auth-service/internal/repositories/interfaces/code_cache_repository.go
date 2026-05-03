@@ -8,9 +8,9 @@ import (
 
 type CodeCacheRepository interface {
 	GetCodeById(ctx context.Context, id int64) (*code.Code, error)
-	SetCodeById(ctx context.Context, code *code.Code) error
+	SetCodeById(ctx context.Context, c *code.Code) error
 	DelCodeById(ctx context.Context, id int64) error
-	GetCodeByUserId(ctx context.Context, userId string) (*code.Code, error)
-	SetCodeByUserId(ctx context.Context, code *code.Code) error
-	DelCodeByUserId(ctx context.Context, userId string) error
+	GetCodeByUserId(ctx context.Context, userId string, codeType code.CodeType) (*code.Code, error)
+	SetCodeByUserId(ctx context.Context, c *code.Code) error
+	DelCodeByUserId(ctx context.Context, userId string, codeType code.CodeType) error
 }

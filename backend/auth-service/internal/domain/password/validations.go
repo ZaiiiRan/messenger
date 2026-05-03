@@ -9,6 +9,9 @@ func ValidatePassword(password string) error {
 	if utf8.RuneCountInString(password) < 8 {
 		return NewPasswordValidationError("password must be at least 8 characters long")
 	}
+	if utf8.RuneCountInString(password) > 72 {
+		return NewPasswordValidationError("password must be at most 72 characters long")
+	}
 
 	var hasUpper, hasLower, hasDigit, hasSpecial bool
 

@@ -18,6 +18,7 @@ type PasswordService interface {
 	CreatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error)
 	CheckPassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (bool, error)
 	UpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error)
+	ForceUpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error)
 }
 
 type passwordService struct {
@@ -111,5 +112,37 @@ func (s *passwordService) UpdatePassword(ctx context.Context, uow *uow.UnitOfWor
 	}
 
 	l.Infow("password.update_password.success")
+	return p, nil
+}
+
+func (s *passwordService) ForceUpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error) {
+	l := s.log.With("op", "force_update_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	p, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
+	if err != nil {
+		l.Errorw("password.force_update_password_failed", "err", err)
+		return nil, err
+	}
+	if p == nil {
+		l.Errorw("password.force_update_password_failed", "err", "password not found")
+		return nil, fmt.Errorf("password not found")
+	}
+
+	if err := p.ForceSetPassword(rawPassword); err != nil {
+		var valErr *passworddomain.PasswordValidationError
+		if errors.As(err, &valErr) {
+			l.Warnw("password.force_update_password_failed.validation_error", "err", err)
+		} else {
+			l.Errorw("password.force_update_password_failed", "err", err)
+		}
+		return nil, err
+	}
+
+	if err := s.passwordDataProvider.save(ctx, p, uow); err != nil {
+		l.Errorw("password.force_update_password_failed", "err", err)
+		return nil, err
+	}
+
+	l.Infow("password.force_update_password.success")
 	return p, nil
 }

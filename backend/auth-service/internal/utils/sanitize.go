@@ -14,6 +14,10 @@ func SanitizeConfirmRequest(req *pb.ConfirmRequest) {
 	req.Code = strings.TrimSpace(req.Code)
 }
 
+func SanitizeConfirmByLinkRequest(req *pb.ConfirmByLinkRequest) {
+	req.Token = strings.TrimSpace(req.Token)
+}
+
 func SanitizeLoginRequest(req *pb.LoginRequest) {
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
@@ -21,5 +25,20 @@ func SanitizeLoginRequest(req *pb.LoginRequest) {
 
 func SanitizeChangePasswordRequest(req *pb.ChangePasswordRequest) {
 	req.OldPassword = strings.TrimSpace(req.OldPassword)
+	req.NewPassword = strings.TrimSpace(req.NewPassword)
+}
+
+func SanitizeForgotPasswordRequest(req *pb.ForgotPasswordRequest) {
+	req.Login = strings.TrimSpace(req.Login)
+}
+
+func SanitizeResetPasswordByCodeRequest(req *pb.ResetPasswordByCodeRequest) {
+	req.Login = strings.TrimSpace(req.Login)
+	req.Code = strings.TrimSpace(req.Code)
+	req.NewPassword = strings.TrimSpace(req.NewPassword)
+}
+
+func SanitizeResetPasswordByLinkRequest(req *pb.ResetPasswordByLinkRequest) {
+	req.Token = strings.TrimSpace(req.Token)
 	req.NewPassword = strings.TrimSpace(req.NewPassword)
 }

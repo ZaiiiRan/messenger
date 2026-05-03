@@ -76,6 +76,19 @@ func (p *Password) SetPassword(password string) error {
 	return nil
 }
 
+func (p *Password) ForceSetPassword(password string) error {
+	if err := ValidatePassword(password); err != nil {
+		return err
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	p.passwordHash = string(hash)
+	p.updatedAt = time.Now()
+	return nil
+}
+
 func (p *Password) CheckPassword(password string) bool {
 	if err := bcrypt.CompareHashAndPassword([]byte(p.passwordHash), []byte(password)); err != nil {
 		return false

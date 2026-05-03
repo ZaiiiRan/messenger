@@ -13,8 +13,10 @@ import (
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/client/grpc/user_client"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/server/grpc"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
@@ -40,9 +42,11 @@ type ServerApp struct {
 	tokenService    tokenservice.TokenService
 	authService     authservice.AuthService
 
-	grpcServer *grpcserver.Server
+	grpcServer    *grpcserver.Server
+	metricsServer *prommetrics.Server
 
-	isGRPCStarted chan bool
+	isGRPCStarted    chan bool
+	isMetricsStarted chan bool
 }
 
 func NewServerApp() (*ServerApp, error) {
@@ -57,9 +61,10 @@ func NewServerApp() (*ServerApp, error) {
 	}
 
 	return &ServerApp{
-		cfg:           cfg,
-		log:           log,
-		isGRPCStarted: make(chan bool),
+		cfg:              cfg,
+		log:              log,
+		isGRPCStarted:    make(chan bool),
+		isMetricsStarted: make(chan bool),
 	}, nil
 }
 
@@ -86,11 +91,16 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	a.initTokenService()
 	a.initAuthService()
 
+	a.initI18n()
+	a.initMetricsServer()
+	a.startMetricsServer()
+
 	if err := a.initGrpcServer(); err != nil {
 		return err
 	}
 	a.startGrpcServer()
 
+	<-a.isMetricsStarted
 	<-a.isGRPCStarted
 	a.log.Infow("app.started")
 	return nil
@@ -108,6 +118,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 	a.redisClient.Close()
 	a.emailCodeTasksKafkaClient.Close()
 	a.grpcServer.Stop(shCtx)
+	a.metricsServer.Stop(shCtx)
 
 	a.log.Infow("app.stopped")
 }
@@ -205,8 +216,22 @@ func (a *ServerApp) initAuthService() {
 	a.authService = authservice.New(a.codeService, a.passwordService, a.tokenService, a.userService, a.emailCodeTasksProducer, a.postgresClient, a.log)
 }
 
+func (a *ServerApp) initMetricsServer() {
+	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
+}
+
+func (a *ServerApp) startMetricsServer() {
+	go func() {
+		a.log.Infow("app.metrics_serve_start", "port", a.cfg.MetricsServer.Port)
+		a.isMetricsStarted <- true
+		if err := a.metricsServer.Start(); err != nil {
+			a.log.Fatalw("app.metrics_serve_error", "err", err)
+		}
+	}()
+}
+
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.authService, a.log)
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.authService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
@@ -214,6 +239,10 @@ func (a *ServerApp) initGrpcServer() error {
 
 	a.grpcServer = srv
 	return nil
+}
+
+func (a *ServerApp) initI18n() {
+	i18n.Init()
 }
 
 func (a *ServerApp) startGrpcServer() {

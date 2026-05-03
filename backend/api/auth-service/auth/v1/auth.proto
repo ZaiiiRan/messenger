@@ -1,4 +1,4 @@
-syntax = "proto3";
+﻿syntax = "proto3";
 
 package auth.v1;
 
@@ -10,10 +10,16 @@ service AuthService {
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc GetNewConfirmationCode(GetNewConfirmationCodeRequest) returns (GetNewConfirmationCodeResponse);
     rpc Confirm(ConfirmRequest) returns (ConfirmResponse);
+    rpc ConfirmByLink(ConfirmByLinkRequest) returns (ConfirmByLinkResponse);
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc Refresh(RefreshRequest) returns (RefreshResponse);
     rpc Logout(LogoutRequest) returns (LogoutResponse);
     rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+    rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+    rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordByCodeResponse);
+    rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordByLinkResponse);
+    rpc GetActiveSessions(GetActiveSessionsRequest) returns (GetActiveSessionsResponse);
+    rpc InvalidateSessions(InvalidateSessionsRequest) returns (InvalidateSessionsResponse);
 }
 
 message RegisterRequest {
@@ -37,6 +43,16 @@ message ConfirmRequest {
 }
 
 message ConfirmResponse {
+    user.v1.User user = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+}
+
+message ConfirmByLinkRequest {
+    string token = 1;
+}
+
+message ConfirmByLinkResponse {
     user.v1.User user = 1;
     string access_token = 2;
     string refresh_token = 3;
@@ -72,4 +88,63 @@ message ChangePasswordResponse {
     user.v1.User user = 1;
     string access_token = 2;
     string refresh_token = 3;
+}
+
+message ForgotPasswordRequest {
+    string login = 1;
+}
+message ForgotPasswordResponse {}
+
+message ResetPasswordByCodeRequest {
+    string login        = 1;
+    string code         = 2;
+    string new_password = 3;
+}
+
+message ResetPasswordByLinkRequest {
+    string token        = 1;
+    string new_password = 2;
+}
+
+message ResetPasswordByCodeResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
+    string refresh_token = 3;
+}
+
+message ResetPasswordByLinkResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
+    string refresh_token = 3;
+}
+
+message Session {
+    int64 id = 1;
+    optional string ip = 2;
+    optional string country = 3;
+    optional string city = 4;
+    optional string os = 5;
+    optional string browser = 6;
+    string created_at = 7;
+}
+
+message GetActiveSessionsRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+}
+
+message GetActiveSessionsResponse {
+    repeated Session sessions = 1;
+    Session current_session = 2;
+}
+
+message InvalidateSessionsRequest {
+    repeated int64 ids = 1;
+    optional bool all = 2;
+}
+
+message InvalidateSessionsResponse {
+    optional user.v1.User user    = 1;
+    optional string access_token  = 2;
+    optional string refresh_token = 3;
 }
