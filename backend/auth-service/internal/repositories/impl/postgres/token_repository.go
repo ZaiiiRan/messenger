@@ -108,6 +108,33 @@ func (r *TokenRepository) QueryToken(ctx context.Context, query *models.QueryTok
 	return res.ToDomain(), nil
 }
 
+func (r *TokenRepository) DeleteTokensByIds(ctx context.Context, userId string, ids []int64, excludeId int64) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := r.conn.Query(ctx,
+		`DELETE FROM refresh_tokens WHERE id = ANY($1) AND user_id::text = $2 AND id != $3 RETURNING token`,
+		ids, userId, excludeId,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("delete tokens by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var tokenStrs []string
+	for rows.Next() {
+		var tokenStr string
+		if err := rows.Scan(&tokenStr); err != nil {
+			return nil, fmt.Errorf("scan deleted token: %w", err)
+		}
+		tokenStrs = append(tokenStrs, tokenStr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows deleted tokens: %w", err)
+	}
+	return tokenStrs, nil
+}
+
 func (r *TokenRepository) QueryActiveTokens(ctx context.Context, query *models.QueryTokensDal) ([]*token.Token, error) {
 	sql := `
 		SELECT ` + tokenColumns + `

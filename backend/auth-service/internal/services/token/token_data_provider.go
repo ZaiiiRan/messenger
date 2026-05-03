@@ -106,6 +106,27 @@ func (tdp *tokenDataProvider) deleteFromCache(ctx context.Context, token string)
 	return cacheRepo.DelToken(ctx, token)
 }
 
+func (tdp *tokenDataProvider) deleteByIds(ctx context.Context, userId string, ids []int64, excludeId int64, uow *uow.UnitOfWork) error {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+	dbRepo := postgresimpl.NewTokenRepository(pgConn)
+	deletedTokenStrs, err := dbRepo.DeleteTokensByIds(ctx, userId, ids, excludeId)
+	if err != nil {
+		return err
+	}
+
+	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
+	for _, tokenStr := range deletedTokenStrs {
+		cacheRepo.DelToken(ctx, tokenStr)
+	}
+	if len(deletedTokenStrs) > 0 {
+		cacheRepo.DelTokenListsByUserId(ctx, userId)
+	}
+	return nil
+}
+
 func (tdp *tokenDataProvider) getActiveByUserId(ctx context.Context, query *models.QueryTokensDal, uow *uow.UnitOfWork) ([]*token.Token, error) {
 	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	if cached, err := cacheRepo.GetTokenList(ctx, query); err == nil && cached != nil {

@@ -143,4 +143,8 @@ message InvalidateSessionsRequest {
     optional bool all = 2;
 }
 
-message InvalidateSessionsResponse {}
+message InvalidateSessionsResponse {
+    optional user.v1.User user    = 1;
+    optional string access_token  = 2;
+    optional string refresh_token = 3;
+}

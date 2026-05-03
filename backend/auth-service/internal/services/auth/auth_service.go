@@ -717,7 +717,84 @@ func (s *service) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessio
 }
 
 func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error) {
-	return &pb.InvalidateSessionsResponse{}, nil
+	l := s.log.With("op", "invalidate_sessions", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	all := req.All != nil && *req.All
+
+	if !all && len(req.Ids) > 1000 {
+		l.Warnw("auth.invalidate_sessions_failed", "err", "to many sessions", "count", len(req.Ids))
+		return nil, status.Errorf(codes.InvalidArgument, "to many sessions")
+	}
+	if !all && len(req.Ids) == 0 {
+		return &pb.InvalidateSessionsResponse{}, nil
+	}
+
+	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
+	if refreshTokenStr == "" {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+
+	refreshToken, uv, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
+	if err != nil {
+		if errors.Is(err, jwt.ErrInvalidToken) {
+			return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.invalidate_sessions_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if !all {
+		if err := s.tokenService.InvalidateRefreshTokensByIds(ctx, uow, refreshToken, req.Ids); err != nil {
+			return nil, status.Errorf(codes.Internal, "internal server error")
+		}
+
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("auth.invalidate_sessions_failed", "err", err)
+			return nil, status.Errorf(codes.Internal, "internal server error")
+		}
+		l.Infow("auth.invalidate_sessions.success", "count", len(req.Ids))
+		return &pb.InvalidateSessionsResponse{}, nil
+	}
+
+	user, err := s.userService.GetUserByID(ctx, refreshToken.GetUserID())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if user == nil || user.Status.IsDeleted {
+		return nil, status.Errorf(codes.PermissionDenied, "user is deleted")
+	}
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
+	uv, err = s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.invalidate_sessions_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	l.Infow("auth.invalidate_sessions.success")
+	return &pb.InvalidateSessionsResponse{
+		User:         user,
+		AccessToken:  utils.StringPtr(access.GetToken()),
+		RefreshToken: utils.StringPtr(refresh.GetToken()),
+	}, nil
 }
 
 func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.User, error) {

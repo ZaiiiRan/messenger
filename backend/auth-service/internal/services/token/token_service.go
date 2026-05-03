@@ -30,6 +30,7 @@ type TokenService interface {
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
 	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
 	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
+	InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error
 }
 
 type tokenService struct {
@@ -170,6 +171,17 @@ func (s *tokenService) InvalidateRefreshToken(ctx context.Context, uow *uow.Unit
 	}
 
 	l.Infow("token.invalidate_refresh_token.success")
+	return nil
+}
+
+func (s *tokenService) InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error {
+	l := s.log.With("op", "invalidate_refresh_tokens_by_ids", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", currentToken.GetUserID())
+
+	if err := s.tokenDataProvider.deleteByIds(ctx, currentToken.GetUserID(), ids, currentToken.GetID(), uow); err != nil {
+		l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
+		return err
+	}
+	l.Infow("token.invalidate_refresh_tokens_by_ids.success", "count", len(ids))
 	return nil
 }
 
