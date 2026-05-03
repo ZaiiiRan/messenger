@@ -260,7 +260,11 @@ func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfW
 		l.Errorw("token.delete_expired_tokens_failed", "err", err)
 		return err
 	}
-	l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
+
+	if len(tokens) > 0 {
+		l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
+	}
+
 	return nil
 }
 
