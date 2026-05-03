@@ -32,6 +32,7 @@ func New(cfg settings.ExpiredTokenClearingWorkerSettings, tokenService tokenserv
 }
 
 func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
+	w.log.Infow("expired_token_clearing.started", "worker_id", w.workerID)
 	for {
 		select {
 		case <-ctx.Done():
@@ -40,16 +41,7 @@ func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
 		default:
 		}
 
-		w.log.Infow("expired_token_clearing.started", "worker_id", w.workerID)
-
-		uow := postgresunitofwork.New(w.pgClient)
-
-		if err := w.tokenService.DeleteExpiredTokens(ctx, uow, w.cfg.BatchSize, w.workerID); err != nil && ctx.Err() != nil {
-			uow.Close()
-			w.log.Infow("expired_token_clearing.stopped", "worker_id", w.workerID)
-			return
-		}
-		uow.Close()
+		w.runOnce(ctx)
 
 		timer := time.NewTimer(time.Millisecond * time.Duration(w.cfg.IntervalMS))
 		select {
@@ -60,6 +52,17 @@ func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
 			w.log.Infow("expired_token_clearing.stopped", "worker_id", w.workerID)
 			return
 		case <-timer.C:
+		}
+	}
+}
+
+func (w *ExpiredTokenClearingWorker) runOnce(ctx context.Context) {
+	uow := postgresunitofwork.New(w.pgClient)
+	defer uow.Close()
+
+	if err := w.tokenService.DeleteExpiredTokens(ctx, uow, w.cfg.BatchSize, w.workerID); err != nil {
+		if ctx.Err() != nil {
+			return
 		}
 	}
 }

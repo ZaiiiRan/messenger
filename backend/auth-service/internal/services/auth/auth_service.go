@@ -337,8 +337,18 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.login_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.login_failed", "err", err)
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
@@ -409,11 +419,14 @@ func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Logout
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
 
+	if err := s.tokenService.ParseRefreshToken(refreshTokenStr); err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
+	}
+
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
-	err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr)
-	if err != nil {
+	if err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr); err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
@@ -447,17 +460,17 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.change_password_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
 	valid, err := s.passwordService.CheckPassword(ctx, uow, user, req.OldPassword)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 	if !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "old password is incorrect")
-	}
-
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("auth.change_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
 	_, err = s.passwordService.UpdatePassword(ctx, uow, user, req.NewPassword)
@@ -574,6 +587,10 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 		return nil, status.Errorf(codes.InvalidArgument, "invalid code")
 	}
 
+	if err := password.ValidatePassword(req.NewPassword); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+	}
+
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 	if _, err := uow.BeginTransaction(ctx); err != nil {
@@ -629,6 +646,10 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 
 	if req.Token == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid token")
+	}
+
+	if err := password.ValidatePassword(req.NewPassword); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()

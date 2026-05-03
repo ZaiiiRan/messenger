@@ -114,7 +114,7 @@ func getGRPCKeepAliveEnforcement(c *settings.GRPCServerSettings) keepalive.Enfor
 		return keepalive.EnforcementPolicy{}
 	}
 	return keepalive.EnforcementPolicy{
-		MinTime:             0,
+		MinTime:             10 * time.Second,
 		PermitWithoutStream: c.PermitWithoutStream,
 	}
 }

@@ -1,6 +1,7 @@
 package code
 
 import (
+	"crypto/subtle"
 	"time"
 )
 
@@ -157,7 +158,7 @@ func (c *Code) CheckCode(rawCode string) (bool, error) {
 
 	c.verificationsLeft--
 
-	if c.code == rawCode {
+	if subtle.ConstantTimeCompare([]byte(c.code), []byte(rawCode)) == 1 {
 		return true, nil
 	}
 

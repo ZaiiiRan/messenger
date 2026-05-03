@@ -25,6 +25,7 @@ type TokenService interface {
 	GenerateToken(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, userVersion *userversion.UserVersion, existedRefreshToken *token.Token) (*token.Token, *token.Token, error)
 	ValidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) (*token.Token, *userversion.UserVersion, error)
 	ValidateAccessToken(ctx context.Context, accessToken string) (*commonjwt.UserClaims, error)
+	ParseRefreshToken(tokenStr string) error
 	InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
@@ -146,6 +147,13 @@ func (s *tokenService) ValidateRefreshToken(ctx context.Context, uow *uow.UnitOf
 
 	l.Infow("token.refresh_token_valid", "user_id", cl.Id)
 	return t, userVersion, nil
+}
+
+func (s *tokenService) ParseRefreshToken(tokenStr string) error {
+	if _, err := commonjwt.ParseUserToken(tokenStr, []byte(s.jwtSettings.RefreshTokenSecret)); err != nil {
+		return commonjwt.ErrInvalidToken
+	}
+	return nil
 }
 
 func (s *tokenService) ValidateAccessToken(ctx context.Context, accessToken string) (*commonjwt.UserClaims, error) {
