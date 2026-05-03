@@ -23,6 +23,7 @@ func PropagateClientMetaUnary() grpc.UnaryClientInterceptor {
 		ctx = ctxmetadata.ForwardCountryNameToOutgoingContext(ctx)
 		ctx = ctxmetadata.ForwardCityToOutgoingContext(ctx)
 		ctx = ctxmetadata.ForwardUAToOutgoingContext(ctx)
+		ctx = ctxmetadata.ForwardLangToOutgoingContext(ctx)
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
