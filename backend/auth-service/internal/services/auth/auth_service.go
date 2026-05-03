@@ -21,7 +21,6 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/jwt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -342,20 +341,15 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 func (s *service) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
 	l := s.log.With("op", "refresh", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
-	}
-
-	refreshTokenStr := md.Get("x-refresh-token")
-	if len(refreshTokenStr) == 0 {
+	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
+	if refreshTokenStr == "" {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
 
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
-	refreshToken, _, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr[0])
+	refreshToken, _, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
 	if err != nil {
 		if errors.Is(err, jwt.ErrInvalidToken) {
 			return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
@@ -398,20 +392,15 @@ func (s *service) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.Refr
 func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
 	l := s.log.With("op", "logout", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
-	}
-
-	refreshTokenStr := md.Get("x-refresh-token")
-	if len(refreshTokenStr) == 0 {
+	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
+	if refreshTokenStr == "" {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
 	}
 
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
-	err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr[0])
+	err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
@@ -424,11 +413,8 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 	l := s.log.With("op", "change_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
-	if claims == nil || claims.IsDeleted {
+	if claims == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthorized")
-	}
-	if claims.IsPermanentlyBanned || claims.IsTemporarilyBanned || !claims.IsConfirmed {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 
 	user, err := s.userService.GetUserByID(ctx, claims.Id)

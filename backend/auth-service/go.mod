@@ -3,7 +3,7 @@ module github.com/ZaiiiRan/messenger/backend/auth-service
 go 1.25.7
 
 require (
-	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260425204718-84debfaae00e
+	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260503004921-5f87cadd027c
 	github.com/confluentinc/confluent-kafka-go/v2 v2.14.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0

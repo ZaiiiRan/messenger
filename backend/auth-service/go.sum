@@ -16,6 +16,8 @@ github.com/Microsoft/hcsshim v0.11.5 h1:haEcLNpj9Ka1gd3B3tAEs9CpE0c+1IhoL59w/exY
 github.com/Microsoft/hcsshim v0.11.5/go.mod h1:MV8xMfmECjl5HdO7U/3/hFVnkmSBjAjmA09d4bExKcU=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260425204718-84debfaae00e h1:r/tuZxhuFo2YumQd8nUTitYaQHYFtXe2+oMEatulkEI=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260425204718-84debfaae00e/go.mod h1:TcbXskQs7I4HIaSH35j8UX0A9JYMqQS1ZSNrHzNLPjg=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260503004921-5f87cadd027c h1:YSaWWiCngcFn4URmwjQhUkUn4ORqpctpo/3mQF12zjs=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260503004921-5f87cadd027c/go.mod h1:TcbXskQs7I4HIaSH35j8UX0A9JYMqQS1ZSNrHzNLPjg=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
