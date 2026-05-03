@@ -55,3 +55,18 @@ func (h *authHandler) ChangePassword(ctx context.Context, req *pb.ChangePassword
 	utils.SanitizeChangePasswordRequest(req)
 	return h.authService.ChangePassword(ctx, req)
 }
+
+func (h *authHandler) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error) {
+	utils.SanitizeForgotPasswordRequest(req)
+	return h.authService.ForgotPassword(ctx, req)
+}
+
+func (h *authHandler) ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error) {
+	utils.SanitizeResetPasswordByCodeRequest(req)
+	return h.authService.ResetPasswordByCode(ctx, req)
+}
+
+func (h *authHandler) ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error) {
+	utils.SanitizeResetPasswordByLinkRequest(req)
+	return h.authService.ResetPasswordByLink(ctx, req)
+}

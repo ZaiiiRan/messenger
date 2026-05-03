@@ -8,9 +8,9 @@ import (
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
-	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
+	codedomain "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/password"
-	producerinteraces "github.com/ZaiiiRan/messenger/backend/auth-service/internal/producers/interfaces"
+	producerinterfaces "github.com/ZaiiiRan/messenger/backend/auth-service/internal/producers/interfaces"
 	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
 	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
@@ -34,6 +34,9 @@ type AuthService interface {
 	Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error)
 	Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error)
 	ChangePassword(ctx context.Context, req *pb.ChangePasswordRequest) (*pb.ChangePasswordResponse, error)
+	ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error)
+	ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error)
+	ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error)
 }
 
 type service struct {
@@ -41,7 +44,7 @@ type service struct {
 	passwordService        passwordservice.PasswordService
 	tokenService           tokenservice.TokenService
 	userService            userservice.UserService
-	emailCodeTasksProducer producerinteraces.EmailCodeTasksProducer
+	emailCodeTasksProducer producerinterfaces.EmailCodeTasksProducer
 	authDataProvider       *authDataProvider
 	log                    *zap.SugaredLogger
 }
@@ -51,7 +54,7 @@ func New(
 	passwordSvc passwordservice.PasswordService,
 	tokenSvc tokenservice.TokenService,
 	userSvc userservice.UserService,
-	emailCodeTasksProducer producerinteraces.EmailCodeTasksProducer,
+	emailCodeTasksProducer producerinterfaces.EmailCodeTasksProducer,
 	pgClient *postgres.PostgresClient,
 	log *zap.SugaredLogger,
 ) AuthService {
@@ -96,7 +99,7 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	c, err := s.codeService.GenerateConfiramtionCode(ctx, uow, user)
+	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypeActivation)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
@@ -137,9 +140,9 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	c, err := s.codeService.GenerateConfiramtionCode(ctx, uow, user)
+	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypeActivation)
 	if err != nil {
-		var cve *code.CodeValidationError
+		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
@@ -154,7 +157,6 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
 
 	l.Infow("auth.get_new_confirmation_code.success")
-
 	return &pb.GetNewConfirmationCodeResponse{}, nil
 }
 
@@ -179,9 +181,9 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	valid, err := s.codeService.CheckConfirmationCode(ctx, uow, user, req.Code)
+	valid, err := s.codeService.CheckCodeByCode(ctx, uow, user.Id, req.Code, codedomain.CodeTypeActivation)
 	if err != nil {
-		var cve *code.CodeValidationError
+		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
@@ -212,7 +214,6 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	}
 
 	l.Infow("auth.confirm.success")
-
 	return &pb.ConfirmResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
@@ -235,9 +236,9 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
 
-	userID, valid, err := s.codeService.CheckConfirmationCodeByLinkToken(ctx, uow, req.Token)
+	userID, valid, err := s.codeService.CheckCodeByLinkToken(ctx, uow, req.Token, codedomain.CodeTypeActivation)
 	if err != nil {
-		var cve *code.CodeValidationError
+		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
@@ -279,7 +280,6 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 	}
 
 	l.Infow("auth.confirm_by_link.success")
-
 	return &pb.ConfirmByLinkResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
@@ -487,8 +487,205 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 	}
 
 	l.Infow("auth.change_password.success")
-
 	return &pb.ChangePasswordResponse{
+		User:         user,
+		AccessToken:  access.GetToken(),
+		RefreshToken: refresh.GetToken(),
+	}, nil
+}
+
+func (s *service) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error) {
+	l := s.log.With("op", "forgot_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	login := strings.ToLower(req.Login)
+
+	user, err := s.userService.GetUserByUsername(ctx, login)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if user == nil {
+		user, err = s.userService.GetUserByEmail(ctx, login)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "internal server error")
+		}
+	}
+
+	if user == nil || user.Status.IsDeleted {
+		l.Infow("auth.forgot_password.user_not_found_or_deleted")
+		return &pb.ForgotPasswordResponse{}, nil
+	}
+
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
+		return &pb.ForgotPasswordResponse{}, nil
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.forgot_password_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypePasswordReset)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			l.Infow("auth.forgot_password.rate_limited")
+			return &pb.ForgotPasswordResponse{}, nil
+		}
+		l.Errorw("auth.forgot_password_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.forgot_password_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, user.Email, c)
+
+	l.Infow("auth.forgot_password.success")
+	return &pb.ForgotPasswordResponse{}, nil
+}
+
+func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error) {
+	l := s.log.With("op", "reset_password_by_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	login := strings.ToLower(req.Login)
+
+	user, err := s.userService.GetUserByUsername(ctx, login)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if user == nil {
+		user, err = s.userService.GetUserByEmail(ctx, login)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "internal server error")
+		}
+	}
+	if user == nil || user.Status.IsDeleted {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid credentials")
+	}
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
+	if utf8.RuneCountInString(req.Code) != 6 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid code")
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.reset_password_by_code_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	valid, err := s.codeService.CheckCodeByCode(ctx, uow, user.Id, req.Code, codedomain.CodeTypePasswordReset)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if !valid {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid code")
+	}
+
+	if _, err := s.passwordService.ForceUpdatePassword(ctx, uow, user, req.NewPassword); err != nil {
+		var pve *password.PasswordValidationError
+		if errors.As(err, &pve) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.reset_password_by_code_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	l.Infow("auth.reset_password_by_code.success")
+	return &pb.ResetPasswordByCodeResponse{
+		User:         user,
+		AccessToken:  access.GetToken(),
+		RefreshToken: refresh.GetToken(),
+	}, nil
+}
+
+func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error) {
+	l := s.log.With("op", "reset_password_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if strings.TrimSpace(req.Token) == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid token")
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.reset_password_by_link_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	userID, valid, err := s.codeService.CheckCodeByLinkToken(ctx, uow, req.Token, codedomain.CodeTypePasswordReset)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if !valid {
+		return nil, status.Errorf(codes.NotFound, "invalid or expired reset link")
+	}
+
+	user, err := s.userService.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+	if user == nil || user.Status.IsDeleted {
+		return nil, status.Errorf(codes.PermissionDenied, "user is deleted")
+	}
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
+	if _, err := s.passwordService.ForceUpdatePassword(ctx, uow, user, req.NewPassword); err != nil {
+		var pve *password.PasswordValidationError
+		if errors.As(err, &pve) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.reset_password_by_link_failed", "err", err)
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	l.Infow("auth.reset_password_by_link.success")
+	return &pb.ResetPasswordByLinkResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
 		RefreshToken: refresh.GetToken(),

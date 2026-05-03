@@ -4,19 +4,39 @@ import (
 	"time"
 )
 
+type CodeType string
+
 const (
-	maxGenerationsLeft   = 3
-	maxVerificationsLeft = 10
-	codeTTL              = 10 * time.Minute
-	blockWindow          = 5 * time.Minute
-	resendCooldown       = 1 * time.Minute
+	CodeTypeActivation    CodeType = "activation"
+	CodeTypePasswordReset CodeType = "password_reset"
 )
+
+const (
+	maxGenerationsLeft = 3
+	resendCooldown     = 1 * time.Minute
+	blockWindow        = 5 * time.Minute
+)
+
+func (ct CodeType) ttl() time.Duration {
+	if ct == CodeTypePasswordReset {
+		return 5 * time.Minute
+	}
+	return 10 * time.Minute
+}
+
+func (ct CodeType) maxVerifications() int {
+	if ct == CodeTypePasswordReset {
+		return 5
+	}
+	return 10
+}
 
 type Code struct {
 	id                int64
 	userId            string
 	code              string
 	linkToken         string
+	codeType          CodeType
 	generationsLeft   int
 	verificationsLeft int
 	expiresAt         time.Time
@@ -24,11 +44,12 @@ type Code struct {
 	updatedAt         time.Time
 }
 
-func New(userId string) (*Code, error) {
+func New(userId string, codeType CodeType) (*Code, error) {
 	c := &Code{}
 	c.generationsLeft = maxGenerationsLeft
-	c.verificationsLeft = maxVerificationsLeft
+	c.verificationsLeft = codeType.maxVerifications()
 	c.userId = userId
+	c.codeType = codeType
 
 	if err := c.GenerateCode(); err != nil {
 		return nil, err
@@ -44,6 +65,7 @@ func New(userId string) (*Code, error) {
 func FromStorage(
 	id int64,
 	userId, code, linkToken string,
+	codeType CodeType,
 	generationsLeft, verificationsLeft int,
 	expiresAt, createdAt, updatedAt time.Time,
 ) *Code {
@@ -52,6 +74,7 @@ func FromStorage(
 		userId:            userId,
 		code:              code,
 		linkToken:         linkToken,
+		codeType:          codeType,
 		generationsLeft:   generationsLeft,
 		verificationsLeft: verificationsLeft,
 		expiresAt:         expiresAt,
@@ -60,15 +83,16 @@ func FromStorage(
 	}
 }
 
-func (c *Code) GetID() int64               { return c.id }
-func (c *Code) GetUserID() string          { return c.userId }
-func (c *Code) GetCode() string            { return c.code }
-func (c *Code) GetLinkToken() string       { return c.linkToken }
-func (c *Code) GetGenerationsLeft() int    { return c.generationsLeft }
-func (c *Code) GetVerificationsLeft() int  { return c.verificationsLeft }
-func (c *Code) GetExpiresAt() time.Time    { return c.expiresAt }
-func (c *Code) GetCreatedAt() time.Time    { return c.createdAt }
-func (c *Code) GetUpdatedAt() time.Time    { return c.updatedAt }
+func (c *Code) GetID() int64              { return c.id }
+func (c *Code) GetUserID() string         { return c.userId }
+func (c *Code) GetCode() string           { return c.code }
+func (c *Code) GetLinkToken() string      { return c.linkToken }
+func (c *Code) GetCodeType() CodeType     { return c.codeType }
+func (c *Code) GetGenerationsLeft() int   { return c.generationsLeft }
+func (c *Code) GetVerificationsLeft() int { return c.verificationsLeft }
+func (c *Code) GetExpiresAt() time.Time   { return c.expiresAt }
+func (c *Code) GetCreatedAt() time.Time   { return c.createdAt }
+func (c *Code) GetUpdatedAt() time.Time   { return c.updatedAt }
 
 func (c *Code) SetID(id int64) {
 	if c.id == 0 {
@@ -77,6 +101,8 @@ func (c *Code) SetID(id int64) {
 }
 
 func (c *Code) GenerateCode() error {
+	maxVerif := c.codeType.maxVerifications()
+
 	if c.verificationsLeft <= 0 && time.Since(c.updatedAt) < blockWindow {
 		return NewCodeValidationError("too many failed confirmation attempts, please try again later")
 	}
@@ -96,7 +122,7 @@ func (c *Code) GenerateCode() error {
 	}
 
 	c.generationsLeft--
-	c.verificationsLeft = maxVerificationsLeft
+	c.verificationsLeft = maxVerif
 
 	code, err := generateSixDigitCode()
 	if err != nil {
@@ -110,7 +136,7 @@ func (c *Code) GenerateCode() error {
 	}
 	c.linkToken = linkToken
 
-	c.expiresAt = time.Now().Add(codeTTL)
+	c.expiresAt = time.Now().Add(c.codeType.ttl())
 	c.updatedAt = time.Now()
 	return nil
 }
@@ -120,11 +146,13 @@ func (c *Code) CheckCode(rawCode string) (bool, error) {
 		return false, NewCodeValidationError("code has been expired")
 	}
 
+	maxVerif := c.codeType.maxVerifications()
+
 	if c.verificationsLeft <= 0 && time.Since(c.updatedAt) < blockWindow {
 		return false, NewCodeValidationError("too many failed confirmation attempts, please try again later")
 	}
 	if c.verificationsLeft <= 0 {
-		c.verificationsLeft = maxVerificationsLeft
+		c.verificationsLeft = maxVerif
 	}
 
 	c.verificationsLeft--

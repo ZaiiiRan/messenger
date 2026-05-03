@@ -62,10 +62,11 @@ func (c V1CodeDal) Index(i int) any {
 	}
 }
 
-func (c V1CodeDal) ToDomain() *code.Code {
+func (c V1CodeDal) ToDomain(codeType code.CodeType) *code.Code {
 	return code.FromStorage(
 		c.Id, c.UserId,
 		c.Code, c.LinkToken,
+		codeType,
 		c.GenerationsLeft, c.VerificationsLeft,
 		c.ExpiresAt, c.CreatedAt, c.UpdatedAt,
 	)
