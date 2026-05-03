@@ -1,0 +1,15 @@
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/email-service"
+smtp_client:
+  max_retries: 3
+  retry_delay_ms: 1000
+  retry_max_delay_ms: 5000
+email_sender_worker:
+  count: 5
+  kafka_consumer:
+    group_id: "email-service-consumer"
+    topic: "email-codes-tasks"
+    batch_size: 100
+    batch_timeout_ms: 1000
