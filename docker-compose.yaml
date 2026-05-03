@@ -239,6 +239,45 @@ services:
       - "8081:8081"
     networks:
       - messenger-network
+  
+  email-worker:
+    build:
+      context: ./backend/email-service
+      dockerfile: Dockerfile
+    depends_on:
+      email-kafka:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    environment:
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_BROKERS: "email-kafka:9092"
+      EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
+      SMTP_CLIENT_HOST: mailhog
+      SMTP_CLIENT_PORT: 1025
+      SMTP_CLIENT_FROM: ${SMTP_USER}
+    volumes:
+      - ./backend/configs/email-service/worker:/etc/email-service
+    networks:
+      - messenger-network
+  
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - messenger-network
 
 volumes:
   # old-messenger-db:
