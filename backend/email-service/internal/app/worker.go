@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/email-service/internal/config"
+	senderservice "github.com/ZaiiiRan/messenger/backend/email-service/internal/services/sender"
+	appi18n "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/i18n"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/smtp"
 	emailsenderworker "github.com/ZaiiiRan/messenger/backend/email-service/internal/workers/email_sender"
@@ -19,6 +21,8 @@ type WorkerApp struct {
 
 	kafkaClient *kafkatransport.KafkaClient
 	smtpClient  *smtp.SMTPClient
+
+	senderService senderservice.SenderService
 
 	workersCtx    context.Context
 	workersCancel context.CancelFunc
@@ -43,10 +47,13 @@ func NewWorkerApp() (*WorkerApp, error) {
 }
 
 func (a *WorkerApp) Run(ctx context.Context) error {
+	appi18n.Init()
+
 	if err := a.initKafkaClient(); err != nil {
 		return err
 	}
 	a.initSMTPClient()
+	a.initSenderService()
 
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
@@ -101,9 +108,13 @@ func (a *WorkerApp) initSMTPClient() {
 	a.smtpClient = smtp.New(a.cfg.SMTPClient)
 }
 
+func (a *WorkerApp) initSenderService() {
+	a.senderService = senderservice.NewSenderService(a.cfg.HTMLGenerator, a.smtpClient, a.log)
+}
+
 func (a *WorkerApp) startEmailSenderWorkers() error {
 	for i := 0; i < int(a.cfg.EmailSenderWorker.Count); i++ {
-		w, err := emailsenderworker.New(i, a.cfg.EmailSenderWorker.KafkaConsumerSettings, a.kafkaClient, a.log)
+		w, err := emailsenderworker.New(a.cfg.EmailSenderWorker.KafkaConsumerSettings, a.kafkaClient, a.senderService, a.log)
 		if err != nil {
 			a.log.Errorw("app.email_sender_worker_init_failed", "err", err, "worker_id", i)
 			return err

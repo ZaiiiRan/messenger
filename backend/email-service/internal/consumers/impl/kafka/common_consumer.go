@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/email-service/internal/config/settings"
+	kafkatransport "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 )
@@ -15,6 +16,8 @@ type Message struct {
 	Key  string
 	Body string
 }
+
+type BatchHandler func(ctx context.Context, msgs []Message) error
 
 type batchMsg struct {
 	raw *kafka.Message
@@ -29,10 +32,11 @@ type Consumer struct {
 	closeOnce    sync.Once
 	batchSize    int
 	batchTimeout time.Duration
+	handler      BatchHandler
 	log          *zap.SugaredLogger
 }
 
-func NewConsumer(cfg settings.KafkaConsumerSettings, kafkaClient *KafkaClient, log *zap.SugaredLogger) (*Consumer, error) {
+func NewConsumer(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger, handler BatchHandler) (*Consumer, error) {
 	cm := kafkaClient.ConfigMap()
 	cm["group.id"] = cfg.GroupID
 	cm["auto.offset.reset"] = "earliest"
@@ -55,6 +59,7 @@ func NewConsumer(cfg settings.KafkaConsumerSettings, kafkaClient *KafkaClient, l
 		done:         make(chan struct{}),
 		batchSize:    int(cfg.BatchSize),
 		batchTimeout: time.Duration(cfg.BatchTimeoutMs) * time.Millisecond,
+		handler:      handler,
 		log:          log,
 	}, nil
 }
@@ -73,7 +78,7 @@ func (c *Consumer) Run(ctx context.Context) {
 		c.readLoop(ctx)
 	}()
 
-	c.batchLoop()
+	c.batchLoop(ctx)
 	wg.Wait()
 	_ = c.kConsumer.Close()
 }
@@ -114,7 +119,7 @@ func (c *Consumer) readLoop(ctx context.Context) {
 	}
 }
 
-func (c *Consumer) batchLoop() {
+func (c *Consumer) batchLoop(ctx context.Context) {
 	batch := make([]batchMsg, 0, c.batchSize)
 	ticker := time.NewTicker(c.batchTimeout)
 	defer ticker.Stop()
@@ -124,12 +129,12 @@ func (c *Consumer) batchLoop() {
 		case msg := <-c.msgCh:
 			batch = append(batch, msg)
 			if len(batch) >= c.batchSize {
-				c.process(batch)
+				c.process(ctx, batch)
 				batch = batch[:0]
 			}
 		case <-ticker.C:
 			if len(batch) > 0 {
-				c.process(batch)
+				c.process(ctx, batch)
 				batch = batch[:0]
 			}
 		case <-c.done:
@@ -143,17 +148,24 @@ func (c *Consumer) batchLoop() {
 				}
 			}
 			if len(batch) > 0 {
-				c.process(batch)
+				c.process(ctx, batch)
 			}
 			return
 		}
 	}
 }
 
-func (c *Consumer) process(batch []batchMsg) {
-	for _, msg := range batch {
-		c.log.Infow("kafka_consumer.received_message", "key", msg.val.Key, "body", msg.val.Body)
+func (c *Consumer) process(ctx context.Context, batch []batchMsg) {
+	msgs := make([]Message, len(batch))
+	for i, m := range batch {
+		msgs[i] = m.val
 	}
+
+	if err := c.handler(ctx, msgs); err != nil {
+		c.log.Errorw("kafka_consumer.handle_error", "err", err, "topic", c.topic)
+		return
+	}
+
 	last := batch[len(batch)-1]
 	if _, err := c.kConsumer.CommitMessage(last.raw); err != nil {
 		c.log.Errorw("kafka_consumer.commit_failed", "err", err, "topic", c.topic)

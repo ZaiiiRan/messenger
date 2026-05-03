@@ -5,6 +5,7 @@ import "github.com/spf13/viper"
 type SMTPClientSettings struct {
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
+	From            string `mapstructure:"from"`
 	Username        string `mapstructure:"username"`
 	Password        string `mapstructure:"password"`
 	MaxRetries      uint   `mapstructure:"max_retries"`
@@ -13,6 +14,11 @@ type SMTPClientSettings struct {
 }
 
 func SetSMTPClientDefaults(v *viper.Viper, prefix string) {
+	v.SetDefault(prefix+".host", "smtp.messenger.com")
+	v.SetDefault(prefix+".port", 587)
+	v.SetDefault(prefix+".from", "")
+	v.SetDefault(prefix+".username", "")
+	v.SetDefault(prefix+".password", "")
 	v.SetDefault(prefix+".max_retries", 3)
 	v.SetDefault(prefix+".retry_delay_ms", 1000)
 	v.SetDefault(prefix+".retry_max_delay_ms", 5000)

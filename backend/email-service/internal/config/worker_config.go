@@ -14,6 +14,7 @@ type WorkerConfig struct {
 	Vault             settings.VaultSettings             `mapstructure:"vault"`
 	SMTPClient        settings.SMTPClientSettings        `mapstructure:"smtp_client"`
 	EmailSenderWorker settings.EmailSenderWorkerSettings `mapstructure:"email_sender_worker"`
+	HTMLGenerator     settings.HTMLGeneratorSettings     `mapstructure:"html_generator"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -53,4 +54,5 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetEmailSenderWorkerDefaults(v, "email_sender_worker")
 	settings.SetSMTPClientDefaults(v, "smtp_client")
+	settings.SetHTMLGeneratorDefaults(v, "html_generator")
 }

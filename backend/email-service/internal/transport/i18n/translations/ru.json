@@ -1,3 +1,17 @@
 [
-    
+  { "id": "email.code_label",                  "translation": "Код подтверждения" },
+  { "id": "email.divider",                      "translation": "или по ссылке" },
+
+  { "id": "email.activation.subtitle",          "translation": "Активация аккаунта" },
+  { "id": "email.activation.body",              "translation": "Введите код подтверждения ниже, чтобы активировать аккаунт. Или нажмите кнопку — мы всё сделаем за вас." },
+  { "id": "email.activation.button",            "translation": "Активировать аккаунт" },
+  { "id": "email.activation.footer",            "translation": "Если вы не запрашивали активацию — просто проигнорируйте это письмо.<br>Код действителен&nbsp;<strong>10&nbsp;минут</strong>." },
+  { "id": "email.activation.subject",           "translation": "Активация аккаунта" },
+
+  { "id": "email.password_reset.subtitle",      "translation": "Сброс пароля" },
+  { "id": "email.password_reset.warning",       "translation": "Если вы не запрашивали сброс пароля — немедленно смените пароль от аккаунта." },
+  { "id": "email.password_reset.body",          "translation": "Введите код подтверждения ниже, чтобы сбросить пароль. Или нажмите кнопку — мы всё сделаем за вас." },
+  { "id": "email.password_reset.button",        "translation": "Сбросить пароль" },
+  { "id": "email.password_reset.footer",        "translation": "Код действителен&nbsp;<strong>5&nbsp;минут</strong>." },
+  { "id": "email.password_reset.subject",       "translation": "Сброс пароля" }
 ]

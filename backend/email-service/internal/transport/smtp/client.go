@@ -34,7 +34,11 @@ func New(cfg settings.SMTPClientSettings) *SMTPClient {
 
 func (c *SMTPClient) SendHTMLMail(to, subject, body string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", c.cfg.Username)
+	from := c.cfg.From
+	if from == "" {
+		from = c.cfg.Username
+	}
+	m.SetHeader("From", from)
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/html", body)

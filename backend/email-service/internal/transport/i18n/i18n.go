@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -16,23 +17,29 @@ var fs embed.FS
 var bundle *i18n.Bundle
 
 var SupportedLanguages []string
+var initOnce sync.Once
 
 func Init() {
-	bundle = i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	initOnce.Do(func() {
+		bundle = i18n.NewBundle(language.English)
+		bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+		SupportedLanguages = SupportedLanguages[:0]
 
-	files, _ := fs.ReadDir("translations")
-	for _, file := range files {
-		name := file.Name()
-		content, _ := fs.ReadFile("translations/" + name)
-		bundle.ParseMessageFileBytes(content, name)
+		files, _ := fs.ReadDir("translations")
+		for _, file := range files {
+			name := file.Name()
+			content, _ := fs.ReadFile("translations/" + name)
+			bundle.ParseMessageFileBytes(content, name)
 
-		lang := strings.TrimSuffix(name, filepath.Ext(name))
-		SupportedLanguages = append(SupportedLanguages, lang)
-	}
+			lang := strings.TrimSuffix(name, filepath.Ext(name))
+			SupportedLanguages = append(SupportedLanguages, lang)
+		}
+	})
 }
 
 func NewLocalizer(lang string) *i18n.Localizer {
+	Init()
+
 	if lang == "" || !isSupported(lang) {
 		lang = "en"
 	}
