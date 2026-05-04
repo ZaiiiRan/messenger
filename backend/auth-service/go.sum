@@ -22,6 +22,8 @@ github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504200843-8fc4a6900e
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504200843-8fc4a6900e73/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504230003-d0ab2c7e72f5 h1:1tB2CvoGev6VVgujDqutLklZm4MnPwdFHBkHZf8xDhs=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504230003-d0ab2c7e72f5/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504235141-36ef85c32378 h1:meN4RcjESvkMVgtrX6CYxbTkvGVOy6IneGdTe3OgPAk=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504235141-36ef85c32378/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
