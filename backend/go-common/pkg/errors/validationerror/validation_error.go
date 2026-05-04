@@ -15,7 +15,7 @@ func (v ValidationError) Merge(other ValidationError) {
 }
 
 func (v ValidationError) ToStatus() error {
-	st := status.New(codes.InvalidArgument, "validation error")
+	st := status.New(codes.InvalidArgument, "error.validation_error")
 
 	var details []*errdetails.BadRequest_FieldViolation
 	for field, desc := range v {
