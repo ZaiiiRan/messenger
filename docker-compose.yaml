@@ -98,10 +98,12 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
     volumes:
-      - ./backend/configs/user-service:/etc/user-service
+      - ./backend/configs/user-service/server:/etc/user-service
     ports:
       - "50051:50051"
+      - "8001:8080"
     networks:
       - messenger-network
   
