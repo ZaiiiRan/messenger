@@ -1,3 +1,33 @@
 [
-    
+    { "id": "domain.code.validation.error.too_many_confirmation_attempts", "translation": "слишком много неудачных попыток подтверждения, попробуйте позже" },
+    { "id": "domain.code.validation.error.number_of_code_resends_has_been_exhausted", "translation": "достигнут лимит повторной отправки кода" },
+    { "id": "domain.code.validation.error.wait_before_requesting_new_code", "translation": "пожалуйста, подождите перед повторным запросом кода" },
+    { "id": "domain.code.validation.error.code_has_been_expired", "translation": "срок действия кода истёк" },
+    { "id": "domain.code.validation.error.too_many_failed_confirmation_attempts", "translation": "слишком много неудачных попыток подтверждения, попробуйте позже" },
+    { "id": "domain.code.validation.error.link_has_expired", "translation": "срок действия ссылки истёк" },
+    { "id": "domain.code.validation.error.invalid_code", "translation": "неверный код" },
+    { "id": "domain.code.validation.error.invalid_token", "translation": "неверный токен" },
+    { "id": "domain.code.validation.error.invalid_or_expired_activation_link", "translation": "неверная или истёкшая ссылка активации" },
+    { "id": "domain.code.validation.error.invalid_or_expired_reset_link", "translation": "неверная или истёкшая ссылка для сброса пароля" },
+
+    { "id": "domain.password.validation.error.password_can_be_changed_only_once_per_24_hours", "translation": "пароль можно менять только один раз в 24 часа" },
+    { "id": "domain.password.validation.error.password_must_be_at_least_8_characters_long", "translation": "пароль должен содержать не менее 8 символов" },
+    { "id": "domain.password.validation.error.password_must_be_at_most_72_characters_long", "translation": "пароль должен содержать не более 72 символов" },
+    { "id": "domain.password.validation.error.password_must_contain_at_least_one_uppercase_letter", "translation": "пароль должен содержать хотя бы одну заглавную букву" },
+    { "id": "domain.password.validation.error.password_must_contain_at_least_one_lowercase_letter", "translation": "пароль должен содержать хотя бы одну строчную букву" },
+    { "id": "domain.password.validation.error.password_must_contain_at_least_one_digit", "translation": "пароль должен содержать хотя бы одну цифру" },
+    { "id": "domain.password.validation.error.password_must_contain_at_least_one_special_character", "translation": "пароль должен содержать хотя бы один специальный символ" },
+    { "id": "domain.password.validation.error.old_and_new_passwords_are_the_same", "translation": "старый и новый пароль совпадают" },
+    { "id": "domain.password.validation.error.old_password_is_incorrect", "translation": "старый пароль указан неверно" },
+
+    { "id": "service.user.error.user_is_deleted", "translation": "пользователь удалён" },
+    { "id": "service.user.error.user_is_already_activated", "translation": "пользователь уже активирован" },
+
+    { "id": "service.auth.error.invalid_login_or_password", "translation": "неверный логин или пароль" },
+    { "id": "service.auth.error.invalid_credentials", "translation": "неверные учетные данные" },
+    { "id": "service.auth.error.too_many_sessions", "translation": "слишком много активных сессий" },
+
+    { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
+    { "id": "error.unauthorized", "translation": "не авторизован" },
+    { "id": "error.permission_denied", "translation": "доступ запрещён" }
 ]

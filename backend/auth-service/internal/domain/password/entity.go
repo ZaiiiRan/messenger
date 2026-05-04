@@ -63,7 +63,7 @@ func (p *Password) SetPassword(password string) error {
 
 	if p.GetID() != 0 {
 		if time.Since(p.updatedAt) < 24*time.Hour {
-			return NewPasswordValidationError("password can be changed only once per 24 hours")
+			return ErrPasswordChangeTooSoon
 		}
 	}
 

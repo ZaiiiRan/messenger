@@ -75,7 +75,7 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 		return false, err
 	}
 	if c == nil {
-		l.Warnw("code.check_by_code_failed", "err", "code not found")
+		l.Warnw("code.check_by_code_failed", "err", ErrCodeNotFound)
 		return false, nil
 	}
 
@@ -85,7 +85,7 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 		return false, err
 	}
 	if !valid {
-		l.Warnw("code.check_by_code_failed", "err", "invalid code")
+		l.Warnw("code.check_by_code_failed", "err", codedomain.ErrInvalidCode)
 		if err := s.codeDataProvider.save(ctx, c, uow); err != nil {
 			l.Errorw("code.check_by_code_failed", "err", err)
 			return false, err
@@ -115,7 +115,7 @@ func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfW
 	}
 
 	if time.Now().After(c.GetExpiresAt()) {
-		return "", false, codedomain.NewCodeValidationError("link has expired")
+		return "", false, codedomain.ErrLinkExpired
 	}
 
 	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {

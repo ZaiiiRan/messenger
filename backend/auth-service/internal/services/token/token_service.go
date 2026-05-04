@@ -2,7 +2,6 @@ package tokenservice
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
@@ -65,8 +64,8 @@ func (s *tokenService) GenerateToken(
 	} else if userVersion != nil {
 		version = userVersion.GetVersion()
 	} else {
-		l.Errorw("token.get_user_version", "err", "user version or existed refresh token is not provided")
-		return nil, nil, fmt.Errorf("user version or existed refresh token is not provided")
+		l.Errorw("token.get_user_version", "err", ErrUserVersionOrExistedRefreshTokenNotProvided)
+		return nil, nil, ErrUserVersionOrExistedRefreshTokenNotProvided
 	}
 
 	c := &commonjwt.UserClaims{
