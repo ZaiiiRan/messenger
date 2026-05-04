@@ -2,8 +2,8 @@ package ctxmetadata
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -15,7 +15,7 @@ func GetUAFromIncomingContext(ctx context.Context) (string, error) {
 			return values[0], nil
 		}
 	}
-	return "", fmt.Errorf("missing metadata")
+	return "", commonerror.ErrMissingMetadata
 }
 
 func ForwardUAToOutgoingContext(ctx context.Context) context.Context {

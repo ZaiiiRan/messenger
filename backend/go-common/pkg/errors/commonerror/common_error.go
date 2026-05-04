@@ -31,4 +31,5 @@ var (
 	ErrUnavailable        = NewCommonError("error.unavailable")
 	ErrDataLoss           = NewCommonError("error.data_loss")
 	ErrUnauthorized       = NewCommonError("error.unauthorized")
+	ErrMissingMetadata    = NewCommonError("error.missing_metadata")
 )

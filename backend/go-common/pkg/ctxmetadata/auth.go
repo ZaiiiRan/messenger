@@ -2,8 +2,8 @@ package ctxmetadata
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	claims "github.com/ZaiiiRan/messenger/backend/go-common/pkg/jwt"
 	"google.golang.org/grpc/metadata"
 )
@@ -29,7 +29,7 @@ func GetAuthMetadataFromIncomingContext(ctx context.Context) (string, error) {
 			return values[0], nil
 		}
 	}
-	return "", fmt.Errorf("missing metadata")
+	return "", commonerror.ErrMissingMetadata
 }
 
 func ForwardAuthToOutgoingContext(ctx context.Context) context.Context {
