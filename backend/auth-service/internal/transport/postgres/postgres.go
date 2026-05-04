@@ -14,7 +14,18 @@ type PostgresClient struct {
 }
 
 func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, error) {
-	pgCfg, err := pgxpool.ParseConfig(cfg.ConnectionString)
+	connectionString := fmt.Sprintf(
+		"postgres://%s:%s@%s/%s",
+		cfg.User,
+		cfg.Password,
+		cfg.Address,
+		cfg.Database,
+	)
+	if cfg.Options != "" {
+		connectionString = fmt.Sprintf("%s?%s", connectionString, cfg.Options)
+	}
+	
+	pgCfg, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres config: %w", err)
 	}
