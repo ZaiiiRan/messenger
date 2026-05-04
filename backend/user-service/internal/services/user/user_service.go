@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
@@ -44,7 +45,9 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	l := s.log.With("op", "create_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.Profile == nil {
-		return nil, grpcstatus.Error(codes.InvalidArgument, "user.profile is required")
+		verr := make(validationerror.ValidationError)
+		verr["profile"] = profile.ErrProfileIsEmpty.Error()
+		return nil, verr.ToStatus()
 	}
 
 	birthdate, berr := utils.ParseDatePtr(req.Profile.Birthdate)
@@ -61,7 +64,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	}
 	verr.Merge(pverr)
 	if berr != nil {
-		verr["profile.birthdate"] = berr.Error()
+		verr["profile.birthdate"] = profile.ErrInvalidBirthdateFormat.Error()
 	}
 	if len(verr) > 0 {
 		l.Warnw("user.create_user_failed.validation_error", "err", verr)
@@ -76,7 +79,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	}, uow)
 	if err != nil {
 		l.Errorw("user.create_user_failed.get_by_email_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if byEmail != nil && !isUniqueHolder(byEmail) {
 		byEmail = nil
@@ -87,7 +90,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	}, uow)
 	if err != nil {
 		l.Errorw("user.create_user_failed.get_by_username_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if byUsername != nil && !isUniqueHolder(byUsername) {
 		byUsername = nil
@@ -105,10 +108,10 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	default:
 		vErr := make(validationerror.ValidationError)
 		if byEmail != nil {
-			vErr["profile.email"] = "user with this email already exists"
+			vErr["profile.email"] = ErrUserWithUsernameExists.Error()
 		}
 		if byUsername != nil {
-			vErr["profile.username"] = "user with this username already exists"
+			vErr["profile.username"] = ErrUserWithEmailExists.Error()
 		}
 		l.Warnw("user.create_user_failed.uniqueness_conflict", "err", vErr)
 		return nil, vErr.ToStatus()
@@ -117,15 +120,15 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	_, err = uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("user.create_user_failed.begin_transaction_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if err := s.dataProvider.save(ctx, u, uow); err != nil {
 		l.Errorw("user.create_user_failed.save_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("user.create_user_failed.commit_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
@@ -136,7 +139,7 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (
 	l := s.log.With("op", "get_user_by_id", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.UserId == "" {
-		return nil, grpcstatus.Error(codes.InvalidArgument, "user_id is required")
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdIsRequired.Error())
 	}
 
 	uow := s.dataProvider.newUOW()
@@ -145,11 +148,11 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (
 	u, err := s.dataProvider.getByID(ctx, req.UserId, uow)
 	if err != nil {
 		l.Errorw("user.get_user_by_id_failed.get_by_id_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if u == nil {
-		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
 	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
@@ -160,7 +163,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	l := s.log.With("op", "get_user_by_username", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.Username == "" {
-		return nil, grpcstatus.Error(codes.InvalidArgument, "username is required")
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUsernameIsRequired.Error())
 	}
 
 	uow := s.dataProvider.newUOW()
@@ -171,11 +174,11 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	}, uow)
 	if err != nil {
 		l.Errorw("user.get_user_by_username_failed.get_by_username_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if u == nil {
-		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
 	l.Infow("user.get_user_by_username_success", "user_id", u.GetID())
@@ -186,7 +189,7 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 	l := s.log.With("op", "get_user_by_email", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.Email == "" {
-		return nil, grpcstatus.Error(codes.InvalidArgument, "email is required")
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrEmailIsRequired.Error())
 	}
 
 	uow := s.dataProvider.newUOW()
@@ -197,11 +200,11 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 	}, uow)
 	if err != nil {
 		l.Errorw("user.get_user_by_email_failed.get_by_email_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if u == nil {
-		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
 	l.Infow("user.get_user_by_email_success", "user_id", u.GetID())
@@ -215,27 +218,27 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 
 	deletedFrom, err := utils.ParseTimestampPtr(req.DeletedFrom)
 	if err != nil {
-		verr["deleted_from"] = "invalid timestamp format, use RFC3339"
+		verr["deleted_from"] = ErrInvalidTimestamp.Error()
 	}
 	deletedTo, err := utils.ParseTimestampPtr(req.DeletedTo)
 	if err != nil {
-		verr["deleted_to"] = "invalid timestamp format, use RFC3339"
+		verr["deleted_to"] = ErrInvalidTimestamp.Error()
 	}
 	createdFrom, err := utils.ParseTimestampPtr(req.CreatedFrom)
 	if err != nil {
-		verr["created_from"] = "invalid timestamp format, use RFC3339"
+		verr["created_from"] = ErrInvalidTimestamp.Error()
 	}
 	createdTo, err := utils.ParseTimestampPtr(req.CreatedTo)
 	if err != nil {
-		verr["created_to"] = "invalid timestamp format, use RFC3339"
+		verr["created_to"] = ErrInvalidTimestamp.Error()
 	}
 	updatedFrom, err := utils.ParseTimestampPtr(req.UpdatedFrom)
 	if err != nil {
-		verr["updated_from"] = "invalid timestamp format, use RFC3339"
+		verr["updated_from"] = ErrInvalidTimestamp.Error()
 	}
 	updatedTo, err := utils.ParseTimestampPtr(req.UpdatedTo)
 	if err != nil {
-		verr["updated_to"] = "invalid timestamp format, use RFC3339"
+		verr["updated_to"] = ErrInvalidTimestamp.Error()
 	}
 
 	if len(verr) > 0 {
@@ -270,7 +273,7 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 	users, err := s.dataProvider.getUserList(ctx, query, uow)
 	if err != nil {
 		l.Errorw("user.get_users_failed.query_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	pbUsers := make([]*pb.User, len(users))
@@ -286,7 +289,7 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 	l := s.log.With("op", "confirm_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.UserId == "" {
-		return nil, grpcstatus.Error(codes.InvalidArgument, "user_id is required")
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdIsRequired.Error())
 	}
 
 	uow := s.dataProvider.newUOW()
@@ -295,21 +298,21 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 	u, err := s.dataProvider.getByID(ctx, req.UserId, uow)
 	if err != nil {
 		l.Errorw("user.confirm_user_failed.get_by_id_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if u == nil {
-		return nil, grpcstatus.Error(codes.NotFound, "user not found")
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
 	if u.GetStatus().IsConfirmed() {
-		return nil, grpcstatus.Error(codes.FailedPrecondition, "user is already confirmed")
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrUserIsAlreadyActivated.Error())
 	}
 	if u.GetStatus().IsDeleted() {
-		return nil, grpcstatus.Error(codes.FailedPrecondition, "deleted user cannot be confirmed")
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrDeletedUserCannotBeActivated.Error())
 	}
 	bannedUntil := u.GetStatus().GetBannedUntil()
 	if u.GetStatus().IsPermanentlyBanned() || (bannedUntil != nil && bannedUntil.After(time.Now())) {
-		return nil, grpcstatus.Error(codes.FailedPrecondition, "banned user cannot be confirmed")
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrBannedUserCannotBeActivated.Error())
 	}
 
 	u.GetStatus().SetConfirmed(true)
@@ -317,15 +320,15 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("user.confirm_user_failed.begin_transaction_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if err := s.dataProvider.save(ctx, u, uow); err != nil {
 		l.Errorw("user.confirm_user_failed.save_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("user.confirm_user_failed.commit_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, "internal server error")
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())

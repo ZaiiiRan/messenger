@@ -1,3 +1,41 @@
 [
+    { "id": "domain.profile.validation.error.profile_is_empty", "translation": "profile is required" },
+    { "id": "domain.profile.validation.error.invalid_phone_format", "translation": "phone must start with + and country code, e.g. +7(999)-123-45-67 or +15551234567" },
+    { "id": "domain.profile.validation.error.invalid_phone_length", "translation": "phone must contain between 8 and 15 digits" },
+    { "id": "domain.profile.validation.error.birthdate_in_future", "translation": "birthdate cannot be in the future" },
+    { "id": "domain.profile.validation.error.invalid_birthdate_format", "translation": "invalid birthdate format" },
+    { "id": "domain.profile.validation.error.firstname_is_empty", "translation": "firstname is empty" },
+    { "id": "domain.profile.validation.error.firstname_too_short", "translation": "firstname must be at least 2 characters long" },
+    { "id": "domain.profile.validation.error.firstname_too_long", "translation": "firstname must be at most 50 characters long" },
+    { "id": "domain.profile.validation.error.invalid_firstname_format", "translation": "firstname must start with a capital letter" },
+    { "id": "domain.profile.validation.error.lastname_is_empty", "translation": "lastname is empty" },
+    { "id": "domain.profile.validation.error.lastname_too_short", "translation": "lastname must be at least 2 characters long" },
+    { "id": "domain.profile.validation.error.lastname_too_long", "translation": "lastname must be at most 50 characters long" },
+    { "id": "domain.profile.validation.error.invalid_lastname_format", "translation": "lastname must start with a capital letter" },
+    { "id": "domain.profile.validation.error.bio_too_long", "translation": "bio must be at most 1000 characters long" },
 
+    { "id": "domain.status.validation.error.banned_until_in_past", "translation": "banned until time cannot be in the past" },
+
+    { "id": "domain.user.validation.error.email_is_empty", "translation": "email is empty" },
+    { "id": "domain.user.validation.error.invalid_email_format", "translation": "invalid email format" },
+    { "id": "domain.user.validation.error.email_too_long", "translation": "email must be at most 254 characters long" },
+    { "id": "domain.user.validation.error.username_is_empty", "translation": "username is empty" },
+    { "id": "domain.user.validation.error.username_contains_spaces", "translation": "username cannot contain spaces" },
+    { "id": "domain.user.validation.error.username_too_short", "translation": "username must be at least 5 characters long" },
+    { "id": "domain.user.validation.error.username_too_long", "translation": "username must be at most 30 characters long" },
+
+    { "id": "service.user.error.user_with_this_username_exists", "translation": "user with this email already exists" },
+    { "id": "service.user.error.user_with_this_email_exists", "translation": "user with this username already exists" },
+    { "id": "service.user.error.user_id_is_required", "translation": "user_id is required" },
+    { "id": "service.user.error.username_is_required", "translation": "username is required" },
+    { "id": "service.user.error.email_is_required", "translation": "email is required" },
+    { "id": "service.user.error.user_not_found", "translation": "user not found" },
+    { "id": "service.user.error.user_is_already_activated", "translation": "user is already activated" },
+    { "id": "service.user.error.deleted_user_cannot_be_activated", "translation": "deleted user cannot be activated" },
+    { "id": "service.user.error.banned_user_cannot_be_activated", "translation": "banned user cannot be activated" },
+    { "id": "service.user.error.invalid_timestamp", "translation": "invalid timestamp format, use RFC3339" },
+
+    { "id": "error.internal_server_error", "translation": "internal server error" },
+    { "id": "error.unauthorized", "translation": "unauthorized" },
+    { "id": "error.permission_denied", "translation": "permission denied" }
 ]

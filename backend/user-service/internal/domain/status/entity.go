@@ -1,7 +1,6 @@
 package status
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -55,7 +54,7 @@ func (s *Status) SetPermanentlyBanned(permanentlyBanned bool) {
 
 func (s *Status) SetBannedUntil(bannedUntil *time.Time) error {
 	if bannedUntil != nil && bannedUntil.Before(time.Now()) {
-		return fmt.Errorf("banned until time cannot be in the past")
+		return ErrBannedUntilInPast
 	}
 	s.bannedUntil = bannedUntil
 	return nil

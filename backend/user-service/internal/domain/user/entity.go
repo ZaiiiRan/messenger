@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
@@ -84,7 +85,7 @@ func (u *User) SetUsername(username string) error {
 	if err := validateUsername(username); err != nil {
 		return err
 	}
-	u.username = username
+	u.username = strings.ToLower(username)
 	return nil
 }
 
@@ -96,7 +97,7 @@ func (u *User) SetEmail(email string) error {
 	if err := validateEmail(email); err != nil {
 		return err
 	}
-	u.email = email
+	u.email = strings.ToLower(email)
 	return nil
 }
 

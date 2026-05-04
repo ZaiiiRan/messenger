@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -9,27 +8,37 @@ import (
 
 func validateEmail(email string) error {
 	if email == "" {
-		return fmt.Errorf("email is empty")
+		return ErrEmptyEmail
 	}
 
 	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 	if !emailRegex.MatchString(email) {
-		return fmt.Errorf("invalid email format")
+		return ErrInvalidEmailFormat
 	}
+
+	if utf8.RuneCountInString(email) > 254 {
+		return ErrEmailTooLong
+	}
+
 	return nil
 }
 
 func validateUsername(username string) error {
 	if username == "" {
-		return fmt.Errorf("username is empty")
+		return ErrEmptyUsername
 	}
 
 	if strings.Contains(username, " ") {
-		return fmt.Errorf("username cannot contain spaces")
+		return ErrUsernameContainsSpaces
 	}
 
 	if utf8.RuneCountInString(username) < 5 {
-		return fmt.Errorf("username must be at least 5 characters")
+		return ErrUsernameTooShort
 	}
+
+	if utf8.RuneCountInString(username) > 30 {
+		return ErrUsernameTooLong
+	}
+
 	return nil
 }

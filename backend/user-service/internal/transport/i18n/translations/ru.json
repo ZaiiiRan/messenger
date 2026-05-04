@@ -1,3 +1,41 @@
 [
+    { "id": "domain.profile.validation.error.profile_is_empty", "translation": "профиль обязателен" },
+    { "id": "domain.profile.validation.error.invalid_phone_format", "translation": "номер телефона должен начинаться с + и кода страны, например +7(999)-123-45-67 или +15551234567" },
+    { "id": "domain.profile.validation.error.invalid_phone_length", "translation": "номер телефона должен содержать от 8 до 15 цифр" },
+    { "id": "domain.profile.validation.error.birthdate_in_future", "translation": "дата рождения не может быть в будущем" },
+    { "id": "domain.profile.validation.error.invalid_birthdate_format", "translation": "неверный формат даты рождения" },
+    { "id": "domain.profile.validation.error.firstname_is_empty", "translation": "имя не указано" },
+    { "id": "domain.profile.validation.error.firstname_too_short", "translation": "имя должно содержать не менее 2 символов" },
+    { "id": "domain.profile.validation.error.firstname_too_long", "translation": "имя должно содержать не более 50 символов" },
+    { "id": "domain.profile.validation.error.invalid_firstname_format", "translation": "имя должно начинаться с заглавной буквы" },
+    { "id": "domain.profile.validation.error.lastname_is_empty", "translation": "фамилия не указана" },
+    { "id": "domain.profile.validation.error.lastname_too_short", "translation": "фамилия должна содержать не менее 2 символов" },
+    { "id": "domain.profile.validation.error.lastname_too_long", "translation": "фамилия должна содержать не более 50 символов" },
+    { "id": "domain.profile.validation.error.invalid_lastname_format", "translation": "фамилия должна начинаться с заглавной буквы" },
+    { "id": "domain.profile.validation.error.bio_too_long", "translation": "о себе должно содержать не более 1000 символов" },
 
+    { "id": "domain.status.validation.error.banned_until_in_past", "translation": "дата окончания блокировки не может быть в прошлом" },
+
+    { "id": "domain.user.validation.error.email_is_empty", "translation": "email не указан" },
+    { "id": "domain.user.validation.error.invalid_email_format", "translation": "неверный формат email" },
+    { "id": "domain.user.validation.error.email_too_long", "translation": "email должен содержать не более 254 символов" },
+    { "id": "domain.user.validation.error.username_is_empty", "translation": "имя пользователя не указано" },
+    { "id": "domain.user.validation.error.username_contains_spaces", "translation": "имя пользователя не должно содержать пробелы" },
+    { "id": "domain.user.validation.error.username_too_short", "translation": "имя пользователя должно содержать не менее 5 символов" },
+    { "id": "domain.user.validation.error.username_too_long", "translation": "имя пользователя должно содержать не более 30 символов" },
+
+    { "id": "service.user.error.user_with_this_username_exists", "translation": "пользователь с таким email уже существует" },
+    { "id": "service.user.error.user_with_this_email_exists", "translation": "пользователь с таким именем пользователя уже существует" },
+    { "id": "service.user.error.user_id_is_required", "translation": "user_id обязателен" },
+    { "id": "service.user.error.username_is_required", "translation": "имя пользователя обязательно" },
+    { "id": "service.user.error.email_is_required", "translation": "email обязателен" },
+    { "id": "service.user.error.user_not_found", "translation": "пользователь не найден" },
+    { "id": "service.user.error.user_is_already_activated", "translation": "пользователь уже активирован" },
+    { "id": "service.user.error.deleted_user_cannot_be_activated", "translation": "удалённый пользователь не может быть активирован" },
+    { "id": "service.user.error.banned_user_cannot_be_activated", "translation": "заблокированный пользователь не может быть активирован" },
+    { "id": "service.user.error.invalid_timestamp", "translation": "неверный формат времени, используйте RFC3339" },
+
+    { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
+    { "id": "error.unauthorized", "translation": "не авторизован" },
+    { "id": "error.permission_denied", "translation": "доступ запрещён" }
 ]
