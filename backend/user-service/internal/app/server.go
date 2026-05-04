@@ -9,6 +9,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/server/grpc"
 	"go.uber.org/zap"
@@ -24,9 +25,11 @@ type ServerApp struct {
 
 	userService userservice.UserService
 
-	grpcServer *grpcserver.Server
+	grpcServer    *grpcserver.Server
+	metricsServer *prommetrics.Server
 
-	isGRPCStarted chan bool
+	isGRPCStarted    chan bool
+	isMetricsStarted chan bool
 }
 
 func NewServerApp() (*ServerApp, error) {
@@ -41,9 +44,10 @@ func NewServerApp() (*ServerApp, error) {
 	}
 
 	return &ServerApp{
-		cfg:           cfg,
-		log:           log,
-		isGRPCStarted: make(chan bool),
+		cfg:              cfg,
+		log:              log,
+		isGRPCStarted:    make(chan bool),
+		isMetricsStarted: make(chan bool),
 	}, nil
 }
 
@@ -57,12 +61,16 @@ func (a *ServerApp) Run(ctx context.Context) error {
 
 	a.initUserService()
 
+	a.initMetricsServer()
+	a.startMetricsServer()
+
 	if err := a.initGrpcServer(); err != nil {
 		return err
 	}
 	a.startGrpcServer()
 
 	<-a.isGRPCStarted
+	<-a.isMetricsStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -76,6 +84,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 	a.postgresClient.Close()
 	a.redisClient.Close()
 	a.grpcServer.Stop(shCtx)
+	a.metricsServer.Stop(shCtx)
 
 	a.log.Infow("app.stopped")
 }
@@ -118,8 +127,22 @@ func (a *ServerApp) initUserService() {
 	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log)
 }
 
+func (a *ServerApp) initMetricsServer() {
+	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
+}
+
+func (a *ServerApp) startMetricsServer() {
+	go func() {
+		a.log.Infow("app.metrics_serve_start", "port", a.cfg.MetricsServer.Port)
+		a.isMetricsStarted <- true
+		if err := a.metricsServer.Start(); err != nil {
+			a.log.Fatalw("app.metrics_serve_error", "err", err)
+		}
+	}()
+}
+
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.userService, a.log)
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.userService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err

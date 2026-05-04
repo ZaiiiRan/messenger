@@ -10,8 +10,11 @@ import (
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
+	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -20,9 +23,17 @@ type Server struct {
 	lis net.Listener
 }
 
-func New(srvSettings settings.GRPCServerSettings, userService userservice.UserService, log *zap.SugaredLogger) (*Server, error) {
+func New(
+	srvSettings settings.GRPCServerSettings,
+	userService userservice.UserService,
+	log *zap.SugaredLogger,
+	reg *prometheus.Registry,
+) (*Server, error) {
+	grpcMetrics := grpc_prom.NewServerMetrics()
+	reg.MustRegister(grpcMetrics)
+
 	s := grpc.NewServer(
-		newChainUnaryInterceptor(log),
+		newChainUnaryInterceptor(grpcMetrics, log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
@@ -33,6 +44,11 @@ func New(srvSettings settings.GRPCServerSettings, userService userservice.UserSe
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen: %w", err)
 	}
+
+	grpcMetrics.InitializeMetrics(s)
+
+	hs := newHealthServer()
+	healthpb.RegisterHealthServer(s, hs)
 
 	return &Server{
 		srv: s,
@@ -66,8 +82,9 @@ func (s *Server) Addr() string {
 	return ""
 }
 
-func newChainUnaryInterceptor(log *zap.SugaredLogger) grpc.ServerOption {
+func newChainUnaryInterceptor(grpcMetrics *grpc_prom.ServerMetrics, log *zap.SugaredLogger) grpc.ServerOption {
 	return grpc.ChainUnaryInterceptor(
+		grpcMetrics.UnaryServerInterceptor(),
 		commonmiddleware.RequestIdMiddleware(),
 		commonmiddleware.LogMiddleware(log),
 		commonmiddleware.RecoveryMiddleware(log),
@@ -92,7 +109,7 @@ func getGRPCKeepAliveEnforcement(c *settings.GRPCServerSettings) keepalive.Enfor
 		return keepalive.EnforcementPolicy{}
 	}
 	return keepalive.EnforcementPolicy{
-		MinTime:             0,
+		MinTime:             10 * time.Second,
 		PermitWithoutStream: c.PermitWithoutStream,
 	}
 }
