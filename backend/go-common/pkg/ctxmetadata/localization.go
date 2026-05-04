@@ -25,6 +25,11 @@ func GetLangFromIncomingContext(ctx context.Context) string {
 	return lang
 }
 
+func GetLocalizerFromContext(ctx context.Context) *i18n.Localizer {
+	loc, _ := ctx.Value(CtxKeyLocalizer{}).(*i18n.Localizer)
+	return loc
+}
+
 func ForwardLangToOutgoingContext(ctx context.Context) context.Context {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if langs := md.Get(AcceptLanguageKey); len(langs) > 0 && langs[0] != "" {
