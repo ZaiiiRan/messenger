@@ -10,6 +10,7 @@ import (
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -88,6 +89,10 @@ func newChainUnaryInterceptor(grpcMetrics *grpc_prom.ServerMetrics, log *zap.Sug
 		commonmiddleware.RequestIdMiddleware(),
 		commonmiddleware.LogMiddleware(log),
 		commonmiddleware.RecoveryMiddleware(log),
+
+		commonmiddleware.I18nMiddleware(utils.CreateLocalizer),
+		commonmiddleware.ErrorTranslatorMiddleware(),
+		
 	)
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
@@ -61,6 +62,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 
 	a.initUserService()
 
+	a.initI18n()
 	a.initMetricsServer()
 	a.startMetricsServer()
 
@@ -125,6 +127,10 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 
 func (a *ServerApp) initUserService() {
 	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
+func (a *ServerApp) initI18n() {
+	i18n.Init()
 }
 
 func (a *ServerApp) initMetricsServer() {
