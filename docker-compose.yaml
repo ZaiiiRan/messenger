@@ -58,7 +58,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - user-db-data:/var/lib/postgresql/data/
+      - user-db-data:/var/lib/postgresql/
     networks:
       - messenger-network
   
@@ -88,7 +88,10 @@ services:
       vault:
         condition: service_healthy
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@user-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: user-db:5432
+      DB_DATABASE: postgres
       MIGRATE_NEED_TO_MIGRATE: true
       REDIS_ADDRESS: user-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -115,7 +118,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - auth-db-data:/var/lib/postgresql/data/
+      - auth-db-data:/var/lib/postgresql/
     networks:
       - messenger-network
   
@@ -149,7 +152,10 @@ services:
       user-service:
         condition: service_started
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: auth-db:5432
+      DB_DATABASE: postgres
       MIGRATE_NEED_TO_MIGRATE: true
       REDIS_ADDRESS: auth-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -183,7 +189,10 @@ services:
       vault:
         condition: service_healthy
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: auth-db:5432
+      DB_DATABASE: postgres
       REDIS_ADDRESS: auth-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       VAULT_TOKEN: ${VAULT_TOKEN}
