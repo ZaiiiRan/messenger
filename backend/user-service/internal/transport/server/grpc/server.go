@@ -26,6 +26,7 @@ type Server struct {
 
 func New(
 	srvSettings settings.GRPCServerSettings,
+	jwtSettings settings.JWTSettings,
 	userService userservice.UserService,
 	log *zap.SugaredLogger,
 	reg *prometheus.Registry,
@@ -34,7 +35,7 @@ func New(
 	reg.MustRegister(grpcMetrics)
 
 	s := grpc.NewServer(
-		newChainUnaryInterceptor(grpcMetrics, log),
+		newChainUnaryInterceptor(&jwtSettings, grpcMetrics, log),
 		grpc.KeepaliveParams(getGRPCKeepAliveServerParams(&srvSettings)),
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
@@ -83,7 +84,7 @@ func (s *Server) Addr() string {
 	return ""
 }
 
-func newChainUnaryInterceptor(grpcMetrics *grpc_prom.ServerMetrics, log *zap.SugaredLogger) grpc.ServerOption {
+func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *grpc_prom.ServerMetrics, log *zap.SugaredLogger) grpc.ServerOption {
 	return grpc.ChainUnaryInterceptor(
 		grpcMetrics.UnaryServerInterceptor(),
 		commonmiddleware.RequestIdMiddleware(),
@@ -92,7 +93,15 @@ func newChainUnaryInterceptor(grpcMetrics *grpc_prom.ServerMetrics, log *zap.Sug
 
 		commonmiddleware.I18nMiddleware(utils.CreateLocalizer),
 		commonmiddleware.ErrorTranslatorMiddleware(),
-		
+
+		commonmiddleware.UserAuthMiddleware(
+			[]byte(jwtSettings.AccessTokenSecret),
+			commonmiddleware.MiddlewareOnly(),
+		),
+
+		commonmiddleware.UserPermissionMiddleware(
+			commonmiddleware.MiddlewareOnly(),
+		),
 	)
 }
 

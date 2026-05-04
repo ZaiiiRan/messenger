@@ -11,6 +11,7 @@ import (
 
 type ServerConfig struct {
 	GRPCServer    settings.GRPCServerSettings    `mapstructure:"grpc_server"`
+	JWT           settings.JWTSettings           `mapstructure:"jwt"`
 	DB            settings.PostgresSettings      `mapstructure:"db"`
 	Migrate       settings.MigrateSettings       `mapstructure:"migrate"`
 	Redis         settings.RedisSettings         `mapstructure:"redis"`
@@ -53,6 +54,7 @@ func LoadServerConfig() (*ServerConfig, error) {
 
 func setServerDefaults(v *viper.Viper) {
 	settings.SetGRPCServerDefaults(v, "grpc_server", ":50051")
+	settings.SetJWTDefaults(v, "jwt")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetMigrateDefaults(v, "migrate")
 	settings.SetRedisDefaults(v, "redis")

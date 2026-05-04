@@ -148,7 +148,7 @@ func (a *ServerApp) startMetricsServer() {
 }
 
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.userService, a.log, a.metricsServer.Registry())
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.userService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
