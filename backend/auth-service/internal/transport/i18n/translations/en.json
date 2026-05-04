@@ -30,5 +30,6 @@
 
     { "id": "error.internal_server_error", "translation": "internal server error" },
     { "id": "error.unauthorized", "translation": "unauthorized" },
-    { "id": "error.permission_denied", "translation": "permission denied" }
+    { "id": "error.permission_denied", "translation": "permission denied" },
+    { "id": "error.validation_error", "translation": "validation error" }
 ]

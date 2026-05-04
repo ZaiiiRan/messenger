@@ -29,5 +29,6 @@
 
     { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
     { "id": "error.unauthorized", "translation": "не авторизован" },
-    { "id": "error.permission_denied", "translation": "доступ запрещён" }
+    { "id": "error.permission_denied", "translation": "доступ запрещён" },
+    { "id": "error.validation_error", "translation": "ошибка валидации" }
 ]
