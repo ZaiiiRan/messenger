@@ -23,57 +23,75 @@ func ErrorTranslatorMiddleware() grpc.UnaryServerInterceptor {
 		}
 
 		locale := ctxmetadata.GetLangFromIncomingContext(ctx)
-		return nil, translateError(localizer, locale, err)
+		return nil, translateGRPCError(localizer, locale, err)
 	}
 }
 
-func translateError(localizer *i18n.Localizer, locale string, err error) error {
+func translateGRPCError(localizer *i18n.Localizer, locale string, err error) error {
 	st, ok := status.FromError(err)
 	if !ok {
+		return err
+	}
+
+	if isAlreadyLocalized(st) {
 		return err
 	}
 
 	originalID := st.Message()
 	newSt := status.New(st.Code(), originalID)
 
-	localizedMsg := &errdetails.LocalizedMessage{
+	newSt, _ = newSt.WithDetails(&errdetails.LocalizedMessage{
 		Locale:  locale,
-		Message: localizeID(localizer, originalID),
-	}
+		Message: localizeMessage(localizer, originalID),
+	})
 
-	badReq := extractTranslatedBadRequest(st, localizer, locale)
+	badReq, fieldMsgs := translateBadRequest(st, localizer, locale)
 	if badReq != nil {
-		newSt, _ = newSt.WithDetails(localizedMsg, badReq)
-	} else {
-		newSt, _ = newSt.WithDetails(localizedMsg)
+		newSt, _ = newSt.WithDetails(badReq)
+		for _, fm := range fieldMsgs {
+			newSt, _ = newSt.WithDetails(fm)
+		}
 	}
 
 	return newSt.Err()
 }
 
-func extractTranslatedBadRequest(st *status.Status, localizer *i18n.Localizer, locale string) *errdetails.BadRequest {
+func translateBadRequest(st *status.Status, localizer *i18n.Localizer, locale string) (*errdetails.BadRequest, []*errdetails.LocalizedMessage) {
 	for _, detail := range st.Details() {
 		d, ok := detail.(*errdetails.BadRequest)
 		if !ok {
 			continue
 		}
+
 		violations := make([]*errdetails.BadRequest_FieldViolation, len(d.FieldViolations))
+		fieldMsgs := make([]*errdetails.LocalizedMessage, len(d.FieldViolations))
+
 		for i, fv := range d.FieldViolations {
 			violations[i] = &errdetails.BadRequest_FieldViolation{
 				Field:       fv.Field,
 				Description: fv.Description,
-				LocalizedMessage: &errdetails.LocalizedMessage{
-					Locale:  locale,
-					Message: localizeID(localizer, fv.Description),
-				},
+			}
+			fieldMsgs[i] = &errdetails.LocalizedMessage{
+				Locale:  locale + "#" + fv.Field,
+				Message: localizeMessage(localizer, fv.Description),
 			}
 		}
-		return &errdetails.BadRequest{FieldViolations: violations}
+
+		return &errdetails.BadRequest{FieldViolations: violations}, fieldMsgs
 	}
-	return nil
+	return nil, nil
 }
 
-func localizeID(localizer *i18n.Localizer, id string) string {
+func isAlreadyLocalized(st *status.Status) bool {
+	for _, detail := range st.Details() {
+		if _, ok := detail.(*errdetails.LocalizedMessage); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func localizeMessage(localizer *i18n.Localizer, id string) string {
 	msg, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID:      id,
 		DefaultMessage: &i18n.Message{ID: id, Other: id},

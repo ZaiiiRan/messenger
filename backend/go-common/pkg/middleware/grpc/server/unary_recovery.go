@@ -4,6 +4,7 @@ import (
 	"context"
 	"runtime/debug"
 
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -21,7 +22,7 @@ func RecoveryMiddleware(log *zap.SugaredLogger) grpc.UnaryServerInterceptor {
 					"stack", string(debug.Stack()),
 				)
 
-				err = status.Errorf(codes.Internal, "internal server error")
+				err = status.Errorf(codes.Internal, "%s", commonerror.ErrInternal.Error())
 			}
 		}()
 		return handler(ctx, req)
