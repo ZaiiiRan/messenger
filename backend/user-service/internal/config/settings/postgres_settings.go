@@ -12,7 +12,7 @@ type PostgresSettings struct {
 
 func SetPostgresDefaults(v *viper.Viper, prefix string) {
 	v.SetDefault(prefix+".user", "postgres")
-	v.SetDefault(prefix+".password", "postgres")
+	v.SetDefault(prefix+".password", "")
 	v.SetDefault(prefix+".address", "localhost:5432")
 	v.SetDefault(prefix+".database", "postgres")
 	v.SetDefault(prefix+".options", "sslmode=disable")
