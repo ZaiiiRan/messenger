@@ -92,6 +92,7 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 		commonmiddleware.RecoveryMiddleware(log),
 
 		commonmiddleware.I18nMiddleware(utils.CreateLocalizer),
+		commonmiddleware.ErrorTranslatorMiddleware(),
 
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),

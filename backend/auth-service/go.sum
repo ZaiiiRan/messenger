@@ -16,10 +16,10 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/Microsoft/hcsshim v0.11.5 h1:haEcLNpj9Ka1gd3B3tAEs9CpE0c+1IhoL59w/exYU38=
 github.com/Microsoft/hcsshim v0.11.5/go.mod h1:MV8xMfmECjl5HdO7U/3/hFVnkmSBjAjmA09d4bExKcU=
-github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260503153558-7f8534e27614 h1:9btOl24ruTrll5GpY6nFmV8nkvLictiyhzRkTkSjhC8=
-github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260503153558-7f8534e27614/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504193907-b33587e8301e h1:dNZJvR6/M1lmTosNzgrlvAPz+MXr6i9XtvrGCnPMtoA=
 github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504193907-b33587e8301e/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504200843-8fc4a6900e73 h1:qHggpsUJeexaiPqLAhAuFo7WGO8YavKxBfHO5Vn+AJ0=
+github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504200843-8fc4a6900e73/go.mod h1:/R1SaAYvXfku5fqK0ByNr6Er1U7vEm7Su161KmBmSn8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
