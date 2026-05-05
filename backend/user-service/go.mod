@@ -4,6 +4,7 @@ go 1.25.4
 
 require (
 	github.com/ZaiiiRan/messenger/backend/go-common v0.0.0-20260504235141-36ef85c32378
+	github.com/confluentinc/confluent-kafka-go/v2 v2.14.1
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jackc/pgx/v5 v5.9.2
