@@ -26,6 +26,7 @@ type Producer struct {
 	batchSize     int
 	flushInterval time.Duration
 	writeTimeout  int
+	name          string
 	log           *zap.SugaredLogger
 }
 
@@ -47,6 +48,7 @@ func New(cfg settings.KafkaProducerSettings, kafkaClient *kafkatransport.KafkaCl
 		batchSize:     int(cfg.BatchSize),
 		flushInterval: time.Duration(cfg.FlushFrequency) * time.Millisecond,
 		writeTimeout:  int(cfg.WriteTimeout) * 1000,
+		name:          cfg.Name,
 		log:           log,
 	}
 
@@ -122,7 +124,7 @@ func (p *Producer) send(batch []Message) {
 			Value: []byte(msg.Value),
 		}, nil)
 		if err != nil {
-			p.log.Errorw("kafka producer: enqueue failed", "err", err, "topic", p.topic)
+			p.log.Errorw("kafka_producer.enqueue_failed", "name", p.name, "err", err, "topic", p.topic)
 		}
 	}
 }
@@ -134,7 +136,8 @@ func (p *Producer) handleDeliveryEvents() {
 			continue
 		}
 		if m.TopicPartition.Error != nil {
-			p.log.Errorw("kafka producer: delivery failed",
+			p.log.Errorw("kafka_producer.delivery_failed",
+				"name", p.name,
 				"err", m.TopicPartition.Error,
 				"topic", *m.TopicPartition.Topic,
 			)

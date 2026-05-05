@@ -9,6 +9,7 @@ type KafkaProducerSettings struct {
 	WriteTimeout   uint          `mapstructure:"write_timeout"`
 	BatchSize      uint          `mapstructure:"batch_size"`
 	FlushFrequency uint          `mapstructure:"flush_frequency"`
+	Name           string        `mapstructure:"name"`
 }
 
 func SetKafkaProducerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
@@ -17,4 +18,5 @@ func SetKafkaProducerDefaults(v *viper.Viper, prefix string, defaultTopic string
 	v.SetDefault(prefix+".write_timeout", 300)
 	v.SetDefault(prefix+".batch_size", 100)
 	v.SetDefault(prefix+".flush_frequency", 1000)
+	v.SetDefault(prefix+".name", defaultTopic+"_producer")
 }
