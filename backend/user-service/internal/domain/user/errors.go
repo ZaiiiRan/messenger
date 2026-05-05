@@ -6,6 +6,6 @@ var (
 	ErrEmailTooLong           = NewUserValidationError("domain.user.validation.error.email_too_long")
 	ErrEmptyUsername          = NewUserValidationError("domain.user.validation.error.username_is_empty")
 	ErrUsernameContainsSpaces = NewUserValidationError("domain.user.validation.error.username_contains_spaces")
-	ErrUsernameTooShort       = NewUserValidationError("username must be at least 5 characters long")
+	ErrUsernameTooShort       = NewUserValidationError("domain.user.validation.error.username_too_short")
 	ErrUsernameTooLong        = NewUserValidationError("domain.user.validation.error.username_too_long")
 )
