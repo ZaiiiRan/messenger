@@ -13,3 +13,4 @@ email_sender_worker:
     topic: "email-codes-tasks"
     batch_size: 100
     batch_timeout_ms: 1000
+    name: "email_codes_tasks_consumer"

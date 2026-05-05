@@ -16,4 +16,4 @@ email_codes_tasks_producer:
   client_id: "auth-service"
   batch_size: 100
   write_timeout: 10
-
+  name: "email_codes_tasks_producer"
