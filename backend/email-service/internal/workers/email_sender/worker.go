@@ -52,7 +52,7 @@ func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaCl
 		return nil
 	}
 
-	consumer, err := kafkaconsumer.NewConsumer(cfg, kafkaClient, workerLog, handlerFunc)
+	consumer, err := kafkaconsumer.New(cfg, kafkaClient, workerLog, handlerFunc)
 	if err != nil {
 		return nil, fmt.Errorf("email sender worker %s: %w", id, err)
 	}

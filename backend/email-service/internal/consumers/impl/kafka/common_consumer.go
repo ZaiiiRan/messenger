@@ -33,10 +33,11 @@ type Consumer struct {
 	batchSize    int
 	batchTimeout time.Duration
 	handler      BatchHandler
+	name         string
 	log          *zap.SugaredLogger
 }
 
-func NewConsumer(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger, handler BatchHandler) (*Consumer, error) {
+func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger, handler BatchHandler) (*Consumer, error) {
 	cm := kafkaClient.ConfigMap()
 	cm["group.id"] = cfg.GroupID
 	cm["auto.offset.reset"] = "earliest"
@@ -60,6 +61,7 @@ func NewConsumer(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport
 		batchSize:    int(cfg.BatchSize),
 		batchTimeout: time.Duration(cfg.BatchTimeoutMs) * time.Millisecond,
 		handler:      handler,
+		name:         cfg.Name,
 		log:          log,
 	}, nil
 }
@@ -100,7 +102,7 @@ func (c *Consumer) readLoop(ctx context.Context) {
 			if kerr, ok := err.(kafka.Error); ok && kerr.Code() == kafka.ErrTimedOut {
 				continue
 			}
-			c.log.Errorw("kafka_consumer.read_error", "err", err, "topic", c.topic)
+			c.log.Errorw("kafka_consumer.read_error", "name", c.name, "err", err, "topic", c.topic)
 			continue
 		}
 
@@ -162,12 +164,12 @@ func (c *Consumer) process(ctx context.Context, batch []batchMsg) {
 	}
 
 	if err := c.handler(ctx, msgs); err != nil {
-		c.log.Errorw("kafka_consumer.handle_error", "err", err, "topic", c.topic)
+		c.log.Errorw("kafka_consumer.handle_error", "name", c.name, "err", err, "topic", c.topic)
 		return
 	}
 
 	last := batch[len(batch)-1]
 	if _, err := c.kConsumer.CommitMessage(last.raw); err != nil {
-		c.log.Errorw("kafka_consumer.commit_failed", "err", err, "topic", c.topic)
+		c.log.Errorw("kafka_consumer.commit_failed", "name", c.name, "err", err, "topic", c.topic)
 	}
 }
