@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -79,7 +78,7 @@ func (u *User) SetID(id string) {
 
 func (u *User) SetUsername(username string) error {
 	if u.username == username {
-		return fmt.Errorf("username is the same as the current one")
+		return ErrSameUsername
 	}
 
 	if err := validateUsername(username); err != nil {
@@ -91,7 +90,7 @@ func (u *User) SetUsername(username string) error {
 
 func (u *User) SetEmail(email string) error {
 	if u.email == email {
-		return fmt.Errorf("email is the same as the current one")
+		return ErrSameEmail
 	}
 
 	if err := validateEmail(email); err != nil {

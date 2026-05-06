@@ -8,4 +8,6 @@ var (
 	ErrUsernameContainsSpaces = NewUserValidationError("domain.user.validation.error.username_contains_spaces")
 	ErrUsernameTooShort       = NewUserValidationError("domain.user.validation.error.username_too_short")
 	ErrUsernameTooLong        = NewUserValidationError("domain.user.validation.error.username_too_long")
+	ErrSameUsername           = NewUserValidationError("domain.user.validation.error.same_username")
+	ErrSameEmail              = NewUserValidationError("domain.user.validation.error.same_email")
 )
