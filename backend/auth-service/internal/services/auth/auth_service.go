@@ -208,6 +208,9 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
 	}
+	if user == nil {
+		return nil, err
+	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
@@ -273,6 +276,9 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 	user, err = s.userService.ConfirmUser(ctx, userID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+	}
+	if user == nil {
+		return nil, err
 	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)

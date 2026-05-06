@@ -59,9 +59,11 @@ func (s *service) ConfirmUser(ctx context.Context, userId string) (*pb.User, err
 		UserId: userId,
 	})
 	if err != nil {
-		if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.NotFound ||
-			status.Code(err) == codes.FailedPrecondition {
+		if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.FailedPrecondition {
 			l.Warnw("user.confirm_user_failed.invalid_argument", "err", err)
+		} else if status.Code(err) == codes.NotFound {
+			l.Warnw("user.confirm_user_failed.not_found", "err", err)
+			return nil, nil
 		} else {
 			l.Errorw("user.confirm_user_failed.confirm_user_error", "err", err)
 		}
