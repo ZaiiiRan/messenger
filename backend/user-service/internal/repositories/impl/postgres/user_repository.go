@@ -130,7 +130,7 @@ func (r *UserRepository) Update(ctx context.Context, users []*user.User) error {
 
 func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error) {
 	if query == nil {
-		query = &models.QueryUsersDal{}
+		return nil, nil
 	}
 
 	var (
@@ -200,7 +200,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 
 func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error) {
 	if query == nil {
-		query = &models.QueryUsersDal{}
+		return nil, nil
 	}
 
 	var (
@@ -234,10 +234,10 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	appendRange(&sb, "s.deleted_at", query.Filter.DeletedFrom, query.Filter.DeletedTo, &args, &argPos)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
-	appendOrder(&sb, "u.id", true)
+	appendOrder(&sb, "u.updated_at", true)
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
-	sb.WriteString("FOR UPDATE OF u SKIP LOCKED")
+	sb.WriteString(" FOR UPDATE OF u SKIP LOCKED")
 
 	rows, err := r.conn.Query(ctx, sb.String(), args...)
 	if err != nil {
@@ -280,7 +280,6 @@ func (r *UserRepository) Delete(ctx context.Context, users []*user.User) error {
 		if u == nil {
 			continue
 		}
-
 		ids = append(ids, u.GetID())
 	}
 
