@@ -28,6 +28,7 @@ type UserService interface {
 	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
+	DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (int, error)
 }
 
 type service struct {
@@ -376,6 +377,7 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (in
 	}
 
 	if err := s.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, users, uow); err != nil {
+		l.Errorw("user.delete_unconfirmed_users_failed.create_deletion_tasks_error", "err", err)
 		return 0, ErrDeleteUnconfirmedUsersFailed
 	}
 	if err := s.dataProvider.deleteUsers(ctx, users, uow); err != nil {

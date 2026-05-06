@@ -101,7 +101,7 @@ func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.U
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	list, err := dbRepo.Query(ctx, query)
+	list, err := dbRepo.QueryLocked(ctx, query)
 	if err != nil {
 		return nil, err
 	}
