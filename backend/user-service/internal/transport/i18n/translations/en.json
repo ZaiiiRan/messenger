@@ -23,6 +23,8 @@
     { "id": "domain.user.validation.error.username_contains_spaces", "translation": "username cannot contain spaces" },
     { "id": "domain.user.validation.error.username_too_short", "translation": "username must be at least 5 characters long" },
     { "id": "domain.user.validation.error.username_too_long", "translation": "username must be at most 30 characters long" },
+    { "id": "domain.user.validation.error.same_username", "translation": "username is the same as the current one" },
+    { "id": "domain.user.validation.error.same_email", "translation": "email is the same as the current one" },
 
     { "id": "service.user.error.user_with_this_username_exists", "translation": "user with this email already exists" },
     { "id": "service.user.error.user_with_this_email_exists", "translation": "user with this username already exists" },

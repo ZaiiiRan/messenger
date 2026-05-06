@@ -23,6 +23,8 @@
     { "id": "domain.user.validation.error.username_contains_spaces", "translation": "имя пользователя не должно содержать пробелы" },
     { "id": "domain.user.validation.error.username_too_short", "translation": "имя пользователя должно содержать не менее 5 символов" },
     { "id": "domain.user.validation.error.username_too_long", "translation": "имя пользователя должно содержать не более 30 символов" },
+    { "id": "domain.user.validation.error.same_username", "translation": "имя пользователя совпадает с текущим" },
+    { "id": "domain.user.validation.error.same_email", "translation": "email совпадает с текущим" },
 
     { "id": "service.user.error.user_with_this_username_exists", "translation": "пользователь с таким email уже существует" },
     { "id": "service.user.error.user_with_this_email_exists", "translation": "пользователь с таким именем пользователя уже существует" },
