@@ -126,7 +126,7 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 }
 
 func (a *ServerApp) initUserService() {
-	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log)
+	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, nil)
 }
 
 func (a *ServerApp) initI18n() {
