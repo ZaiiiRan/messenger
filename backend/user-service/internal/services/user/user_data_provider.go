@@ -127,11 +127,11 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
 
 	if u.GetID() == "" {
-		if err := dbRepo.Create(ctx, u); err != nil {
+		if err := dbRepo.Create(ctx, []*user.User{u}); err != nil {
 			return err
 		}
 	} else {
-		if err := dbRepo.Update(ctx, u); err != nil {
+		if err := dbRepo.Update(ctx, []*user.User{u}); err != nil {
 			return err
 		}
 	}
