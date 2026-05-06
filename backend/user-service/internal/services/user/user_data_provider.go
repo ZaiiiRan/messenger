@@ -92,6 +92,47 @@ func (udp *userDataProvider) getUserByFilter(ctx context.Context, filter models.
 	return list[0], nil
 }
 
+func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.UserFilterDal, batch_size int, uow *uow.UnitOfWork) ([]*user.User, error) {
+	query := models.NewQueryUsersDal(filter, 1, batch_size)
+
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbRepo := postgresimpl.NewUserRepository(pgConn)
+	list, err := dbRepo.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) == 0 {
+		return nil, nil
+	}
+
+	return list, nil
+}
+
+func (udp *userDataProvider) deleteUsers(ctx context.Context, users []*user.User, uow *uow.UnitOfWork) error {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+
+	dbRepo := postgresimpl.NewUserRepository(pgConn)
+	err = dbRepo.Delete(ctx, users)
+	if err != nil {
+		return err
+	}
+
+	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+	for _, u := range users {
+		cacheRepo.DeleteUser(ctx, u.GetID())
+	}
+
+	return nil
+}
+
 func (udp *userDataProvider) getUserList(ctx context.Context, query *models.QueryUsersDal, uow *uow.UnitOfWork) ([]*user.User, error) {
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	list, err := cacheRepo.GetUserList(ctx, query)

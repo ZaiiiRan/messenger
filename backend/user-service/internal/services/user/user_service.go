@@ -12,6 +12,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/models"
+	userdatadeletiontasks "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
@@ -30,14 +31,21 @@ type UserService interface {
 }
 
 type service struct {
-	log          *zap.SugaredLogger
-	dataProvider *userDataProvider
+	log                          *zap.SugaredLogger
+	dataProvider                 *userDataProvider
+	userDataDeletionTasksService userdatadeletiontasks.UserDataDeletionTasksService
 }
 
-func New(pgClient *postgres.PostgresClient, redisClient *redis.RedisClient, log *zap.SugaredLogger) UserService {
+func New(
+	pgClient *postgres.PostgresClient,
+	redisClient *redis.RedisClient,
+	log *zap.SugaredLogger,
+	userDataDeletionTasksService userdatadeletiontasks.UserDataDeletionTasksService,
+) UserService {
 	return &service{
-		log:          log,
-		dataProvider: newUserDataProvider(pgClient, redisClient),
+		log:                          log,
+		dataProvider:                 newUserDataProvider(pgClient, redisClient),
+		userDataDeletionTasksService: userDataDeletionTasksService,
 	}
 }
 
@@ -333,6 +341,53 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
 	return &pb.ConfirmUserResponse{User: userToProto(u)}, nil
+}
+
+func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (int, error) {
+	l := s.log.With("op", "delete_unconfirmed_users")
+
+	if batchSize <= 0 {
+		l.Warnw("user.delete_unconfirmed_users_failed.invalid_batch_size", "batch_size", batchSize)
+		return 0, nil
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	_, err := uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("user.delete_unconfirmed_users_failed.begin_transaction_error", "err", err)
+		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+
+	confirmTimeout := time.Now().Add(-1 * time.Hour)
+	filter := models.UserFilterDal{
+		IsConfirmed: utils.BoolPtr(false),
+		CreatedTo:   &confirmTimeout,
+		UpdatedTo:   &confirmTimeout,
+	}
+
+	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, uow)
+	if err != nil {
+		l.Errorw("user.delete_unconfirmed_users_failed.query_error", "err", err)
+		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+	if users == nil {
+		return 0, nil
+	}
+
+	if err := s.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, users, uow); err != nil {
+		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+	if err := s.dataProvider.deleteUsers(ctx, users, uow); err != nil {
+		l.Errorw("user.delete_unconfirmed_users_failed.delete_error", "err", err)
+		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.delete_unconfirmed_users_failed.commit_error", "err", err)
+		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+
+	return len(users), nil
 }
 
 func isUniqueHolder(u *user.User) bool {

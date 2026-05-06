@@ -25,4 +25,5 @@ var (
 	ErrDeletedUserCannotBeActivated = newUserServiceError("service.user.error.deleted_user_cannot_be_activated")
 	ErrBannedUserCannotBeActivated  = newUserServiceError("service.user.error.banned_user_cannot_be_activated")
 	ErrInvalidTimestamp             = newUserServiceError("service.user.error.invalid_timestamp")
+	ErrDeleteUnconfirmedUsersFailed = newUserServiceError("service.user.error.delete_unconfirmed_users_failed")
 )
