@@ -12,10 +12,10 @@ import (
 )
 
 type UserDataDeletionTasksRepository struct {
-	conn *pgxpool.Pool
+	conn *pgxpool.Conn
 }
 
-func NewUserDataDeletionTasksRepository(conn *pgxpool.Pool) interfaces.OutboxEventRepository {
+func NewUserDataDeletionTasksRepository(conn *pgxpool.Conn) interfaces.OutboxEventRepository {
 	return &UserDataDeletionTasksRepository{
 		conn: conn,
 	}
