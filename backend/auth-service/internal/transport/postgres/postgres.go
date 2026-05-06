@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	"github.com/jackc/pgx/v5"
@@ -24,7 +25,7 @@ func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, e
 	if cfg.Options != "" {
 		connectionString = fmt.Sprintf("%s?%s", connectionString, cfg.Options)
 	}
-	
+
 	pgCfg, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres config: %w", err)
@@ -46,6 +47,14 @@ func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, e
 		conn.TypeMap().RegisterTypes(types)
 		return nil
 	}
+
+	pgCfg.MinConns = int32(cfg.MinConns)
+	pgCfg.MaxConns = int32(cfg.MaxConns)
+	pgCfg.MinIdleConns = int32(cfg.MinIdleConns)
+	pgCfg.MaxConnIdleTime = time.Duration(cfg.MaxConnIdleTime) * time.Second
+	pgCfg.MaxConnLifetime = time.Duration(cfg.MaxConnLifetime) * time.Second
+	pgCfg.PingTimeout = time.Duration(cfg.PingTimeout) * time.Second
+	pgCfg.HealthCheckPeriod = time.Duration(cfg.HealthCheckPeriod) * time.Second
 
 	pool, err := pgxpool.NewWithConfig(ctx, pgCfg)
 	if err != nil {
