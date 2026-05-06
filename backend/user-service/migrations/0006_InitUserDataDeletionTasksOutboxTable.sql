@@ -14,17 +14,7 @@ ON user_data_deletion_tasks_outbox (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_outbox_status_updated_attempts_created
 ON user_data_deletion_tasks_outbox (status, updated_at, attempts, created_at);
 
-CREATE TYPE v1_user_data_deletion_task_outbox AS (
-    id UUID,
-    payload JSONB,
-    status SMALLINT,
-    attempts SMALLINT,
-    created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
-);
-
 -- + goose Down
 DROP INDEX IF EXISTS idx_outbox_status_created;
 DROP INDEX IF EXISTS idx_outbox_status_updated_attempts_created;
-DROP TYPE IF EXISTS v1_user_data_deletion_task_outbox;
 DROP TABLE IF EXISTS user_data_deletion_tasks_outbox;
