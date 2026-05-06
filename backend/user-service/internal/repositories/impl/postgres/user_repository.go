@@ -210,7 +210,7 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	)
 
 	sb.WriteString(`
-		SELECT FOR UPDATE
+		SELECT
 		u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
 			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at
@@ -236,6 +236,8 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.id", true)
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
+
+	sb.WriteString("FOR UPDATE OF u SKIP LOCKED")
 
 	rows, err := r.conn.Query(ctx, sb.String(), args...)
 	if err != nil {
