@@ -9,12 +9,11 @@ import (
 	producersmodels "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/models"
 	uow "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/unitofwork/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 type UserDataDeletionTasksService interface {
-	CreateUserDataDeletionTasks(ctx context.Context, users []*user.User, uow *uow.UnitOfWork) error
+	CreateUserDataDeletionTasks(ctx context.Context, workerID string, users []*user.User, uow *uow.UnitOfWork) error
 }
 
 type service struct {
@@ -29,8 +28,8 @@ func New(pgClient *postgres.PostgresClient, log *zap.SugaredLogger) UserDataDele
 	}
 }
 
-func (s *service) CreateUserDataDeletionTasks(ctx context.Context, users []*user.User, uow *uow.UnitOfWork) error {
-	l := s.log.With("op", "create_user_data_deletion_tasks")
+func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID string, users []*user.User, uow *uow.UnitOfWork) error {
+	l := s.log.With("op", "create_user_data_deletion_tasks", "worker_id", workerID)
 
 	outboxEvents := make([]*outboxevent.OutboxEvent, 0, len(users))
 	for _, user := range users {
@@ -51,12 +50,15 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, users []*user
 		return ErrCreateUserDataDeletionTask
 	}
 
+	if len(outboxEvents) > 0 {
+		l.Infow("user_data_deletion_tasks.create_user_data_deletion_tasks.success", "count", len(outboxEvents))
+	}
+
 	return nil
 }
 
 func (s *service) createUserDataDeletionTask(user *user.User) (*outboxevent.OutboxEvent, error) {
 	payload := producersmodels.UserDataDeletionTask{
-		Id:          uuid.New().String(),
 		UserId:      user.GetID(),
 		Username:    user.GetUsername(),
 		Email:       user.GetEmail(),

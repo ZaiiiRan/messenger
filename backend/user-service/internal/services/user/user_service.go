@@ -28,7 +28,7 @@ type UserService interface {
 	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
-	DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (int, error)
+	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 }
 
 type service struct {
@@ -344,8 +344,8 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 	return &pb.ConfirmUserResponse{User: userToProto(u)}, nil
 }
 
-func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (int, error) {
-	l := s.log.With("op", "delete_unconfirmed_users")
+func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
+	l := s.log.With("op", "delete_unconfirmed_users", "worker_id", workerID)
 
 	if batchSize <= 0 {
 		l.Warnw("user.delete_unconfirmed_users_failed.invalid_batch_size", "batch_size", batchSize)
@@ -376,7 +376,7 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (in
 		return 0, nil
 	}
 
-	if err := s.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, users, uow); err != nil {
+	if err := s.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, workerID, users, uow); err != nil {
 		l.Errorw("user.delete_unconfirmed_users_failed.create_deletion_tasks_error", "err", err)
 		return 0, ErrDeleteUnconfirmedUsersFailed
 	}
@@ -387,6 +387,10 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int) (in
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("user.delete_unconfirmed_users_failed.commit_error", "err", err)
 		return 0, ErrDeleteUnconfirmedUsersFailed
+	}
+
+	if len(users) > 0 {
+		l.Infow("user.delete_unconfirmed_users_success", "count", len(users))
 	}
 
 	return len(users), nil
