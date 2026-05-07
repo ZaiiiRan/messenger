@@ -13,8 +13,8 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
-	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing_worker"
-	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending_worker"
+	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing"
+	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending"
 	"go.uber.org/zap"
 )
 
