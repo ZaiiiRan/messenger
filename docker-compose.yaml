@@ -87,6 +87,12 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -104,6 +110,85 @@ services:
     ports:
       - "50051:50051"
       - "8001:8080"
+    networks:
+      - messenger-network
+  
+  user-data-deletion-kafka:
+    image: public.ecr.aws/bitnami/kafka:3.9
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@user-data-deletion-kafka:9093
+      KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://user-data-deletion-kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_CLIENT_USERS: ${KAFKA_USER}
+      KAFKA_CLIENT_PASSWORDS: ${KAFKA_PASSWORD}
+      KAFKA_INTER_BROKER_USER: ${KAFKA_USER}
+      KAFKA_INTER_BROKER_PASSWORD: ${KAFKA_PASSWORD}
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "printf \"security.protocol=SASL_PLAINTEXT\\nsasl.mechanism=PLAIN\\nsasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\\\"$$KAFKA_CLIENT_USERS\\\" password=\\\"$$KAFKA_CLIENT_PASSWORDS\\\";\\n\" > /tmp/client.properties && kafka-topics.sh --bootstrap-server localhost:9092 --command-config /tmp/client.properties --list"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - user-data-deletion-kafka-data:/bitnami/kafka
+    networks:
+      - messenger-network
+
+  user-data-deletion-kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    depends_on:
+      email-kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: user-data-deletion-tasks
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: user-data-deletion-kafka:9092
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_USER}\" password=\"${KAFKA_PASSWORD}\";"
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    networks:
+      - messenger-network
+  
+  user-worker:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    entrypoint: ["./worker"]
+    depends_on:
+      user-db:
+        condition: service_healthy
+      user-redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: user-db:5432
+      DB_DATABASE: postgres
+      REDIS_ADDRESS: user-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "user-data-deletion-kafka:9092"
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
+    volumes:
+      - ./backend/configs/user-service/worker:/etc/user-service
     networks:
       - messenger-network
   
@@ -153,6 +238,12 @@ services:
         condition: service_healthy
       user-service:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -189,6 +280,8 @@ services:
       auth-redis:
         condition: service_healthy
       vault:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
     environment:
       DB_USER: ${POSTGRES_USER}
@@ -248,7 +341,7 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_USER}\" password=\"${KAFKA_PASSWORD}\";"
       SERVER_PORT: 8081
     ports:
-      - "8081:8081"
+      - "8082:8081"
     networks:
       - messenger-network
   
@@ -295,6 +388,7 @@ volumes:
   # old-messenger-db:
   user-db-data:
   auth-db-data:
+  user-data-deletion-kafka-data:
   email-kafka-data:
 
 networks:
