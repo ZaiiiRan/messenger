@@ -2,7 +2,7 @@ package settings
 
 import "github.com/spf13/viper"
 
-type KafkaProducerSettings struct {
+type KafkaBatchProducerSettings struct {
 	KafkaSettings  KafkaSettings `mapstructure:"kafka_settings"`
 	Topic          string        `mapstructure:"topic"`
 	ClientID       string        `mapstructure:"client_id"`
@@ -12,7 +12,7 @@ type KafkaProducerSettings struct {
 	Name           string        `mapstructure:"name"`
 }
 
-func SetKafkaProducerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
+func SetKafkaBatchProducerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
 	SetKafkaDefaults(v, prefix+".kafka_settings")
 	v.SetDefault(prefix+".topic", defaultTopic)
 	v.SetDefault(prefix+".write_timeout", 300)

@@ -10,16 +10,16 @@ import (
 )
 
 type ServerConfig struct {
-	GRPCServer              settings.GRPCServerSettings    `mapstructure:"grpc_server"`
-	UserServiceGRPCClient   settings.GRPCClientSettings    `mapstructure:"user_service_grpc_client"`
-	JWT                     settings.JWTSettings           `mapstructure:"jwt"`
-	DB                      settings.PostgresSettings      `mapstructure:"db"`
-	Migrate                 settings.MigrateSettings       `mapstructure:"migrate"`
-	Redis                   settings.RedisSettings         `mapstructure:"redis"`
-	EmailCodesTasksProducer settings.KafkaProducerSettings `mapstructure:"email_codes_tasks_producer"`
-	Shutdown                settings.ShutdownSettings      `mapstructure:"shutdown"`
-	MetricsServer           settings.MetricsServerSettings `mapstructure:"metrics_server"`
-	Vault                   settings.VaultSettings         `mapstructure:"vault"`
+	GRPCServer              settings.GRPCServerSettings         `mapstructure:"grpc_server"`
+	UserServiceGRPCClient   settings.GRPCClientSettings         `mapstructure:"user_service_grpc_client"`
+	JWT                     settings.JWTSettings                `mapstructure:"jwt"`
+	DB                      settings.PostgresSettings           `mapstructure:"db"`
+	Migrate                 settings.MigrateSettings            `mapstructure:"migrate"`
+	Redis                   settings.RedisSettings              `mapstructure:"redis"`
+	EmailCodesTasksProducer settings.KafkaBatchProducerSettings `mapstructure:"email_codes_tasks_producer"`
+	Shutdown                settings.ShutdownSettings           `mapstructure:"shutdown"`
+	MetricsServer           settings.MetricsServerSettings      `mapstructure:"metrics_server"`
+	Vault                   settings.VaultSettings              `mapstructure:"vault"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -61,7 +61,7 @@ func setServerDefaults(v *viper.Viper) {
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetMigrateDefaults(v, "migrate")
 	settings.SetRedisDefaults(v, "redis")
-	settings.SetKafkaProducerDefaults(v, "email_codes_tasks_producer", "email-codes-tasks")
+	settings.SetKafkaBatchProducerDefaults(v, "email_codes_tasks_producer", "email-codes-tasks")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetVaultDefaults(v, "vault")
