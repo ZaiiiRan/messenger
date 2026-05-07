@@ -1,11 +1,14 @@
-package userdatadeletiontasks
+package userdatadeletiontasksservice
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
+	producersinterfaces "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/interfaces"
 	producersmodels "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/models"
 	uow "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/unitofwork/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
@@ -14,17 +17,24 @@ import (
 
 type UserDataDeletionTasksService interface {
 	CreateUserDataDeletionTasks(ctx context.Context, workerID string, users []*user.User, uow *uow.UnitOfWork) error
+	SendUserDataDeletionTasks(ctx context.Context, workerID string, retryIntervalMS uint, batchSize int) error
 }
 
 type service struct {
-	log          *zap.SugaredLogger
-	dataProvider *userDataDeletionTasksDataProvider
+	log                           *zap.SugaredLogger
+	dataProvider                  *userDataDeletionTasksDataProvider
+	userDataDeletionTasksProducer producersinterfaces.UserDataDeletionTasksProducer
 }
 
-func New(pgClient *postgres.PostgresClient, log *zap.SugaredLogger) UserDataDeletionTasksService {
+func New(
+	pgClient *postgres.PostgresClient,
+	userDataDeletionTasksProducer producersinterfaces.UserDataDeletionTasksProducer,
+	log *zap.SugaredLogger,
+) UserDataDeletionTasksService {
 	return &service{
-		log:          log,
-		dataProvider: newUserDataDeletionTasksDataProvider(pgClient),
+		log:                           log,
+		userDataDeletionTasksProducer: userDataDeletionTasksProducer,
+		dataProvider:                  newUserDataDeletionTasksDataProvider(pgClient),
 	}
 }
 
@@ -54,6 +64,129 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 		l.Infow("user_data_deletion_tasks.create_user_data_deletion_tasks.success", "count", len(outboxEvents))
 	}
 
+	return nil
+}
+
+func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string, retryIntervalMS uint, batchSize int) error {
+	l := s.log.With("op", "send_user_data_deletion_tasks")
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	_, err := uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.begin_transaction_error", "err", err)
+		return ErrSendUserDataDeletionTasks
+	}
+
+	now := time.Now()
+	retryAfter := now.Add(-1 * (time.Duration(retryIntervalMS) * time.Millisecond))
+	outboxEvents, err := s.dataProvider.getUserDataDeletionTasksLocked(ctx, batchSize, retryAfter, uow)
+	if err != nil {
+		l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.get_tasks_error", "err", err)
+		return ErrSendUserDataDeletionTasks
+	}
+	if outboxEvents == nil {
+		return nil
+	}
+
+	outboxEventsToUpdate := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
+	outboxEventsToDelete := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
+
+	for _, event := range outboxEvents {
+		var payload producersmodels.UserDataDeletionTask
+		if err := json.Unmarshal(event.GetPayload(), &payload); err != nil {
+			l.Errorw(
+				"user_data_deletion_tasks.send_user_data_deletion_tasks_failed.unmarshal_payload_error",
+				"err", err,
+				"event", event.GetID(),
+				"payload", event.GetPayload(),
+				"attempts", event.GetAttempts(),
+				"status", event.GetStatus(),
+			)
+			err = s.MarkUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			if err != nil {
+				continue
+			}
+			outboxEventsToUpdate = append(outboxEventsToUpdate, event)
+			continue
+		}
+		payload.Id = event.GetID()
+
+		if err := s.userDataDeletionTasksProducer.ProduceUserDataDeletionTask(ctx, &payload); err != nil {
+			l.Errorw(
+				"user_data_deletion_tasks.send_user_data_deletion_tasks_failed.produce_error",
+				"err", err,
+				"event", event.GetID(),
+				"payload", event.GetPayload(),
+				"attempts", event.GetAttempts(),
+				"status", event.GetStatus(),
+			)
+			err = s.MarkUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			if err != nil {
+				continue
+			}
+			outboxEventsToUpdate = append(outboxEventsToUpdate, event)
+			continue
+		}
+
+		outboxEventsToDelete = append(outboxEventsToDelete, event)
+	}
+
+	if len(outboxEventsToDelete) > 0 {
+		if err := s.dataProvider.deleteUserDataDeletionTasks(ctx, outboxEventsToDelete, uow); err != nil {
+			l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.delete_error", "err", err)
+			return ErrSendUserDataDeletionTasks
+		}
+	}
+	if len(outboxEventsToUpdate) > 0 {
+		if err := s.dataProvider.updateUserDataDeletionTasks(ctx, outboxEventsToUpdate, uow); err != nil {
+			l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.update_error", "err", err)
+			return ErrSendUserDataDeletionTasks
+		}
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.commit_error", "err", err)
+		return ErrSendUserDataDeletionTasks
+	}
+
+	if len(outboxEventsToDelete) > 0 {
+		l.Infow("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "successfully_sended", len(outboxEventsToDelete))
+	}
+	if len(outboxEventsToUpdate) > 0 {
+		l.Infow("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "not_sended", len(outboxEventsToUpdate))
+	}
+
+	return nil
+}
+
+func (s *service) MarkUserDataDeletionTaskFailed(
+	event *outboxevent.OutboxEvent,
+	now time.Time,
+	log *zap.SugaredLogger,
+	logPrefix string,
+) error {
+	err := event.IncrementAttempts()
+	if err != nil {
+		log.Errorw(
+			fmt.Sprintf("%s.mark_task_as_failed_error", logPrefix),
+			"err", err,
+			"event", event.GetID(),
+			"attempts", event.GetAttempts(),
+			"status", event.GetStatus(),
+		)
+		return err
+	}
+	event.SetUpdatedAt(&now)
+	if err := event.SetStatus(outboxevent.OutboxEventStatusFailed); err != nil {
+		log.Errorw(
+			fmt.Sprintf("%s.mark_task_as_failed_error", logPrefix),
+			"err", err,
+			"event", event.GetID(),
+			"attempts", event.GetAttempts(),
+			"status", event.GetStatus(),
+		)
+		return err
+	}
 	return nil
 }
 

@@ -3,13 +3,10 @@ package implkafkaproducer
 import (
 	"context"
 	"fmt"
-	"sync"
-	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"go.uber.org/zap"
 )
 
 type Message struct {
@@ -18,19 +15,13 @@ type Message struct {
 }
 
 type Producer struct {
-	kProducer     *kafka.Producer
-	topic         string
-	msgCh         chan Message
-	done          chan struct{}
-	closeOnce     sync.Once
-	batchSize     int
-	flushInterval time.Duration
-	writeTimeout  int
-	name          string
-	log           *zap.SugaredLogger
+	kProducer    *kafka.Producer
+	topic        string
+	writeTimeout int
+	name         string
 }
 
-func New(cfg settings.KafkaProducerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger) (*Producer, error) {
+func New(cfg settings.KafkaProducerSettings, kafkaClient *kafkatransport.KafkaClient) (*Producer, error) {
 	cm := kafkaClient.ConfigMap()
 	cm["client.id"] = cfg.ClientID
 	cm["message.timeout.ms"] = int(cfg.WriteTimeout) * 1000
@@ -40,107 +31,44 @@ func New(cfg settings.KafkaProducerSettings, kafkaClient *kafkatransport.KafkaCl
 		return nil, fmt.Errorf("kafka producer: create: %w", err)
 	}
 
-	p := &Producer{
-		kProducer:     kProducer,
-		topic:         cfg.Topic,
-		msgCh:         make(chan Message, int(cfg.BatchSize)*2),
-		done:          make(chan struct{}),
-		batchSize:     int(cfg.BatchSize),
-		flushInterval: time.Duration(cfg.FlushFrequency) * time.Millisecond,
-		writeTimeout:  int(cfg.WriteTimeout) * 1000,
-		name:          cfg.Name,
-		log:           log,
-	}
-
-	go p.run()
-	go p.handleDeliveryEvents()
-
-	return p, nil
+	return &Producer{
+		kProducer:    kProducer,
+		topic:        cfg.Topic,
+		writeTimeout: int(cfg.WriteTimeout) * 1000,
+		name:         cfg.Name,
+	}, nil
 }
 
 func (p *Producer) Produce(ctx context.Context, msg Message) error {
+	deliveryChan := make(chan kafka.Event, 1)
+
+	if err := p.kProducer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &p.topic,
+			Partition: kafka.PartitionAny,
+		},
+		Key:   []byte(msg.Key),
+		Value: []byte(msg.Value),
+	}, deliveryChan); err != nil {
+		return fmt.Errorf("kafka producer %s: enqueue: %w", p.name, err)
+	}
+
 	select {
-	case p.msgCh <- msg:
+	case e := <-deliveryChan:
+		m, ok := e.(*kafka.Message)
+		if !ok {
+			return fmt.Errorf("kafka producer %s: unexpected event type", p.name)
+		}
+		if m.TopicPartition.Error != nil {
+			return fmt.Errorf("kafka producer %s: delivery failed: %w", p.name, m.TopicPartition.Error)
+		}
 		return nil
-	case <-p.done:
-		return fmt.Errorf("kafka producer: closed")
 	case <-ctx.Done():
 		return ctx.Err()
 	}
 }
 
 func (p *Producer) Close() {
-	p.closeOnce.Do(func() {
-		close(p.done)
-	})
-}
-
-func (p *Producer) run() {
-	batch := make([]Message, 0, p.batchSize)
-	ticker := time.NewTicker(p.flushInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case msg := <-p.msgCh:
-			batch = append(batch, msg)
-			if len(batch) >= p.batchSize {
-				p.send(batch)
-				batch = batch[:0]
-			}
-		case <-ticker.C:
-			if len(batch) > 0 {
-				p.send(batch)
-				batch = batch[:0]
-			}
-		case <-p.done:
-		drain:
-			for {
-				select {
-				case msg := <-p.msgCh:
-					batch = append(batch, msg)
-				default:
-					break drain
-				}
-			}
-			if len(batch) > 0 {
-				p.send(batch)
-			}
-			p.kProducer.Flush(p.writeTimeout)
-			p.kProducer.Close()
-			return
-		}
-	}
-}
-
-func (p *Producer) send(batch []Message) {
-	for _, msg := range batch {
-		err := p.kProducer.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{
-				Topic:     &p.topic,
-				Partition: kafka.PartitionAny,
-			},
-			Key:   []byte(msg.Key),
-			Value: []byte(msg.Value),
-		}, nil)
-		if err != nil {
-			p.log.Errorw("kafka_producer.enqueue_failed", "name", p.name, "err", err, "topic", p.topic)
-		}
-	}
-}
-
-func (p *Producer) handleDeliveryEvents() {
-	for e := range p.kProducer.Events() {
-		m, ok := e.(*kafka.Message)
-		if !ok {
-			continue
-		}
-		if m.TopicPartition.Error != nil {
-			p.log.Errorw("kafka_producer.delivery_failed",
-				"name", p.name,
-				"err", m.TopicPartition.Error,
-				"topic", *m.TopicPartition.Topic,
-			)
-		}
-	}
+	p.kProducer.Flush(p.writeTimeout)
+	p.kProducer.Close()
 }

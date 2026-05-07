@@ -12,9 +12,11 @@ import (
 type WorkerConfig struct {
 	DB                                 settings.PostgresSettings                           `mapstructure:"db"`
 	Redis                              settings.RedisSettings                              `mapstructure:"redis"`
+	UserDataDeletionTasksProducer      settings.KafkaProducerSettings                      `mapstructure:"user_data_deletion_tasks_producer"`
 	Shutdown                           settings.ShutdownSettings                           `mapstructure:"shutdown"`
 	Vault                              settings.VaultSettings                              `mapstructure:"vault"`
 	UnconfirmedUsersDataClearingWorker settings.UnconfirmedUsersDataClearingWorkerSettings `mapstructure:"unconfirmed_users_data_clearing_worker"`
+	UserDataDeletionTasksSendingWorker settings.KafkaSendingWorkerSettings                  `mapstructure:"user_data_deletion_tasks_sending_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -52,7 +54,9 @@ func LoadWorkerConfig() (*WorkerConfig, error) {
 func setWorkerDefaults(v *viper.Viper) {
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetRedisDefaults(v, "redis")
+	settings.SetKafkaProducerDefaults(v, "user_data_deletion_tasks_producer", "user-data-deletion-tasks")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetUnconfirmedUsersDataClearingWorkerDefaults(v, "unconfirmed_users_data_clearing_worker")
+	settings.SetKafkaSendingWorkerDefaults(v, "user_data_deletion_tasks_sending_worker")
 }

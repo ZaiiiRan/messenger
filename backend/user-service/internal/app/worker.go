@@ -7,11 +7,14 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
+	implkafkaproducer "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/impl/kafka"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
-	userdatadeletiontasks "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
+	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing_worker"
+	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending_worker"
 	"go.uber.org/zap"
 )
 
@@ -22,8 +25,11 @@ type WorkerApp struct {
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
 
+	userDataDeletionTasksKafkaClient   *kafka.KafkaClient
+	userDataDeletionTasksKafkaProducer *implkafkaproducer.Producer
+
 	userService                  userservice.UserService
-	userDataDeletionTasksService userdatadeletiontasks.UserDataDeletionTasksService
+	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService
 
 	workersCtx    context.Context
 	workersCancel context.CancelFunc
@@ -54,6 +60,12 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.initRedisClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initUserDataDeletionTasksKafkaClient(ctx); err != nil {
+		return err
+	}
+	if err := a.initUserDataDeletionTasksKafkaProducer(); err != nil {
+		return err
+	}
 
 	a.initUserDataDeletionTasksService()
 	a.initUserService()
@@ -61,6 +73,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startUnconfirmedUsersDataClearingWorkers()
+	a.startUserDataDeletionTasksSendingWorkers()
 
 	a.log.Infow("app.started")
 	return nil
@@ -87,6 +100,8 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	case <-shCtx.Done():
 		a.log.Warnw("app.workers_shutdown_timeout")
 	}
+
+	a.userDataDeletionTasksKafkaProducer.Close()
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
@@ -118,8 +133,30 @@ func (a *WorkerApp) initRedisClient(ctx context.Context) error {
 	return nil
 }
 
+func (a *WorkerApp) initUserDataDeletionTasksKafkaClient(ctx context.Context) error {
+	kafkaClient, err := kafka.New(a.cfg.UserDataDeletionTasksProducer.KafkaSettings)
+	if err != nil {
+		a.log.Errorw("app.user_data_deletion_tasks_kafka_client_init_failed", "err", err)
+		return err
+	}
+	a.userDataDeletionTasksKafkaClient = kafkaClient
+
+	a.log.Infow("app.user_data_deletion_tasks_kafka_connected")
+	return nil
+}
+
+func (a *WorkerApp) initUserDataDeletionTasksKafkaProducer() error {
+	producer, err := implkafkaproducer.New(a.cfg.UserDataDeletionTasksProducer, a.userDataDeletionTasksKafkaClient)
+	if err != nil {
+		a.log.Errorw("app.user_data_deletion_tasks_kafka_producer_init_failed", "err", err)
+		return err
+	}
+	a.userDataDeletionTasksKafkaProducer = producer
+	return nil
+}
+
 func (a *WorkerApp) initUserDataDeletionTasksService() {
-	a.userDataDeletionTasksService = userdatadeletiontasks.New(a.postgresClient, a.log)
+	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.userDataDeletionTasksKafkaProducer, a.log)
 }
 
 func (a *WorkerApp) initUserService() {
@@ -131,6 +168,21 @@ func (a *WorkerApp) startUnconfirmedUsersDataClearingWorkers() {
 		w := unconfirmeduserdataclearingworker.New(
 			a.cfg.UnconfirmedUsersDataClearingWorker,
 			a.userService,
+			a.log,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startUserDataDeletionTasksSendingWorkers() {
+	for i := 0; i < int(a.cfg.UserDataDeletionTasksSendingWorker.Count); i++ {
+		w := usersdatadeletiontaskssendingworker.New(
+			a.cfg.UserDataDeletionTasksSendingWorker,
+			a.userDataDeletionTasksService,
 			a.log,
 		)
 		a.workersWG.Add(1)
