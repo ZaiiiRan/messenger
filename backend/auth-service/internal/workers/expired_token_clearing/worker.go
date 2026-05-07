@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
-	postgresunitofwork "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers"
@@ -57,12 +56,5 @@ func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
 }
 
 func (w *ExpiredTokenClearingWorker) runOnce(ctx context.Context) {
-	uow := postgresunitofwork.New(w.pgClient)
-	defer uow.Close()
-
-	if err := w.tokenService.DeleteExpiredTokens(ctx, uow, w.cfg.BatchSize, w.workerID); err != nil {
-		if ctx.Err() != nil {
-			return
-		}
-	}
+	w.tokenService.DeleteExpiredTokens(ctx, w.workerID, w.cfg.BatchSize)
 }

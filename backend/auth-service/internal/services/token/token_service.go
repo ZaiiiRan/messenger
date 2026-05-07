@@ -28,9 +28,9 @@ type TokenService interface {
 	InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
-	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
 	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
 	InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error
+	DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error
 }
 
 type tokenService struct {
@@ -251,8 +251,11 @@ func (s *tokenService) GetRefreshTokens(
 	return tokens, nil
 }
 
-func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error {
+func (s *tokenService) DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error {
 	l := s.log.With("op", "delete_expired_tokens", "worker_id", workerID)
+
+	uow := s.tokenDataProvider.newUOW()
+	defer uow.Close()
 
 	tokens, err := s.tokenDataProvider.deleteExpiredTokens(ctx, batchSize, uow)
 	if err != nil {
