@@ -34,7 +34,7 @@ type ServerApp struct {
 
 	userGrpcClient *usergrpcclient.Client
 
-	emailCodeTasksProducer *implkafkaproducer.Producer
+	emailCodeTasksProducer *implkafkaproducer.BatchProducer
 
 	userService     userservice.UserService
 	codeService     codeservice.CodeService
@@ -170,7 +170,7 @@ func (a *ServerApp) initEmailCodesTasksKafkaClient(ctx context.Context) error {
 }
 
 func (a *ServerApp) initEmailCodeTasksProducer() error {
-	producer, err := implkafkaproducer.New(
+	producer, err := implkafkaproducer.NewBatchProducer(
 		a.cfg.EmailCodesTasksProducer,
 		a.emailCodeTasksKafkaClient,
 		a.log,
