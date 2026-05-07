@@ -8,12 +8,12 @@ import (
 )
 
 type V1OutboxEventDal struct {
-	Id        string          `json:"id"`
-	Payload   json.RawMessage `json:"payload"`
-	Status    int16           `json:"status"`
-	Attempts  int16           `json:"attempts"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	Id        string          `db:"id" json:"id"`
+	Payload   json.RawMessage `db:"payload" json:"payload"`
+	Status    int16           `db:"status" json:"status"`
+	Attempts  int16           `db:"attempts" json:"attempts"`
+	CreatedAt time.Time       `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time       `db:"updated_at" json:"updated_at"`
 }
 
 func V1OutboxEventFromDomain(event *outboxevent.OutboxEvent) V1OutboxEventDal {

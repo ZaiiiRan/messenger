@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/interfaces"
@@ -26,19 +27,28 @@ func (r *UserDataDeletionTasksRepository) Create(ctx context.Context, events []*
 		return nil
 	}
 
-	eventDals := make([]models.V1OutboxEventDal, len(events))
+	payloads := make([][]byte, len(events))
+	statuses := make([]int16, len(events))
+	attempts := make([]int16, len(events))
+	createdAts := make([]time.Time, len(events))
+	updatedAts := make([]time.Time, len(events))
 	for i, e := range events {
-		eventDals[i] = models.V1OutboxEventFromDomain(e)
+		payloads[i] = e.GetPayload()
+		statuses[i] = int16(e.GetStatus())
+		attempts[i] = e.GetAttempts()
+		createdAts[i] = e.GetCreatedAt()
+		updatedAts[i] = e.GetUpdatedAt()
 	}
 
 	const sql = `
 		INSERT INTO user_data_deletion_tasks_outbox (payload, status, attempts, created_at, updated_at)
-		SELECT (i).payload, (i).status, (i).attempts, (i).created_at, (i).updated_at
-		FROM UNNEST($1::v1_outbox_event[]) i
+		SELECT u.payload, u.status, u.attempts, u.created_at, u.updated_at
+		FROM UNNEST($1::jsonb[], $2::smallint[], $3::smallint[], $4::timestamptz[], $5::timestamptz[])
+			AS u(payload, status, attempts, created_at, updated_at)
 		RETURNING id, payload, status, attempts, created_at, updated_at
 	`
 
-	rows, err := r.conn.Query(ctx, sql, eventDals)
+	rows, err := r.conn.Query(ctx, sql, payloads, statuses, attempts, createdAts, updatedAts)
 	if err != nil {
 		return fmt.Errorf("insert outbox events: %w", err)
 	}
