@@ -383,6 +383,43 @@ services:
       start_period: 10s
     networks:
       - messenger-network
+  
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    depends_on:
+      user-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    volumes:
+      - ./backend/configs/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "9090:9090"
+    networks:
+      - messenger-network
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./backend/configs/grafana/provisioning:/etc/grafana/provisioning
+      - ./backend/configs/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - messenger-network
 
 volumes:
   # old-messenger-db:
@@ -390,6 +427,7 @@ volumes:
   auth-db-data:
   user-data-deletion-kafka-data:
   email-kafka-data:
+  grafana-data:
 
 networks:
   messenger-network:
