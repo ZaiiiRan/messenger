@@ -143,7 +143,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 		SELECT
 			u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at
+			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted
 		FROM users u
 		JOIN profile p ON p.user_id = u.id
 		JOIN status  s ON s.user_id = u.id
@@ -162,6 +162,8 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	appendBool(&sb, "s.is_permanently_banned", query.Filter.IsPermanentlyBanned, &args, &argPos)
 	appendIsNotNull(&sb, "s.banned_until", query.Filter.IsTemporarilyBanned)
 	appendRange(&sb, "s.deleted_at", query.Filter.DeletedFrom, query.Filter.DeletedTo, &args, &argPos)
+	appendBool(&sb, "s.is_permanently_deleted", query.Filter.IsPermanentlyDeleted, &args, &argPos)
+	appendRange(&sb, "s.banned_until", query.Filter.BannedUntilFrom, query.Filter.BannedUntilTo, &args, &argPos)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.id", true)
@@ -184,6 +186,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
 			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
 			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
+			&statusDal.IsPermanentlyDeleted,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
@@ -213,7 +216,7 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 		SELECT
 		u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at
+			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted
 		FROM users u
 		JOIN profile p ON p.user_id = u.id
 		JOIN status  s ON s.user_id = u.id
@@ -232,6 +235,8 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	appendBool(&sb, "s.is_permanently_banned", query.Filter.IsPermanentlyBanned, &args, &argPos)
 	appendIsNotNull(&sb, "s.banned_until", query.Filter.IsTemporarilyBanned)
 	appendRange(&sb, "s.deleted_at", query.Filter.DeletedFrom, query.Filter.DeletedTo, &args, &argPos)
+	appendBool(&sb, "s.is_permanently_deleted", query.Filter.IsPermanentlyDeleted, &args, &argPos)
+	appendRange(&sb, "s.banned_until", query.Filter.BannedUntilFrom, query.Filter.BannedUntilTo, &args, &argPos)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.updated_at", true)
@@ -256,6 +261,7 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
 			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
 			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
+			&statusDal.IsPermanentlyDeleted,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
@@ -374,10 +380,10 @@ func (r *UserRepository) insertProfiles(ctx context.Context, dals []models.V1Pro
 
 func (r *UserRepository) insertStatuses(ctx context.Context, dals []models.V1StatusDal) ([]models.V1StatusDal, error) {
 	const sql = `
-		INSERT INTO status (user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at)
-		SELECT (i).user_id, (i).is_confirmed, (i).is_permanently_banned, (i).banned_until, (i).is_deleted, (i).deleted_at
+		INSERT INTO status (user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at, is_permanently_deleted)
+		SELECT (i).user_id, (i).is_confirmed, (i).is_permanently_banned, (i).banned_until, (i).is_deleted, (i).deleted_at, (i).is_permanently_deleted
 		FROM UNNEST($1::v1_status[]) i
-		RETURNING id, user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at
+		RETURNING id, user_id, is_confirmed, is_permanently_banned, banned_until, is_deleted, deleted_at, is_permanently_deleted
 	`
 
 	rows, err := r.conn.Query(ctx, sql, dals)
@@ -389,7 +395,9 @@ func (r *UserRepository) insertStatuses(ctx context.Context, dals []models.V1Sta
 	var result []models.V1StatusDal
 	for rows.Next() {
 		var res models.V1StatusDal
-		if err := rows.Scan(&res.Id, &res.UserId, &res.IsConfirmed, &res.IsPermanentlyBanned, &res.BannedUntil, &res.IsDeleted, &res.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&res.Id, &res.UserId, &res.IsConfirmed, &res.IsPermanentlyBanned, &res.BannedUntil, &res.IsDeleted, &res.DeletedAt, &res.IsPermanentlyDeleted,
+		); err != nil {
 			return nil, fmt.Errorf("scan inserted status: %w", err)
 		}
 		result = append(result, res)
@@ -473,14 +481,15 @@ func (r *UserRepository) updateStatuses(ctx context.Context, dals []models.V1Sta
 	const sql = `
 		UPDATE status AS t
 		SET
-			is_confirmed          = u.is_confirmed,
-			is_permanently_banned = u.is_permanently_banned,
-			banned_until          = u.banned_until,
-			is_deleted            = u.is_deleted,
-			deleted_at            = u.deleted_at
+			is_confirmed           = u.is_confirmed,
+			is_permanently_banned  = u.is_permanently_banned,
+			banned_until           = u.banned_until,
+			is_deleted             = u.is_deleted,
+			deleted_at             = u.deleted_at,
+			is_permanently_deleted = u.is_permanently_deleted
 		FROM UNNEST($1::v1_status[]) AS u
 		WHERE t.user_id = u.user_id
-		RETURNING t.id, t.user_id, t.is_confirmed, t.is_permanently_banned, t.banned_until, t.is_deleted, t.deleted_at
+		RETURNING t.id, t.user_id, t.is_confirmed, t.is_permanently_banned, t.banned_until, t.is_deleted, t.deleted_at, t.is_permanently_deleted
 	`
 
 	rows, err := r.conn.Query(ctx, sql, dals)
@@ -492,7 +501,9 @@ func (r *UserRepository) updateStatuses(ctx context.Context, dals []models.V1Sta
 	var result []models.V1StatusDal
 	for rows.Next() {
 		var res models.V1StatusDal
-		if err := rows.Scan(&res.Id, &res.UserId, &res.IsConfirmed, &res.IsPermanentlyBanned, &res.BannedUntil, &res.IsDeleted, &res.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&res.Id, &res.UserId, &res.IsConfirmed, &res.IsPermanentlyBanned, &res.BannedUntil, &res.IsDeleted, &res.DeletedAt, &res.IsPermanentlyDeleted,
+		); err != nil {
 			return nil, fmt.Errorf("scan updated status: %w", err)
 		}
 		result = append(result, res)

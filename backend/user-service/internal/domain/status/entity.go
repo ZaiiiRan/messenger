@@ -5,20 +5,22 @@ import (
 )
 
 type Status struct {
-	isConfirmed         bool
-	isPermanentlyBanned bool
-	bannedUntil         *time.Time
-	isDeleted           bool
-	deletedAt           *time.Time
+	isConfirmed          bool
+	isPermanentlyBanned  bool
+	bannedUntil          *time.Time
+	isDeleted            bool
+	deletedAt            *time.Time
+	isPermanentlyDeleted bool
 }
 
 func New() *Status {
 	return &Status{
-		isConfirmed:         false,
-		isPermanentlyBanned: false,
-		bannedUntil:         nil,
-		isDeleted:           false,
-		deletedAt:           nil,
+		isConfirmed:          false,
+		isPermanentlyBanned:  false,
+		bannedUntil:          nil,
+		isDeleted:            false,
+		deletedAt:            nil,
+		isPermanentlyDeleted: false,
 	}
 }
 
@@ -28,13 +30,15 @@ func FromStorage(
 	bannedUntil *time.Time,
 	isDeleted bool,
 	deletedAt *time.Time,
+	isPermanentlyDeleted bool,
 ) *Status {
 	return &Status{
-		isConfirmed:         isConfirmed,
-		isPermanentlyBanned: isPermanentlyBanned,
-		bannedUntil:         bannedUntil,
-		isDeleted:           isDeleted,
-		deletedAt:           deletedAt,
+		isConfirmed:          isConfirmed,
+		isPermanentlyBanned:  isPermanentlyBanned,
+		bannedUntil:          bannedUntil,
+		isDeleted:            isDeleted,
+		deletedAt:            deletedAt,
+		isPermanentlyDeleted: isPermanentlyDeleted,
 	}
 }
 
@@ -43,6 +47,7 @@ func (s *Status) IsPermanentlyBanned() bool  { return s.isPermanentlyBanned }
 func (s *Status) GetBannedUntil() *time.Time { return s.bannedUntil }
 func (s *Status) IsDeleted() bool            { return s.isDeleted }
 func (s *Status) GetDeletedAt() *time.Time   { return s.deletedAt }
+func (s *Status) IsPermanentlyDeleted() bool { return s.isPermanentlyDeleted }
 
 func (s *Status) SetConfirmed(confirmed bool) {
 	s.isConfirmed = confirmed
@@ -68,4 +73,12 @@ func (s *Status) SetDeleted(deleted bool) {
 	} else {
 		s.deletedAt = nil
 	}
+}
+
+func (s *Status) SetPermanentlyDeleted(permanentlyDeleted bool) error {
+	if permanentlyDeleted && !s.isDeleted {
+		return ErrPermanentlyDeletedIfNotDeleted
+	}
+	s.isPermanentlyDeleted = permanentlyDeleted
+	return nil
 }

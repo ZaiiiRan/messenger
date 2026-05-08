@@ -14,6 +14,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	deleteduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/deleted_user_data_clearing"
+	unbantemporarilybanneduserworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unban_temporarily_banned_user"
 	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing"
 	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending"
 	"go.uber.org/zap"
@@ -75,6 +76,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 
 	a.startUnconfirmedUsersDataClearingWorkers()
 	a.startDeletedUsersDataClearingWorkers()
+	a.startUnbanTemporarilyBannedUserWorkers()
 	a.startUserDataDeletionTasksSendingWorkers()
 
 	a.log.Infow("app.started")
@@ -184,6 +186,21 @@ func (a *WorkerApp) startDeletedUsersDataClearingWorkers() {
 	for i := 0; i < int(a.cfg.DeletedUsersDataClearingWorker.Count); i++ {
 		w := deleteduserdataclearingworker.New(
 			a.cfg.DeletedUsersDataClearingWorker,
+			a.userService,
+			a.log,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startUnbanTemporarilyBannedUserWorkers() {
+	for i := 0; i < int(a.cfg.UnbanTemporarilyBannedUsersWorker.Count); i++ {
+		w := unbantemporarilybanneduserworker.New(
+			a.cfg.UnbanTemporarilyBannedUsersWorker,
 			a.userService,
 			a.log,
 		)
