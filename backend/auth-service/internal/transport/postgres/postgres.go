@@ -38,6 +38,7 @@ func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, e
 			"v1_user_version", "_v1_user_version",
 			"v1_confirmation_code", "_v1_confirmation_code",
 			"v1_password_reset_token", "_v1_password_reset_token",
+			"v1_inbox_event", "_v1_inbox_event",
 		}
 
 		types, err := conn.LoadTypes(ctx, names)
