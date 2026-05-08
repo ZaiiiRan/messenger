@@ -25,7 +25,7 @@ type BatchProducer struct {
 	log           *zap.SugaredLogger
 }
 
-func NewBatchProducer(cfg settings.KafkaProducerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger) (*BatchProducer, error) {
+func NewBatchProducer(cfg settings.KafkaBatchProducerSettings, kafkaClient *kafkatransport.KafkaClient, log *zap.SugaredLogger) (*BatchProducer, error) {
 	cm := kafkaClient.ConfigMap()
 	cm["client.id"] = cfg.ClientID
 	cm["message.timeout.ms"] = int(cfg.WriteTimeout) * 1000
