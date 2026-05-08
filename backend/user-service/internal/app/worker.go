@@ -13,6 +13,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
+	deleteduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/deleted_user_data_clearing"
 	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing"
 	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending"
 	"go.uber.org/zap"
@@ -73,6 +74,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startUnconfirmedUsersDataClearingWorkers()
+	a.startDeletedUsersDataClearingWorkers()
 	a.startUserDataDeletionTasksSendingWorkers()
 
 	a.log.Infow("app.started")
@@ -167,6 +169,21 @@ func (a *WorkerApp) startUnconfirmedUsersDataClearingWorkers() {
 	for i := 0; i < int(a.cfg.UnconfirmedUsersDataClearingWorker.Count); i++ {
 		w := unconfirmeduserdataclearingworker.New(
 			a.cfg.UnconfirmedUsersDataClearingWorker,
+			a.userService,
+			a.log,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startDeletedUsersDataClearingWorkers() {
+	for i := 0; i < int(a.cfg.DeletedUsersDataClearingWorker.Count); i++ {
+		w := deleteduserdataclearingworker.New(
+			a.cfg.DeletedUsersDataClearingWorker,
 			a.userService,
 			a.log,
 		)

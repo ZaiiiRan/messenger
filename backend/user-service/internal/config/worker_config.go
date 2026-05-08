@@ -16,7 +16,8 @@ type WorkerConfig struct {
 	Shutdown                           settings.ShutdownSettings                           `mapstructure:"shutdown"`
 	Vault                              settings.VaultSettings                              `mapstructure:"vault"`
 	UnconfirmedUsersDataClearingWorker settings.UnconfirmedUsersDataClearingWorkerSettings `mapstructure:"unconfirmed_users_data_clearing_worker"`
-	UserDataDeletionTasksSendingWorker settings.KafkaSendingWorkerSettings                  `mapstructure:"user_data_deletion_tasks_sending_worker"`
+	DeletedUsersDataClearingWorker     settings.DeletedUsersDataClearingWorkerSettings     `mapstructure:"deleted_users_data_clearing_worker"`
+	UserDataDeletionTasksSendingWorker settings.KafkaSendingWorkerSettings                 `mapstructure:"user_data_deletion_tasks_sending_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -58,5 +59,6 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetUnconfirmedUsersDataClearingWorkerDefaults(v, "unconfirmed_users_data_clearing_worker")
+	settings.SetDeletedUsersDataClearingWorkerDefaults(v, "deleted_users_data_clearing_worker")
 	settings.SetKafkaSendingWorkerDefaults(v, "user_data_deletion_tasks_sending_worker")
 }

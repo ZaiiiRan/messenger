@@ -29,6 +29,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
 	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
+	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 }
 
 type service struct {
@@ -391,6 +392,67 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, wor
 
 	if len(users) > 0 {
 		l.Infow("user.delete_unconfirmed_users_success", "count", len(users))
+	}
+
+	return len(users), nil
+}
+
+func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
+	l := s.log.With("op", "clear_deleted_users", "worker_id", workerID)
+
+	if batchSize <= 0 {
+		l.Warnw("user.clear_deleted_users_failed.invalid_batch_size", "batch_size", batchSize)
+		return 0, nil
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	_, err := uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("user.clear_deleted_users_failed.begin_transaction_error", "err", err)
+		return 0, ErrClearDeletedUsersFailed
+	}
+
+	now := time.Now()
+	deleteTimeout := now.Add(-1 * time.Hour * 24 * 30)
+	filter := models.UserFilterDal{
+		IsDeleted: utils.BoolPtr(true),
+		DeletedTo: &deleteTimeout,
+	}
+
+	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, uow)
+	if err != nil {
+		l.Errorw("user.clear_deleted_users_failed.query_error", "err", err)
+		return 0, ErrClearDeletedUsersFailed
+	}
+	if users == nil {
+		return 0, nil
+	}
+
+	for _, u := range users {
+		u.GetProfile().SetPhone(nil)
+		u.GetProfile().SetBirthdate(nil)
+		u.GetProfile().SetBio(nil)
+		u.GetStatus().SetPermanentlyBanned(false)
+		u.GetStatus().SetBannedUntil(nil)
+		u.SetUpdatedAt(&now)
+	}
+
+	if err := s.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, workerID, users, uow); err != nil {
+		l.Errorw("user.clear_deleted_users_failed.create_deletion_tasks_error", "err", err)
+		return 0, ErrClearDeletedUsersFailed
+	}
+	if err := s.dataProvider.updateUsers(ctx, users, uow); err != nil {
+		l.Errorw("user.clear_deleted_users_failed.update_error", "err", err)
+		return 0, ErrClearDeletedUsersFailed
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.clear_deleted_users_failed.commit_error", "err", err)
+		return 0, ErrClearDeletedUsersFailed
+	}
+
+	if len(users) > 0 {
+		l.Infow("user.clear_deleted_users_success", "count", len(users))
 	}
 
 	return len(users), nil

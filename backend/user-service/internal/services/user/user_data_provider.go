@@ -133,6 +133,26 @@ func (udp *userDataProvider) deleteUsers(ctx context.Context, users []*user.User
 	return nil
 }
 
+func (udp *userDataProvider) updateUsers(ctx context.Context, users []*user.User, uow *uow.UnitOfWork) error {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+
+	dbRepo := postgresimpl.NewUserRepository(pgConn)
+	err = dbRepo.Update(ctx, users)
+	if err != nil {
+		return err
+	}
+
+	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+	for _, u := range users {
+		cacheRepo.DeleteUser(ctx, u.GetID())
+	}
+
+	return nil
+}
+
 func (udp *userDataProvider) getUserList(ctx context.Context, query *models.QueryUsersDal, uow *uow.UnitOfWork) ([]*user.User, error) {
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	list, err := cacheRepo.GetUserList(ctx, query)
