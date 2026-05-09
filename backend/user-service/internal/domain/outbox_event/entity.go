@@ -61,11 +61,19 @@ func (e *OutboxEvent) SetID(id string) {
 }
 
 func (e *OutboxEvent) IncrementAttempts() error {
-	if e.attempts >= MaxAttempts {
+	if e.attempts > MaxAttempts {
 		return ErrMaxAttemptsReached
 	}
 	e.attempts++
 	return nil
+}
+
+func (e *OutboxEvent) SetPayload(payload json.RawMessage) {
+	e.payload = payload
+}
+
+func (e *OutboxEvent) ResetAttempts() {
+	e.attempts = 0
 }
 
 func (e *OutboxEvent) SetStatus(status OutboxEventStatus) error {
