@@ -13,7 +13,7 @@ type KafkaConsumerSettings struct {
 
 func SetKafkaConsumerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
 	SetKafkaDefaults(v, prefix+".kafka_settings")
-	v.SetDefault(prefix+".group_id", "email-service-consumer")
+	v.SetDefault(prefix+".group_id", "auth-service-consumer")
 	v.SetDefault(prefix+".topic", defaultTopic)
 	v.SetDefault(prefix+".batch_size", 100)
 	v.SetDefault(prefix+".batch_timeout_ms", 1000)

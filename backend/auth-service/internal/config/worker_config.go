@@ -10,11 +10,12 @@ import (
 )
 
 type WorkerConfig struct {
-	DB                         settings.PostgresSettings                   `mapstructure:"db"`
-	Redis                      settings.RedisSettings                      `mapstructure:"redis"`
-	Shutdown                   settings.ShutdownSettings                   `mapstructure:"shutdown"`
-	Vault                      settings.VaultSettings                      `mapstructure:"vault"`
-	ExpiredTokenClearingWorker settings.ExpiredTokenClearingWorkerSettings `mapstructure:"expired_token_clearing_worker"`
+	DB                            settings.PostgresSettings                      `mapstructure:"db"`
+	Redis                         settings.RedisSettings                         `mapstructure:"redis"`
+	Shutdown                      settings.ShutdownSettings                      `mapstructure:"shutdown"`
+	Vault                         settings.VaultSettings                         `mapstructure:"vault"`
+	ExpiredTokenClearingWorker    settings.ExpiredTokenClearingWorkerSettings    `mapstructure:"expired_token_clearing_worker"`
+	UserDataDeletionTasksConsumer settings.UserDataDeletionTasksConsumerSettings `mapstructure:"user_data_deletion_tasks_consumer"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -55,4 +56,5 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetExpiredTokenClearingWorkerDefaults(v, "expired_token_clearing_worker")
+	settings.SetUserDataDeletionTasksConsumerDefaults(v, "user_data_deletion_tasks_consumer")
 }
