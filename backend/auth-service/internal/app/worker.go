@@ -7,12 +7,15 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
+	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
+	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_data_deletion_tasks"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
 	expiredtokenclearingworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/expired_token_clearing"
+	userdatadeletiontasksworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/user_data_deletion_tasks"
 	userdatadeletiontasksconsumerworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/user_data_deletion_tasks_consumer"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"go.uber.org/zap"
@@ -26,6 +29,8 @@ type WorkerApp struct {
 	redisClient                      *redis.RedisClient
 	userDataDeletionTasksKafkaClient *kafkatransport.KafkaClient
 
+	codeService                  codeservice.CodeService
+	passwordService              passwordservice.PasswordService
 	tokenService                 tokenservice.TokenService
 	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService
 
@@ -62,6 +67,8 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 		return err
 	}
 
+	a.initPasswordService()
+	a.initCodeService()
 	a.initTokenService()
 	a.initUserDataDeletionTasksSerivce()
 
@@ -71,6 +78,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.startUserDataDeletionTasksConsumerWorkers(); err != nil {
 		return err
 	}
+	a.startUserDataDeletionTasksWorkers()
 
 	a.log.Infow("app.started")
 	return nil
@@ -140,12 +148,20 @@ func (a *WorkerApp) initUserDataDeletionTasksKafkaClient() error {
 	return nil
 }
 
+func (a *WorkerApp) initCodeService() {
+	a.codeService = codeservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
+func (a *WorkerApp) initPasswordService() {
+	a.passwordService = passwordservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
 func (a *WorkerApp) initTokenService() {
 	a.tokenService = tokenservice.New(settings.JWTSettings{}, a.postgresClient, a.redisClient, a.log)
 }
 
 func (a *WorkerApp) initUserDataDeletionTasksSerivce() {
-	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.log)
+	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.passwordService, a.codeService, a.tokenService, a.log)
 }
 
 func (a *WorkerApp) startExpiredTokenClearingWorkers() {
@@ -178,4 +194,19 @@ func (a *WorkerApp) startUserDataDeletionTasksConsumerWorkers() error {
 		}()
 	}
 	return nil
+}
+
+func (a *WorkerApp) startUserDataDeletionTasksWorkers() {
+	for i := 0; i < int(a.cfg.UserDataDeletionTasksWorker.Count); i++ {
+		w := userdatadeletiontasksworker.New(
+			a.cfg.UserDataDeletionTasksWorker,
+			a.userDataDeletionTasksService,
+			a.log,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
 }

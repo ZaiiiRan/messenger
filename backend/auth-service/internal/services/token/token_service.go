@@ -31,6 +31,7 @@ type TokenService interface {
 	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
 	InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error
 	DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error
+	DeleteUserVersionAndTokensByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error
 }
 
 type tokenService struct {
@@ -267,6 +268,33 @@ func (s *tokenService) DeleteExpiredTokens(ctx context.Context, workerID string,
 		l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
 	}
 
+	return nil
+}
+
+func (s *tokenService) DeleteUserVersionAndTokensByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error {
+	l := s.log.With("op", "delete_user_version_and_tokens_by_user_id", "worker_id", workerID, "user_id", userID)
+
+	err := s.tokenDataProvider.deleteByUserId(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+
+	uv, err := s.userVersionDataProvider.getByUserId(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+	if uv == nil {
+		return nil
+	}
+
+	if err := s.userVersionDataProvider.delete(ctx, uv, uow); err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+
+	l.Infow("token.delete_user_version_and_tokens_by_user_id.success")
 	return nil
 }
 

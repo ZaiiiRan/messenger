@@ -16,6 +16,7 @@ type WorkerConfig struct {
 	Vault                         settings.VaultSettings                         `mapstructure:"vault"`
 	ExpiredTokenClearingWorker    settings.ExpiredTokenClearingWorkerSettings    `mapstructure:"expired_token_clearing_worker"`
 	UserDataDeletionTasksConsumer settings.UserDataDeletionTasksConsumerSettings `mapstructure:"user_data_deletion_tasks_consumer"`
+	UserDataDeletionTasksWorker   settings.UserDataDeletionTasksWorkerSettings   `mapstructure:"user_data_deletion_tasks_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -57,4 +58,5 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetExpiredTokenClearingWorkerDefaults(v, "expired_token_clearing_worker")
 	settings.SetUserDataDeletionTasksConsumerDefaults(v, "user_data_deletion_tasks_consumer")
+	settings.SetUserDataDeletionTasksWorkerDefaults(v, "user_data_deletion_tasks_worker")
 }

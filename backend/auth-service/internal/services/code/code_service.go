@@ -17,6 +17,7 @@ type CodeService interface {
 	GenerateCode(ctx context.Context, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) (*codedomain.Code, error)
 	CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string, codeType codedomain.CodeType) (bool, error)
 	CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string, codeType codedomain.CodeType) (userID string, valid bool, err error)
+	DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error
 }
 
 type codeService struct {
@@ -125,4 +126,25 @@ func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfW
 
 	l.Infow("code.check_by_link_token.success")
 	return c.GetUserID(), true, nil
+}
+
+func (s *codeService) DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error {
+	l := s.log.With("op", "delete_code_by_user_id", "code_type", codeType, "worker_id", workerID, "user_id", userID)
+
+	c, err := s.codeDataProvider.getByUserID(ctx, userID, codeType, uow)
+	if err != nil {
+		l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+		return err
+	}
+	if c == nil {
+		return nil
+	}
+
+	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {
+		l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+		return err
+	}
+
+	l.Infow("code.delete_code_by_user_id.success")
+	return nil
 }

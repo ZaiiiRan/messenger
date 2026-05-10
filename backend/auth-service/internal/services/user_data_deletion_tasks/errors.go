@@ -15,5 +15,6 @@ func (e *UserDataDeletionServiceError) Error() string {
 }
 
 var (
-	ErrCreateUserDataDeletionTask = newUserDataDeletionServiceError("service.user_deletion_tasks.create_user_data_deletion_task_error")
+	ErrCreateUserDataDeletionTasks  = newUserDataDeletionServiceError("service.user_data_deletion_tasks.create_user_data_deletion_tasks_error")
+	ErrProcessUserDataDeletionTasks = newUserDataDeletionServiceError("service.user_data_deletion_tasks.process_user_data_deletion_tasks_error")
 )
