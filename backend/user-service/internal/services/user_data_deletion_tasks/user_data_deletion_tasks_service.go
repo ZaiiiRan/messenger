@@ -68,7 +68,7 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 }
 
 func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string, retryIntervalMS uint, batchSize int) error {
-	l := s.log.With("op", "send_user_data_deletion_tasks")
+	l := s.log.With("op", "send_user_data_deletion_tasks", "worker_id", workerID)
 
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
@@ -89,8 +89,8 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 		return nil
 	}
 
-	outboxEventsToUpdate := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
-	outboxEventsToDelete := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
+	outboxEventsFailed := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
+	outboxEventsSuccess := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
 
 	for _, event := range outboxEvents {
 		var payload producersmodels.UserDataDeletionTask
@@ -103,11 +103,11 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 				"attempts", event.GetAttempts(),
 				"status", event.GetStatus(),
 			)
-			err = s.MarkUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			outboxEventsToUpdate = append(outboxEventsToUpdate, event)
+			outboxEventsFailed = append(outboxEventsFailed, event)
 			continue
 		}
 		payload.Id = event.GetID()
@@ -121,25 +121,25 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 				"attempts", event.GetAttempts(),
 				"status", event.GetStatus(),
 			)
-			err = s.MarkUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			outboxEventsToUpdate = append(outboxEventsToUpdate, event)
+			outboxEventsFailed = append(outboxEventsFailed, event)
 			continue
 		}
 
-		outboxEventsToDelete = append(outboxEventsToDelete, event)
+		outboxEventsSuccess = append(outboxEventsSuccess, event)
 	}
 
-	if len(outboxEventsToDelete) > 0 {
-		if err := s.dataProvider.deleteUserDataDeletionTasks(ctx, outboxEventsToDelete, uow); err != nil {
+	if len(outboxEventsSuccess) > 0 {
+		if err := s.dataProvider.deleteUserDataDeletionTasks(ctx, outboxEventsSuccess, uow); err != nil {
 			l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.delete_error", "err", err)
 			return ErrSendUserDataDeletionTasks
 		}
 	}
-	if len(outboxEventsToUpdate) > 0 {
-		if err := s.dataProvider.updateUserDataDeletionTasks(ctx, outboxEventsToUpdate, uow); err != nil {
+	if len(outboxEventsFailed) > 0 {
+		if err := s.dataProvider.updateUserDataDeletionTasks(ctx, outboxEventsFailed, uow); err != nil {
 			l.Errorw("user_data_deletion_tasks.send_user_data_deletion_tasks_failed.update_error", "err", err)
 			return ErrSendUserDataDeletionTasks
 		}
@@ -149,17 +149,17 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 		return ErrSendUserDataDeletionTasks
 	}
 
-	if len(outboxEventsToDelete) > 0 {
-		l.Infow("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "successfully_sended", len(outboxEventsToDelete))
+	if len(outboxEventsSuccess) > 0 {
+		l.Infow("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "successfully_sended", len(outboxEventsSuccess))
 	}
-	if len(outboxEventsToUpdate) > 0 {
-		l.Infow("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "not_sended", len(outboxEventsToUpdate))
+	if len(outboxEventsFailed) > 0 {
+		l.Warnw("user_data_deletion_tasks.send_user_data_deletion_tasks.success", "not_sended", len(outboxEventsFailed))
 	}
 
 	return nil
 }
 
-func (s *service) MarkUserDataDeletionTaskFailed(
+func (s *service) markUserDataDeletionTaskFailed(
 	event *outboxevent.OutboxEvent,
 	now time.Time,
 	log *zap.SugaredLogger,
