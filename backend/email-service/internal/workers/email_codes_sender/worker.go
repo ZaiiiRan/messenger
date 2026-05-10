@@ -1,4 +1,4 @@
-package emailsenderworker
+package emailcodessenderworker
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type EmailSenderWorker struct {
+type EmailCodesSenderWorker struct {
 	id            string
 	consumer      *kafkaconsumer.Consumer
 	senderService senderservice.SenderService
@@ -27,7 +27,7 @@ func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaCl
 
 	workerLog := log.With("worker_id", id)
 
-	w := &EmailSenderWorker{
+	w := &EmailCodesSenderWorker{
 		id:            id,
 		log:           workerLog,
 		senderService: senderService,
@@ -60,7 +60,7 @@ func New(cfg settings.KafkaConsumerSettings, kafkaClient *kafkatransport.KafkaCl
 	return w, nil
 }
 
-func (w *EmailSenderWorker) Run(ctx context.Context) {
+func (w *EmailCodesSenderWorker) Run(ctx context.Context) {
 	w.log.Infow("email_sender.started")
 	w.consumer.Run(ctx)
 	w.log.Infow("email_sender.stopped")

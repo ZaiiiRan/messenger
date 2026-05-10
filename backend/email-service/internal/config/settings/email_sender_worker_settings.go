@@ -7,7 +7,7 @@ type EmailSenderWorkerSettings struct {
 	Count                 int                   `mapstructure:"count"`
 }
 
-func SetEmailSenderWorkerDefaults(v *viper.Viper, prefix string) {
+func SetEmailSenderWorkerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
 	v.SetDefault(prefix+".count", 5)
-	SetKafkaConsumerDefaults(v, prefix+".kafka_consumer", "email-codes-tasks")
+	SetKafkaConsumerDefaults(v, prefix+".kafka_consumer", defaultTopic)
 }
