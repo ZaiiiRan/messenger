@@ -14,3 +14,8 @@ user_data_deletion_tasks_consumer:
     batch_size: 1000
     batch_timeout_ms: 1000
     name: "user_data_deletion_tasks_consumer"
+user_data_deletion_tasks_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 1000
