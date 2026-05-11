@@ -12,6 +12,7 @@ import (
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	deleteduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/deleted_user_data_clearing"
 	unbantemporarilybanneduserworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unban_temporarily_banned_user"
@@ -33,6 +34,10 @@ type WorkerApp struct {
 	userService                  userservice.UserService
 	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService
 
+	metricsServer    *prommetrics.Server
+	workerMetrics    *prommetrics.WorkerMetrics
+	isMetricsStarted chan bool
+
 	workersCtx    context.Context
 	workersCancel context.CancelFunc
 	workersWG     sync.WaitGroup
@@ -50,8 +55,9 @@ func NewWorkerApp() (*WorkerApp, error) {
 	}
 
 	return &WorkerApp{
-		cfg: cfg,
-		log: log,
+		cfg:              cfg,
+		log:              log,
+		isMetricsStarted: make(chan bool),
 	}, nil
 }
 
@@ -72,6 +78,9 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.initUserDataDeletionTasksService()
 	a.initUserService()
 
+	a.initMetricsServer()
+	a.startMetricsServer()
+
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startUnconfirmedUsersDataClearingWorkers()
@@ -79,6 +88,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.startUnbanTemporarilyBannedUserWorkers()
 	a.startUserDataDeletionTasksSendingWorkers()
 
+	<-a.isMetricsStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -103,6 +113,10 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	case <-workersStopped:
 	case <-shCtx.Done():
 		a.log.Warnw("app.workers_shutdown_timeout")
+	}
+
+	if a.metricsServer != nil {
+		a.metricsServer.Stop(shCtx)
 	}
 
 	a.userDataDeletionTasksKafkaProducer.Close()
@@ -167,12 +181,28 @@ func (a *WorkerApp) initUserService() {
 	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, a.userDataDeletionTasksService)
 }
 
+func (a *WorkerApp) initMetricsServer() {
+	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
+	a.workerMetrics = prommetrics.NewWorkerMetrics(a.metricsServer.Registry())
+}
+
+func (a *WorkerApp) startMetricsServer() {
+	go func() {
+		a.log.Infow("app.metrics_serve_start", "port", a.cfg.MetricsServer.Port)
+		a.isMetricsStarted <- true
+		if err := a.metricsServer.Start(); err != nil {
+			a.log.Fatalw("app.metrics_serve_error", "err", err)
+		}
+	}()
+}
+
 func (a *WorkerApp) startUnconfirmedUsersDataClearingWorkers() {
 	for i := 0; i < int(a.cfg.UnconfirmedUsersDataClearingWorker.Count); i++ {
 		w := unconfirmeduserdataclearingworker.New(
 			a.cfg.UnconfirmedUsersDataClearingWorker,
 			a.userService,
 			a.log,
+			a.workerMetrics,
 		)
 		a.workersWG.Add(1)
 		go func() {
@@ -188,6 +218,7 @@ func (a *WorkerApp) startDeletedUsersDataClearingWorkers() {
 			a.cfg.DeletedUsersDataClearingWorker,
 			a.userService,
 			a.log,
+			a.workerMetrics,
 		)
 		a.workersWG.Add(1)
 		go func() {
@@ -203,6 +234,7 @@ func (a *WorkerApp) startUnbanTemporarilyBannedUserWorkers() {
 			a.cfg.UnbanTemporarilyBannedUsersWorker,
 			a.userService,
 			a.log,
+			a.workerMetrics,
 		)
 		a.workersWG.Add(1)
 		go func() {
@@ -218,6 +250,7 @@ func (a *WorkerApp) startUserDataDeletionTasksSendingWorkers() {
 			a.cfg.UserDataDeletionTasksSendingWorker,
 			a.userDataDeletionTasksService,
 			a.log,
+			a.workerMetrics,
 		)
 		a.workersWG.Add(1)
 		go func() {

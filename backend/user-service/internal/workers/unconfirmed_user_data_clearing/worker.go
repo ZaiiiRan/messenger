@@ -6,29 +6,39 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/workers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
+
+const workerType = "unconfirmed_user_data_clearing"
 
 type UnconfirmedUserDataClearingWorker struct {
 	workerID    string
 	cfg         *settings.UnconfirmedUsersDataClearingWorkerSettings
 	userService userservice.UserService
 	log         *zap.SugaredLogger
+	metrics     *prommetrics.WorkerMetrics
 }
 
 func New(
 	cfg settings.UnconfirmedUsersDataClearingWorkerSettings,
 	userService userservice.UserService,
 	log *zap.SugaredLogger,
+	metrics *prommetrics.WorkerMetrics,
 ) workers.Worker {
-	return &UnconfirmedUserDataClearingWorker{
+	w := &UnconfirmedUserDataClearingWorker{
 		workerID:    uuid.New().String(),
 		cfg:         &cfg,
 		userService: userService,
 		log:         log,
+		metrics:     metrics,
 	}
+	metrics.CyclesTotal.WithLabelValues(workerType, "success").Add(0)
+	metrics.CyclesTotal.WithLabelValues(workerType, "error").Add(0)
+	metrics.ProcessedItemsTotal.WithLabelValues(workerType).Add(0)
+	return w
 }
 
 func (w *UnconfirmedUserDataClearingWorker) Run(ctx context.Context) {
@@ -60,12 +70,17 @@ func (w *UnconfirmedUserDataClearingWorker) Run(ctx context.Context) {
 }
 
 func (w *UnconfirmedUserDataClearingWorker) runOnce(ctx context.Context) (int, error) {
+	start := time.Now()
 	deletedCount, err := w.userService.DeleteUnconfirmedUsers(ctx, int(w.cfg.BatchSize), w.workerID)
+	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
 	if err != nil {
 		if ctx.Err() != nil {
 			return 0, nil
 		}
+		w.metrics.CyclesTotal.WithLabelValues(workerType, "error").Inc()
 		return 0, err
 	}
+	w.metrics.CyclesTotal.WithLabelValues(workerType, "success").Inc()
+	w.metrics.ProcessedItemsTotal.WithLabelValues(workerType).Add(float64(deletedCount))
 	return deletedCount, nil
 }
