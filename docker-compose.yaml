@@ -109,7 +109,6 @@ services:
       - ./backend/configs/user-service/server:/etc/user-service
     ports:
       - "50051:50051"
-      - "8001:8080"
     networks:
       - messenger-network
   
@@ -176,6 +175,12 @@ services:
         condition: service_healthy
       user-data-deletion-kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -267,7 +272,6 @@ services:
       - ./backend/configs/auth-service/server:/etc/auth-service
     ports:
       - "50052:50051"
-      - "8002:8080"
     networks:
       - messenger-network
   
@@ -287,6 +291,12 @@ services:
         condition: service_healthy
       user-data-deletion-kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -373,11 +383,17 @@ services:
       SMTP_CLIENT_HOST: mailhog
       SMTP_CLIENT_PORT: 1025
       SMTP_CLIENT_FROM: ${SMTP_USER}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
     volumes:
       - ./backend/configs/email-service/worker:/etc/email-service
     networks:
       - messenger-network
-  
+
   mailhog:
     image: mailhog/mailhog:v1.0.1
     ports:
@@ -397,6 +413,12 @@ services:
       user-service:
         condition: service_healthy
       auth-service:
+        condition: service_healthy
+      user-worker:
+        condition: service_healthy
+      auth-worker:
+        condition: service_healthy
+      email-worker:
         condition: service_healthy
     volumes:
       - ./backend/configs/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
