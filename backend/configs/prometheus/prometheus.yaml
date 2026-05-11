@@ -8,3 +8,12 @@ scrape_configs:
   - job_name: 'auth-service'
     static_configs:
       - targets: ['auth-service:8080']
+  - job_name: 'user-worker'
+    static_configs:
+      - targets: ['user-worker:8080']
+  - job_name: 'auth-worker'
+    static_configs:
+      - targets: ['auth-worker:8080']
+  - job_name: 'email-worker'
+    static_configs:
+      - targets: ['email-worker:8080']
