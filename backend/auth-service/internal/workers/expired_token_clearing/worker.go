@@ -7,7 +7,6 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
-	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -19,16 +18,14 @@ type ExpiredTokenClearingWorker struct {
 	workerID     string
 	cfg          *settings.ExpiredTokenClearingWorkerSettings
 	tokenService tokenservice.TokenService
-	pgClient     *postgres.PostgresClient
 	log          *zap.SugaredLogger
 	metrics      *prommetrics.WorkerMetrics
 }
 
-func New(cfg settings.ExpiredTokenClearingWorkerSettings, tokenService tokenservice.TokenService, pgClient *postgres.PostgresClient, log *zap.SugaredLogger, metrics *prommetrics.WorkerMetrics) workers.Worker {
+func New(cfg settings.ExpiredTokenClearingWorkerSettings, tokenService tokenservice.TokenService, log *zap.SugaredLogger, metrics *prommetrics.WorkerMetrics) workers.Worker {
 	w := &ExpiredTokenClearingWorker{
 		cfg:          &cfg,
 		tokenService: tokenService,
-		pgClient:     pgClient,
 		log:          log,
 		workerID:     uuid.New().String(),
 		metrics:      metrics,

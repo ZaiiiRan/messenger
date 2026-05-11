@@ -12,4 +12,5 @@ type CodeRepository interface {
 	UpdateCode(ctx context.Context, code *code.Code) error
 	DeleteCode(ctx context.Context, code *code.Code) error
 	QueryCode(ctx context.Context, query *models.QueryCodeDal) (*code.Code, error)
+	DeleteExpiredCodes(ctx context.Context, query *models.QueryExpiredCodesDal) ([]*code.Code, error)
 }

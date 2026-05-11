@@ -131,3 +131,39 @@ func (r *codeRepository) QueryCode(ctx context.Context, query *models.QueryCodeD
 	}
 	return res.ToDomain(r.codeType), nil
 }
+
+func (r *codeRepository) DeleteExpiredCodes(ctx context.Context, query *models.QueryExpiredCodesDal) ([]*code.Code, error) {
+	sql := `
+		DELETE FROM %s AS c
+		WHERE c.id IN (
+			SELECT c.id
+			FROM %s AS c
+			WHERE c.expires_at < NOW()
+			FOR UPDATE SKIP LOCKED
+			LIMIT $1
+		)
+		RETURNING id, user_id, code, link_token, generations_left, verifications_left, expires_at, created_at, updated_at
+	`
+
+	rows, err := r.conn.Query(ctx, fmt.Sprintf(sql, r.tableName, r.tableName), query.PageSize)
+	if err != nil {
+		return nil, fmt.Errorf("delete expired codes: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*code.Code
+	for rows.Next() {
+		var res models.V1CodeDal
+		if err := rows.Scan(
+			&res.Id, &res.UserId, &res.Code, &res.LinkToken, &res.GenerationsLeft, &res.VerificationsLeft, &res.ExpiresAt, &res.CreatedAt, &res.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan expired codes: %w", err)
+		}
+		result = append(result, res.ToDomain(r.codeType))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate expired codes: %w", err)
+	}
+
+	return result, nil
+}

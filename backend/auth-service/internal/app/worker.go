@@ -15,6 +15,8 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
+	expiredactivationcodeclearingworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/expired_activation_code_clearing"
+	expiredresetpasswordcodeclearingworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/expired_reset_password_code_clearing"
 	expiredtokenclearingworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/expired_token_clearing"
 	userdatadeletiontasksworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/user_data_deletion_tasks"
 	userdatadeletiontasksconsumerworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/user_data_deletion_tasks_consumer"
@@ -84,6 +86,8 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startExpiredTokenClearingWorkers()
+	a.startExpiredResetPasswordCodeClearingWorkers()
+	a.startExpiredActivationCodeClearingWorkers()
 	if err := a.startUserDataDeletionTasksConsumerWorkers(); err != nil {
 		return err
 	}
@@ -195,7 +199,29 @@ func (a *WorkerApp) startMetricsServer() {
 
 func (a *WorkerApp) startExpiredTokenClearingWorkers() {
 	for i := 0; i < int(a.cfg.ExpiredTokenClearingWorker.Count); i++ {
-		w := expiredtokenclearingworker.New(a.cfg.ExpiredTokenClearingWorker, a.tokenService, a.postgresClient, a.log, a.workerMetrics)
+		w := expiredtokenclearingworker.New(a.cfg.ExpiredTokenClearingWorker, a.tokenService, a.log, a.workerMetrics)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startExpiredResetPasswordCodeClearingWorkers() {
+	for i := 0; i < int(a.cfg.ExpiredResetPasswordCodesClearingWorker.Count); i++ {
+		w := expiredresetpasswordcodeclearingworker.New(a.cfg.ExpiredResetPasswordCodesClearingWorker, a.codeService, a.log, a.workerMetrics)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startExpiredActivationCodeClearingWorkers() {
+	for i := 0; i < int(a.cfg.ExpiredActivationCodesClearingWorker.Count); i++ {
+		w := expiredactivationcodeclearingworker.New(a.cfg.ExpiredActivationCodesClearingWorker, a.codeService, a.log, a.workerMetrics)
 		a.workersWG.Add(1)
 		go func() {
 			defer a.workersWG.Done()

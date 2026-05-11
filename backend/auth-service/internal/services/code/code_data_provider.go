@@ -22,6 +22,10 @@ func newCodeDataProvider(pg *pgclient.PostgresClient, redis *redisclient.RedisCl
 	return &codeDataProvider{pg: pg, redis: redis}
 }
 
+func (cdp *codeDataProvider) newUOW() *uow.UnitOfWork {
+	return uow.New(cdp.pg)
+}
+
 func (cdp *codeDataProvider) getByUserID(ctx context.Context, userID string, codeType code.CodeType, uow *uow.UnitOfWork) (*code.Code, error) {
 	cacheRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
 	if c, err := cacheRepo.GetCodeByUserId(ctx, userID, codeType); err == nil && c != nil {
@@ -132,4 +136,25 @@ func (cdp *codeDataProvider) delete(ctx context.Context, c *code.Code, uow *uow.
 	}
 
 	return dbRepo.DeleteCode(ctx, c)
+}
+
+func (cdp *codeDataProvider) deleteExpiredCodes(ctx context.Context, batchSize uint, codeType code.CodeType, uow *uow.UnitOfWork) ([]*code.Code, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var dbRepo interfaces.CodeRepository
+	if codeType == code.CodeTypePasswordReset {
+		dbRepo = postgresimpl.NewPasswordResetCodeRepository(pgConn)
+	} else {
+		dbRepo = postgresimpl.NewActivationCodeRepository(pgConn)
+	}
+
+	codes, err := dbRepo.DeleteExpiredCodes(ctx, models.NewQueryExpiredCodesDal(int(batchSize)))
+	if err != nil {
+		return nil, err
+	}
+
+	return codes, nil
 }

@@ -18,6 +18,7 @@ type CodeService interface {
 	CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string, codeType codedomain.CodeType) (bool, error)
 	CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string, codeType codedomain.CodeType) (userID string, valid bool, err error)
 	DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error
+	DeleteExpiredCodes(ctx context.Context, workerID string, batchSize uint, codeType codedomain.CodeType) error
 }
 
 type codeService struct {
@@ -146,5 +147,24 @@ func (s *codeService) DeleteCodeByUserID(ctx context.Context, workerID string, u
 	}
 
 	l.Infow("code.delete_code_by_user_id.success")
+	return nil
+}
+
+func (s *codeService) DeleteExpiredCodes(ctx context.Context, workerID string, batchSize uint, codeType codedomain.CodeType) error {
+	l := s.log.With("op", "delete_expired_codes", "code_type", codeType, "worker_id", workerID)
+
+	uow := s.codeDataProvider.newUOW()
+	defer uow.Close()
+
+	codes, err := s.codeDataProvider.deleteExpiredCodes(ctx, batchSize, codeType, uow)
+	if err != nil {
+		l.Errorw("code.delete_expired_codes_failed", "err", err)
+		return err
+	}
+
+	if len(codes) > 0 {
+		l.Infow("code.delete_expired_codes.success", "count", len(codes))
+	}
+
 	return nil
 }

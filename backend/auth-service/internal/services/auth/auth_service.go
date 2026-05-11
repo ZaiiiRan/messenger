@@ -260,7 +260,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.NotFound, "%s", codedomain.ErrInvalidOrExpiredActivationLink.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidOrExpiredActivationLink.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, userID)
@@ -675,7 +675,7 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.NotFound, "%s", codedomain.ErrInvalidOrExpiredResetLink.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidOrExpiredResetLink.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, userID)
