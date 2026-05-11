@@ -10,6 +10,7 @@ import (
 )
 
 type WorkerConfig struct {
+	MetricsServer          settings.MetricsServerSettings     `mapstructure:"metrics_server"`
 	Shutdown               settings.ShutdownSettings          `mapstructure:"shutdown"`
 	Vault                  settings.VaultSettings             `mapstructure:"vault"`
 	SMTPClient             settings.SMTPClientSettings        `mapstructure:"smtp_client"`
@@ -50,6 +51,7 @@ func LoadWorkerConfig() (*WorkerConfig, error) {
 }
 
 func setWorkerDefaults(v *viper.Viper) {
+	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetEmailSenderWorkerDefaults(v, "email_sender_worker", "email-codes-tasks")
