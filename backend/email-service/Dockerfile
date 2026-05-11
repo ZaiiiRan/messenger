@@ -21,6 +21,7 @@ WORKDIR /root
 
 RUN apt-get update && apt-get install -y \
     librdkafka1 \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/worker .
