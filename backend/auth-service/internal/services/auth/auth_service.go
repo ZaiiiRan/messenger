@@ -18,6 +18,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/jwt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -83,7 +84,7 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 	_, err = uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("auth.register_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	_, err = s.passwordService.CreatePassword(ctx, uow, user, req.Password)
@@ -92,31 +93,31 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		if errors.As(err, &pve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypeActivation)
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if !errors.As(err, &cve) {
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 		c = nil
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.register_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
@@ -146,7 +147,7 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	_, err = uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("auth.get_new_confirmation_code_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypeActivation)
@@ -155,12 +156,12 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.get_new_confirmation_code_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
@@ -189,7 +190,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	_, err = uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("auth.confirm_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	valid, err := s.codeService.CheckCodeByCode(ctx, uow, user.Id, req.Code, codedomain.CodeTypeActivation)
@@ -198,7 +199,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
@@ -206,7 +207,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 
 	user, err = s.userService.ConfirmUser(ctx, user.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
 		return nil, err
@@ -214,17 +215,17 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.confirm_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.confirm.success")
@@ -247,7 +248,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 	_, err := uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("auth.confirm_by_link_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	userID, valid, err := s.codeService.CheckCodeByLinkToken(ctx, uow, req.Token, codedomain.CodeTypeActivation)
@@ -256,7 +257,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Errorf(codes.NotFound, "%s", codedomain.ErrInvalidOrExpiredActivationLink.Error())
@@ -264,7 +265,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 
 	user, err := s.userService.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil || user.Status.IsDeleted {
 		return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
@@ -275,7 +276,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 
 	user, err = s.userService.ConfirmUser(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
 		return nil, err
@@ -283,17 +284,17 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.confirm_by_link_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.confirm_by_link.success")
@@ -314,12 +315,12 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 
 	user, err := s.userService.GetUserByUsername(ctx, req.Login)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
 		user, err = s.userService.GetUserByEmail(ctx, req.Login)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 	}
 
@@ -332,7 +333,7 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 
 	valid, err := s.passwordService.CheckPassword(ctx, uow, user, req.Password)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Error(codes.Unauthenticated, ErrInvalidLoginOrPassword.Error())
@@ -340,22 +341,22 @@ func (s *service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 
 	uv, err := s.tokenService.GetUserVersion(ctx, uow, user.Id)
 	if err != nil || uv == nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.login_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.login_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.login.success")
@@ -371,7 +372,7 @@ func (s *service) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.Refr
 
 	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
 	if refreshTokenStr == "" {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -380,33 +381,33 @@ func (s *service) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.Refr
 	refreshToken, _, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
 	if err != nil {
 		if errors.Is(err, jwt.ErrInvalidToken) {
-			return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+			return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, refreshToken.GetUserID())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil || user.Status.IsDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	_, err = uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("auth.refresh_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, nil, refreshToken)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.refresh_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.refresh.success", "user_id", user.Id)
@@ -422,18 +423,18 @@ func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Logout
 
 	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
 	if refreshTokenStr == "" {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	if err := s.tokenService.ParseRefreshToken(refreshTokenStr); err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
 	defer uow.Close()
 
 	if err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr); err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.logout.success")
@@ -445,7 +446,7 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 
 	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
 	if claims == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	if req.OldPassword == req.NewPassword {
@@ -454,13 +455,13 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 
 	user, err := s.userService.GetUserByID(ctx, claims.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil || user.Status.IsDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
-		return nil, status.Errorf(codes.PermissionDenied, "error.permission_denied")
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -468,12 +469,12 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.change_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	valid, err := s.passwordService.CheckPassword(ctx, uow, user, req.OldPassword)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", password.ErrOldPasswordIncorrect.Error())
@@ -485,22 +486,22 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 		if errors.As(err, &pve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.change_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.change_password.success")
@@ -518,12 +519,12 @@ func (s *service) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequ
 
 	user, err := s.userService.GetUserByUsername(ctx, login)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
 		user, err = s.userService.GetUserByEmail(ctx, login)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 	}
 
@@ -540,7 +541,7 @@ func (s *service) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequ
 	defer uow.Close()
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.forgot_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	c, err := s.codeService.GenerateCode(ctx, uow, user.Id, codedomain.CodeTypePasswordReset)
@@ -551,12 +552,12 @@ func (s *service) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequ
 			return &pb.ForgotPasswordResponse{}, nil
 		}
 		l.Errorw("auth.forgot_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.forgot_password_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
@@ -574,19 +575,19 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 
 	user, err := s.userService.GetUserByUsername(ctx, login)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
 		user, err = s.userService.GetUserByEmail(ctx, login)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 	}
 	if user == nil || user.Status.IsDeleted {
 		return nil, status.Error(codes.Unauthenticated, ErrInvalidCredentials.Error())
 	}
 	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
-		return nil, status.Errorf(codes.PermissionDenied, "error.permission_denied")
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
 	}
 
 	if utf8.RuneCountInString(req.Code) != 6 {
@@ -601,7 +602,7 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 	defer uow.Close()
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.reset_password_by_code_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	valid, err := s.codeService.CheckCodeByCode(ctx, uow, user.Id, req.Code, codedomain.CodeTypePasswordReset)
@@ -610,7 +611,7 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
@@ -621,22 +622,22 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 		if errors.As(err, &pve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.reset_password_by_code_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.reset_password_by_code.success")
@@ -662,7 +663,7 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 	defer uow.Close()
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.reset_password_by_link_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	userID, valid, err := s.codeService.CheckCodeByLinkToken(ctx, uow, req.Token, codedomain.CodeTypePasswordReset)
@@ -671,7 +672,7 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 		if errors.As(err, &cve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
 		return nil, status.Errorf(codes.NotFound, "%s", codedomain.ErrInvalidOrExpiredResetLink.Error())
@@ -679,13 +680,13 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 
 	user, err := s.userService.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil || user.Status.IsDeleted {
 		return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
 	}
 	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
-		return nil, status.Errorf(codes.PermissionDenied, "error.permission_denied")
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
 	}
 
 	if _, err := s.passwordService.ForceUpdatePassword(ctx, uow, user, req.NewPassword); err != nil {
@@ -693,22 +694,22 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 		if errors.As(err, &pve) {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.reset_password_by_link_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.reset_password_by_link.success")
@@ -724,7 +725,7 @@ func (s *service) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessio
 
 	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
 	if refreshTokenStr == "" {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -733,14 +734,14 @@ func (s *service) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessio
 	refreshToken, uv, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
 	if err != nil {
 		if errors.Is(err, jwt.ErrInvalidToken) {
-			return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+			return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	otherTokens, err := s.tokenService.GetRefreshTokens(ctx, uow, refreshToken, uv, req)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	sessions := make([]*pb.Session, 0, len(otherTokens))
@@ -770,7 +771,7 @@ func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSess
 
 	refreshTokenStr, _ := ctxmetadata.GetRefreshTokenFromIncomingContext(ctx)
 	if refreshTokenStr == "" {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -779,24 +780,24 @@ func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSess
 	refreshToken, uv, err := s.tokenService.ValidateRefreshToken(ctx, uow, refreshTokenStr)
 	if err != nil {
 		if errors.Is(err, jwt.ErrInvalidToken) {
-			return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+			return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("auth.invalidate_sessions_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if !all {
 		if err := s.tokenService.InvalidateRefreshTokensByIds(ctx, uow, refreshToken, req.Ids); err != nil {
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
 		if err := uow.Commit(ctx); err != nil {
 			l.Errorw("auth.invalidate_sessions_failed", "err", err)
-			return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+			return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 		l.Infow("auth.invalidate_sessions.success", "count", len(req.Ids))
 		return &pb.InvalidateSessionsResponse{}, nil
@@ -804,28 +805,28 @@ func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSess
 
 	user, err := s.userService.GetUserByID(ctx, refreshToken.GetUserID())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil || user.Status.IsDeleted {
 		return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
 	}
 	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
-		return nil, status.Errorf(codes.PermissionDenied, "error.permission_denied")
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
 	}
 
 	uv, err = s.tokenService.UpdateUserVersion(ctx, uow, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	if err := uow.Commit(ctx); err != nil {
 		l.Errorw("auth.invalidate_sessions_failed", "err", err)
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	l.Infow("auth.invalidate_sessions.success")
@@ -839,7 +840,7 @@ func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSess
 func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.User, error) {
 	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
 	if claims == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 	if claims.IsConfirmed {
 		return nil, status.Error(codes.FailedPrecondition, userservice.ErrUserAlreadyActivated.Error())
@@ -850,10 +851,10 @@ func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.U
 
 	user, err := s.userService.GetUserByID(ctx, claims.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error.internal_server_error")
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "error.unauthorized")
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 	if user.Status.IsConfirmed {
 		return nil, status.Error(codes.FailedPrecondition, userservice.ErrUserAlreadyActivated.Error())
