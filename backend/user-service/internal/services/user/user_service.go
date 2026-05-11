@@ -29,6 +29,7 @@ type UserService interface {
 	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
+	GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error)
 	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
@@ -296,6 +297,31 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 
 	l.Infow("user.get_users_success", "count", len(pbUsers))
 	return &pb.GetUsersResponse{Users: pbUsers}, nil
+}
+
+func (s *service) GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error) {
+	l := s.log.With("op", "get_me_by_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, claims.Id, uow)
+	if err != nil {
+		l.Errorw("user.get_get_me_by_user_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if u == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
+	return &pb.GetMeByUserResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {

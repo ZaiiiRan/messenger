@@ -96,7 +96,9 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/user.v1.UserService/GetMeByUser",
+			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(

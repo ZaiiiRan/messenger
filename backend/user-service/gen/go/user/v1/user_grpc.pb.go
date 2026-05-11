@@ -25,6 +25,7 @@ const (
 	UserService_GetUserByUsername_FullMethodName = "/user.v1.UserService/GetUserByUsername"
 	UserService_GetUserByEmail_FullMethodName    = "/user.v1.UserService/GetUserByEmail"
 	UserService_GetUsers_FullMethodName          = "/user.v1.UserService/GetUsers"
+	UserService_GetMeByUser_FullMethodName       = "/user.v1.UserService/GetMeByUser"
 	UserService_BanUser_FullMethodName           = "/user.v1.UserService/BanUser"
 	UserService_UnbanUser_FullMethodName         = "/user.v1.UserService/UnbanUser"
 	UserService_DeleteUser_FullMethodName        = "/user.v1.UserService/DeleteUser"
@@ -40,6 +41,7 @@ type UserServiceClient interface {
 	GetUserByUsername(ctx context.Context, in *GetUserByUsernameRequest, opts ...grpc.CallOption) (*GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, in *GetUserByEmailRequest, opts ...grpc.CallOption) (*GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, in *GetUsersRequest, opts ...grpc.CallOption) (*GetUsersResponse, error)
+	GetMeByUser(ctx context.Context, in *GetMeByUserRequest, opts ...grpc.CallOption) (*GetMeByUserResponse, error)
 	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
 	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
@@ -113,6 +115,16 @@ func (c *userServiceClient) GetUsers(ctx context.Context, in *GetUsersRequest, o
 	return out, nil
 }
 
+func (c *userServiceClient) GetMeByUser(ctx context.Context, in *GetMeByUserRequest, opts ...grpc.CallOption) (*GetMeByUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMeByUserResponse)
+	err := c.cc.Invoke(ctx, UserService_GetMeByUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -153,6 +165,7 @@ type UserServiceServer interface {
 	GetUserByUsername(context.Context, *GetUserByUsernameRequest) (*GetUserByUsernameResponse, error)
 	GetUserByEmail(context.Context, *GetUserByEmailRequest) (*GetUserByEmailResponse, error)
 	GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error)
+	GetMeByUser(context.Context, *GetMeByUserRequest) (*GetMeByUserResponse, error)
 	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
 	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
@@ -183,6 +196,9 @@ func (UnimplementedUserServiceServer) GetUserByEmail(context.Context, *GetUserBy
 }
 func (UnimplementedUserServiceServer) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUserServiceServer) GetMeByUser(context.Context, *GetMeByUserRequest) (*GetMeByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMeByUser not implemented")
 }
 func (UnimplementedUserServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BanUser not implemented")
@@ -322,6 +338,24 @@ func _UserService_GetUsers_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetMeByUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMeByUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetMeByUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetMeByUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetMeByUser(ctx, req.(*GetMeByUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -406,6 +440,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsers",
 			Handler:    _UserService_GetUsers_Handler,
+		},
+		{
+			MethodName: "GetMeByUser",
+			Handler:    _UserService_GetMeByUser_Handler,
 		},
 		{
 			MethodName: "BanUser",
