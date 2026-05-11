@@ -6,11 +6,14 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	tokenservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/token"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
+
+const workerType = "expired_token_clearing"
 
 type ExpiredTokenClearingWorker struct {
 	workerID     string
@@ -18,16 +21,21 @@ type ExpiredTokenClearingWorker struct {
 	tokenService tokenservice.TokenService
 	pgClient     *postgres.PostgresClient
 	log          *zap.SugaredLogger
+	metrics      *prommetrics.WorkerMetrics
 }
 
-func New(cfg settings.ExpiredTokenClearingWorkerSettings, tokenService tokenservice.TokenService, pgClient *postgres.PostgresClient, log *zap.SugaredLogger) workers.Worker {
-	return &ExpiredTokenClearingWorker{
+func New(cfg settings.ExpiredTokenClearingWorkerSettings, tokenService tokenservice.TokenService, pgClient *postgres.PostgresClient, log *zap.SugaredLogger, metrics *prommetrics.WorkerMetrics) workers.Worker {
+	w := &ExpiredTokenClearingWorker{
 		cfg:          &cfg,
 		tokenService: tokenService,
 		pgClient:     pgClient,
 		log:          log,
 		workerID:     uuid.New().String(),
+		metrics:      metrics,
 	}
+	metrics.CyclesTotal.WithLabelValues(workerType, "success").Add(0)
+	metrics.CyclesTotal.WithLabelValues(workerType, "error").Add(0)
+	return w
 }
 
 func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
@@ -56,5 +64,8 @@ func (w *ExpiredTokenClearingWorker) Run(ctx context.Context) {
 }
 
 func (w *ExpiredTokenClearingWorker) runOnce(ctx context.Context) {
+	start := time.Now()
 	w.tokenService.DeleteExpiredTokens(ctx, w.workerID, w.cfg.BatchSize)
+	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
+	w.metrics.CyclesTotal.WithLabelValues(workerType, "success").Inc()
 }

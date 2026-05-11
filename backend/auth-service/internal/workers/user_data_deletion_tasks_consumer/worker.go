@@ -4,16 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	kafkaconsumer "github.com/ZaiiiRan/messenger/backend/auth-service/internal/consumers/impl/kafka"
 	consumersmodels "github.com/ZaiiiRan/messenger/backend/auth-service/internal/consumers/models"
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_data_deletion_tasks"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
+
+const workerType = "user_data_deletion_tasks_consumer"
 
 type UserDataDeletionTasksConsumerWorker struct {
 	workerID                     string
@@ -27,6 +31,7 @@ func New(
 	kafkaClient *kafkatransport.KafkaClient,
 	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService,
 	log *zap.SugaredLogger,
+	metrics *prommetrics.WorkerMetrics,
 ) (workers.Worker, error) {
 	id := uuid.New().String()
 
@@ -38,7 +43,13 @@ func New(
 		userDataDeletionTasksService: userDataDeletionTasksService,
 	}
 
+	metrics.CyclesTotal.WithLabelValues(workerType, "success").Add(0)
+	metrics.CyclesTotal.WithLabelValues(workerType, "error").Add(0)
+	metrics.ProcessedItemsTotal.WithLabelValues(workerType).Add(0)
+
 	handlerFunc := func(ctx context.Context, messages []kafkaconsumer.Message) error {
+		start := time.Now()
+
 		taskMessages := make([]*consumersmodels.UserDataDeletionTask, 0, len(messages))
 		for _, message := range messages {
 			var taskMessage *consumersmodels.UserDataDeletionTask
@@ -59,7 +70,14 @@ func New(
 		}
 
 		err := w.userDataDeletionTasksService.CreateUserDataDeletionTasks(ctx, w.workerID, taskMessages)
-		return err
+		metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
+		if err != nil {
+			metrics.CyclesTotal.WithLabelValues(workerType, "error").Inc()
+			return err
+		}
+		metrics.CyclesTotal.WithLabelValues(workerType, "success").Inc()
+		metrics.ProcessedItemsTotal.WithLabelValues(workerType).Add(float64(len(taskMessages)))
+		return nil
 	}
 
 	consumer, err := kafkaconsumer.New(cfg, kafkaClient, workerLog, handlerFunc)

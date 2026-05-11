@@ -13,6 +13,7 @@ import (
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/user_data_deletion_tasks"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
 	expiredtokenclearingworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/expired_token_clearing"
 	userdatadeletiontasksworker "github.com/ZaiiiRan/messenger/backend/auth-service/internal/workers/user_data_deletion_tasks"
@@ -34,6 +35,10 @@ type WorkerApp struct {
 	tokenService                 tokenservice.TokenService
 	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService
 
+	metricsServer    *prommetrics.Server
+	workerMetrics    *prommetrics.WorkerMetrics
+	isMetricsStarted chan bool
+
 	workersCtx    context.Context
 	workersCancel context.CancelFunc
 	workersWG     sync.WaitGroup
@@ -51,8 +56,9 @@ func NewWorkerApp() (*WorkerApp, error) {
 	}
 
 	return &WorkerApp{
-		cfg: cfg,
-		log: log,
+		cfg:              cfg,
+		log:              log,
+		isMetricsStarted: make(chan bool),
 	}, nil
 }
 
@@ -72,6 +78,9 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.initTokenService()
 	a.initUserDataDeletionTasksSerivce()
 
+	a.initMetricsServer()
+	a.startMetricsServer()
+
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startExpiredTokenClearingWorkers()
@@ -80,6 +89,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	}
 	a.startUserDataDeletionTasksWorkers()
 
+	<-a.isMetricsStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -104,6 +114,10 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	case <-workersStopped:
 	case <-shCtx.Done():
 		a.log.Warnw("app.workers_shutdown_timeout")
+	}
+
+	if a.metricsServer != nil {
+		a.metricsServer.Stop(shCtx)
 	}
 
 	a.postgresClient.Close()
@@ -164,9 +178,24 @@ func (a *WorkerApp) initUserDataDeletionTasksSerivce() {
 	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.passwordService, a.codeService, a.tokenService, a.log)
 }
 
+func (a *WorkerApp) initMetricsServer() {
+	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
+	a.workerMetrics = prommetrics.NewWorkerMetrics(a.metricsServer.Registry())
+}
+
+func (a *WorkerApp) startMetricsServer() {
+	go func() {
+		a.log.Infow("app.metrics_serve_start", "port", a.cfg.MetricsServer.Port)
+		a.isMetricsStarted <- true
+		if err := a.metricsServer.Start(); err != nil {
+			a.log.Fatalw("app.metrics_serve_error", "err", err)
+		}
+	}()
+}
+
 func (a *WorkerApp) startExpiredTokenClearingWorkers() {
 	for i := 0; i < int(a.cfg.ExpiredTokenClearingWorker.Count); i++ {
-		w := expiredtokenclearingworker.New(a.cfg.ExpiredTokenClearingWorker, a.tokenService, a.postgresClient, a.log)
+		w := expiredtokenclearingworker.New(a.cfg.ExpiredTokenClearingWorker, a.tokenService, a.postgresClient, a.log, a.workerMetrics)
 		a.workersWG.Add(1)
 		go func() {
 			defer a.workersWG.Done()
@@ -182,6 +211,7 @@ func (a *WorkerApp) startUserDataDeletionTasksConsumerWorkers() error {
 			a.userDataDeletionTasksKafkaClient,
 			a.userDataDeletionTasksService,
 			a.log,
+			a.workerMetrics,
 		)
 		if err != nil {
 			a.log.Errorw("app.user_data_deletion_tasks_consumer_worker_init_failed", "err", err, "worker_id", i)
@@ -202,6 +232,7 @@ func (a *WorkerApp) startUserDataDeletionTasksWorkers() {
 			a.cfg.UserDataDeletionTasksWorker,
 			a.userDataDeletionTasksService,
 			a.log,
+			a.workerMetrics,
 		)
 		a.workersWG.Add(1)
 		go func() {

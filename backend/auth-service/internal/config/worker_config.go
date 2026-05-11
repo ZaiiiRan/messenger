@@ -10,6 +10,7 @@ import (
 )
 
 type WorkerConfig struct {
+	MetricsServer                 settings.MetricsServerSettings                 `mapstructure:"metrics_server"`
 	DB                            settings.PostgresSettings                      `mapstructure:"db"`
 	Redis                         settings.RedisSettings                         `mapstructure:"redis"`
 	Shutdown                      settings.ShutdownSettings                      `mapstructure:"shutdown"`
@@ -52,6 +53,7 @@ func LoadWorkerConfig() (*WorkerConfig, error) {
 }
 
 func setWorkerDefaults(v *viper.Viper) {
+	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetRedisDefaults(v, "redis")
 	settings.SetShutdownDefaults(v, "shutdown")
