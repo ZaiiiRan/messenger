@@ -12,6 +12,8 @@ service UserService {
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
     rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
 
+    rpc GetMeByUser(GetMeByUserRequest) returns (GetMeByUserResponse);
+
     rpc BanUser(BanUserRequest) returns (BanUserResponse);
     rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
@@ -157,5 +159,13 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {
+    User user = 1;
+}
+
+message GetMeByUserRequest {
+    bool include_privacy_settings = 1;
+}
+
+message GetMeByUserResponse {
     User user = 1;
 }
