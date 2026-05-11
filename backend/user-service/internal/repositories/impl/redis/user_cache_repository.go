@@ -23,21 +23,32 @@ const (
 )
 
 type cachedUserDal struct {
-	User    models.V1UserDal    `json:"user"`
-	Profile models.V1ProfileDal `json:"profile"`
-	Status  models.V1StatusDal  `json:"status"`
+	User            models.V1UserDal            `json:"user"`
+	Profile         models.V1ProfileDal         `json:"profile"`
+	Status          models.V1StatusDal          `json:"status"`
+	PrivacySettings models.V1PrivacySettingsDal `json:"privacy_settings"`
 }
 
-func toCachedUserDal(u *user.User) cachedUserDal {
-	return cachedUserDal{
-		User:    models.V1UserDalFromDomain(u),
-		Profile: models.V1ProfileDalFromDomain(u.GetID(), u.GetProfile()),
-		Status:  models.V1StatusDalFromDomain(u.GetID(), u.GetStatus()),
+func toCachedUserDal(u *user.User) (cachedUserDal, error) {
+	ps, err := models.V1PrivacySettingsDalFromDomain(u.GetID(), u.GetPrivacySettings())
+	if err != nil {
+		return cachedUserDal{}, err
 	}
+	return cachedUserDal{
+		User:            models.V1UserDalFromDomain(u),
+		Profile:         models.V1ProfileDalFromDomain(u.GetID(), u.GetProfile()),
+		Status:          models.V1StatusDalFromDomain(u.GetID(), u.GetStatus()),
+		PrivacySettings: ps,
+	}, nil
 }
 
-func (c cachedUserDal) toDomain() *user.User {
-	return c.User.ToDomain(c.Profile.ToDomain(), c.Status.ToDomain())
+func (c cachedUserDal) toDomain() (*user.User, error) {
+	ps, err := c.PrivacySettings.ToDomain()
+	if err != nil {
+		return nil, err
+	}
+
+	return c.User.ToDomain(c.Profile.ToDomain(), ps, c.Status.ToDomain()), nil
 }
 
 type UserCacheRepository struct {
@@ -65,7 +76,11 @@ func (r *UserCacheRepository) listKey(hash string) string {
 }
 
 func (r *UserCacheRepository) SetUser(ctx context.Context, u *user.User) error {
-	if err := set(ctx, r.redis, r.keyByID(u.GetID()), toCachedUserDal(u), userTTL); err != nil {
+	cachedUser, err := toCachedUserDal(u)
+	if err != nil {
+		return err
+	}
+	if err := set(ctx, r.redis, r.keyByID(u.GetID()), cachedUser, userTTL); err != nil {
 		return err
 	}
 	cl := r.redis.GetClient()
@@ -80,7 +95,8 @@ func (r *UserCacheRepository) GetUser(ctx context.Context, id string) (*user.Use
 	if err != nil || cached == nil {
 		return nil, err
 	}
-	return cached.toDomain(), nil
+	domainUser, err := cached.toDomain()
+	return domainUser, err
 }
 
 func (r *UserCacheRepository) DeleteUser(ctx context.Context, id string) error {
@@ -157,7 +173,11 @@ func (r *UserCacheRepository) SetUserList(ctx context.Context, query *models.Que
 
 	cached := make([]cachedUserDal, len(users))
 	for i, u := range users {
-		cached[i] = toCachedUserDal(u)
+		cachedUser, err := toCachedUserDal(u)
+		if err != nil {
+			return err
+		}
+		cached[i] = cachedUser
 	}
 
 	key := r.listKey(hash)
@@ -181,7 +201,11 @@ func (r *UserCacheRepository) GetUserList(ctx context.Context, query *models.Que
 
 	users := make([]*user.User, len(*cachedList))
 	for i, c := range *cachedList {
-		users[i] = c.toDomain()
+		domainUser, err := c.toDomain()
+		if err != nil {
+			return nil, err
+		}
+		users[i] = domainUser
 	}
 	return users, nil
 }

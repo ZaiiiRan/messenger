@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	privacysettings "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/privacy_settings"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
@@ -48,13 +49,14 @@ func (u V1UserDal) Index(i int) any {
 	}
 }
 
-func (u V1UserDal) ToDomain(profile *profile.Profile, status *status.Status) *user.User {
+func (u V1UserDal) ToDomain(profile *profile.Profile, privacySettings *privacysettings.PrivacySettings, status *status.Status) *user.User {
 	return user.FromStorage(
 		u.Id,
 		u.Username,
 		u.Email,
 		profile,
 		status,
+		privacySettings,
 		u.CreatedAt,
 		u.UpdatedAt,
 	)

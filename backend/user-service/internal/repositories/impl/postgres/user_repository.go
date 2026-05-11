@@ -43,10 +43,16 @@ func (r *UserRepository) Create(ctx context.Context, users []*user.User) error {
 
 	profileDals := make([]models.V1ProfileDal, len(users))
 	statusDals := make([]models.V1StatusDal, len(users))
+	privacySettingsDals := make([]models.V1PrivacySettingsDal, len(users))
 	for i, u := range users {
 		inserted := userByUsername[u.GetUsername()]
 		profileDals[i] = models.V1ProfileDalFromDomain(inserted.Id, u.GetProfile())
 		statusDals[i] = models.V1StatusDalFromDomain(inserted.Id, u.GetStatus())
+		privacySettingsDal, err := models.V1PrivacySettingsDalFromDomain(inserted.Id, u.GetPrivacySettings())
+		if err != nil {
+			return err
+		}
+		privacySettingsDals[i] = privacySettingsDal
 	}
 
 	insertedProfiles, err := r.insertProfiles(ctx, profileDals)
@@ -59,6 +65,11 @@ func (r *UserRepository) Create(ctx context.Context, users []*user.User) error {
 		return err
 	}
 
+	insertedPrivacySettings, err := r.insertPrivacySettings(ctx, privacySettingsDals)
+	if err != nil {
+		return err
+	}
+
 	profileByUserId := make(map[string]models.V1ProfileDal, len(insertedProfiles))
 	for _, p := range insertedProfiles {
 		profileByUserId[p.UserId] = p
@@ -67,12 +78,21 @@ func (r *UserRepository) Create(ctx context.Context, users []*user.User) error {
 	for _, s := range insertedStatuses {
 		statusByUserId[s.UserId] = s
 	}
+	privacySettingsByUserId := make(map[string]models.V1PrivacySettingsDal, len(insertedPrivacySettings))
+	for _, ps := range insertedPrivacySettings {
+		privacySettingsByUserId[ps.UserId] = ps
+	}
 
 	for _, u := range users {
 		inserted := userByUsername[u.GetUsername()]
 		p := profileByUserId[inserted.Id]
 		s := statusByUserId[inserted.Id]
-		*u = *inserted.ToDomain(p.ToDomain(), s.ToDomain())
+		ps := privacySettingsByUserId[inserted.Id]
+		domainPs, err := ps.ToDomain()
+		if err != nil {
+			return err
+		}
+		*u = *inserted.ToDomain(p.ToDomain(), domainPs, s.ToDomain())
 	}
 
 	return nil
@@ -86,10 +106,16 @@ func (r *UserRepository) Update(ctx context.Context, users []*user.User) error {
 	userDals := make([]models.V1UserDal, len(users))
 	profileDals := make([]models.V1ProfileDal, len(users))
 	statusDals := make([]models.V1StatusDal, len(users))
+	privacySettingsDals := make([]models.V1PrivacySettingsDal, len(users))
 	for i, u := range users {
 		userDals[i] = models.V1UserDalFromDomain(u)
 		profileDals[i] = models.V1ProfileDalFromDomain(u.GetID(), u.GetProfile())
 		statusDals[i] = models.V1StatusDalFromDomain(u.GetID(), u.GetStatus())
+		privacySettingsDal, err := models.V1PrivacySettingsDalFromDomain(u.GetID(), u.GetPrivacySettings())
+		if err != nil {
+			return err
+		}
+		privacySettingsDals[i] = privacySettingsDal
 	}
 
 	updatedUsers, err := r.updateUsers(ctx, userDals)
@@ -107,6 +133,11 @@ func (r *UserRepository) Update(ctx context.Context, users []*user.User) error {
 		return err
 	}
 
+	updatedPrivacySettings, err := r.updatePrivacySettings(ctx, privacySettingsDals)
+	if err != nil {
+		return err
+	}
+
 	userById := make(map[string]models.V1UserDal, len(updatedUsers))
 	for _, u := range updatedUsers {
 		userById[u.Id] = u
@@ -119,10 +150,19 @@ func (r *UserRepository) Update(ctx context.Context, users []*user.User) error {
 	for _, s := range updatedStatuses {
 		statusByUserId[s.UserId] = s
 	}
+	privacySettingsByUserId := make(map[string]models.V1PrivacySettingsDal, len(updatedPrivacySettings))
+	for _, ps := range updatedPrivacySettings {
+		privacySettingsByUserId[ps.UserId] = ps
+	}
 
 	for _, u := range users {
 		id := u.GetID()
-		*u = *userById[id].ToDomain(profileByUserId[id].ToDomain(), statusByUserId[id].ToDomain())
+		ps := privacySettingsByUserId[id]
+		domainPs, err := ps.ToDomain()
+		if err != nil {
+			return err
+		}
+		*u = *userById[id].ToDomain(profileByUserId[id].ToDomain(), domainPs, statusByUserId[id].ToDomain())
 	}
 
 	return nil
@@ -143,10 +183,12 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 		SELECT
 			u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted
+			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted,
+			ps.settings
 		FROM users u
 		JOIN profile p ON p.user_id = u.id
 		JOIN status  s ON s.user_id = u.id
+		JOIN privacy_settings ps ON ps.user_id = u.id
 		WHERE 1=1
 	`)
 
@@ -178,21 +220,30 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	var result []*user.User
 	for rows.Next() {
 		var (
-			userDal    models.V1UserDal
-			profileDal models.V1ProfileDal
-			statusDal  models.V1StatusDal
+			userDal            models.V1UserDal
+			profileDal         models.V1ProfileDal
+			statusDal          models.V1StatusDal
+			privacySettingsDal models.V1PrivacySettingsDal
 		)
 		if err := rows.Scan(
 			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
 			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
 			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
 			&statusDal.IsPermanentlyDeleted,
+			&privacySettingsDal.Settings,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		profileDal.UserId = userDal.Id
 		statusDal.UserId = userDal.Id
-		result = append(result, userDal.ToDomain(profileDal.ToDomain(), statusDal.ToDomain()))
+		privacySettingsDal.UserId = userDal.Id
+
+		domainPs, err := privacySettingsDal.ToDomain()
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, userDal.ToDomain(profileDal.ToDomain(), domainPs, statusDal.ToDomain()))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate users: %w", err)
@@ -216,10 +267,12 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 		SELECT
 		u.id, u.username, u.email, u.created_at, u.updated_at,
 			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted
+			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted,
+			ps.settings
 		FROM users u
 		JOIN profile p ON p.user_id = u.id
 		JOIN status  s ON s.user_id = u.id
+		JOIN privacy_settings ps ON ps.user_id = u.id
 		WHERE 1=1
 	`)
 
@@ -253,21 +306,30 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	var result []*user.User
 	for rows.Next() {
 		var (
-			userDal    models.V1UserDal
-			profileDal models.V1ProfileDal
-			statusDal  models.V1StatusDal
+			userDal            models.V1UserDal
+			profileDal         models.V1ProfileDal
+			statusDal          models.V1StatusDal
+			privacySettingsDal models.V1PrivacySettingsDal
 		)
 		if err := rows.Scan(
 			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
 			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
 			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
 			&statusDal.IsPermanentlyDeleted,
+			&privacySettingsDal.Settings,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		profileDal.UserId = userDal.Id
 		statusDal.UserId = userDal.Id
-		result = append(result, userDal.ToDomain(profileDal.ToDomain(), statusDal.ToDomain()))
+		privacySettingsDal.UserId = userDal.Id
+
+		domainPs, err := privacySettingsDal.ToDomain()
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, userDal.ToDomain(profileDal.ToDomain(), domainPs, statusDal.ToDomain()))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate users: %w", err)
@@ -300,6 +362,10 @@ func (r *UserRepository) Delete(ctx context.Context, users []*user.User) error {
 		),
 		deleted_status AS (
 			DELETE FROM status
+			WHERE user_id::text = ANY($1)
+		),
+		deleted_privacy_settings AS (
+			DELETE FROM privacy_settings
 			WHERE user_id::text = ANY($1)
 		)
 		DELETE FROM users
@@ -409,6 +475,35 @@ func (r *UserRepository) insertStatuses(ctx context.Context, dals []models.V1Sta
 	return result, nil
 }
 
+func (r *UserRepository) insertPrivacySettings(ctx context.Context, dals []models.V1PrivacySettingsDal) ([]models.V1PrivacySettingsDal, error) {
+	const sql = `
+		INSERT INTO privacy_settings (user_id, settings)
+		SELECT (i).user_id, (i).settings
+		FROM UNNEST($1::v1_privacy_settings[]) i
+		RETURNING id, user_id, settings
+	`
+
+	rows, err := r.conn.Query(ctx, sql, dals)
+	if err != nil {
+		return nil, fmt.Errorf("insert privacy settings: %w", err)
+	}
+	defer rows.Close()
+
+	var result []models.V1PrivacySettingsDal
+	for rows.Next() {
+		var res models.V1PrivacySettingsDal
+		if err := rows.Scan(&res.Id, &res.UserId, &res.Settings); err != nil {
+			return nil, fmt.Errorf("scan inserted privacy settings: %w", err)
+		}
+		result = append(result, res)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate inserted privacy settings: %w", err)
+	}
+
+	return result, nil
+}
+
 func (r *UserRepository) updateUsers(ctx context.Context, dals []models.V1UserDal) ([]models.V1UserDal, error) {
 	const sql = `
 		UPDATE users AS t
@@ -510,6 +605,37 @@ func (r *UserRepository) updateStatuses(ctx context.Context, dals []models.V1Sta
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate updated statuses: %w", err)
+	}
+
+	return result, nil
+}
+
+func (r *UserRepository) updatePrivacySettings(ctx context.Context, dals []models.V1PrivacySettingsDal) ([]models.V1PrivacySettingsDal, error) {
+	const sql = `
+		UPDATE privacy_settings AS t
+		SET
+			settings = u.settings
+		FROM UNNEST($1::v1_privacy_settings[]) AS u
+		WHERE t.user_id = u.user_id
+		RETURNING t.id, t.user_id, t.settings
+	`
+
+	rows, err := r.conn.Query(ctx, sql, dals)
+	if err != nil {
+		return nil, fmt.Errorf("update privacy settings: %w", err)
+	}
+	defer rows.Close()
+
+	var result []models.V1PrivacySettingsDal
+	for rows.Next() {
+		var res models.V1PrivacySettingsDal
+		if err := rows.Scan(&res.Id, &res.UserId, &res.Settings); err != nil {
+			return nil, fmt.Errorf("scan updated privacy settings: %w", err)
+		}
+		result = append(result, res)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate updated privacy settings: %w", err)
 	}
 
 	return result, nil

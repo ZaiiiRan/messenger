@@ -8,6 +8,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
+	privacysettings "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/privacy_settings"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
@@ -69,7 +70,8 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 		req.Profile.Bio,
 	)
 	st := status.New()
-	u, verr := user.New(req.Username, req.Email, prof, st)
+	ps := privacysettings.New()
+	u, verr := user.New(req.Username, req.Email, prof, ps, st)
 	if verr == nil {
 		verr = make(validationerror.ValidationError)
 	}
@@ -114,7 +116,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 		byEmail.GetID() == byUsername.GetID() &&
 		!byEmail.GetStatus().IsConfirmed():
 		l.Infow("user.create_user.user_already_pending", "user_id", byEmail.GetID())
-		return &pb.CreateUserResponse{User: userToProto(byEmail)}, nil
+		return &pb.CreateUserResponse{User: userToProto(byEmail, false)}, nil
 
 	default:
 		vErr := make(validationerror.ValidationError)
@@ -143,7 +145,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	}
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
-	return &pb.CreateUserResponse{User: userToProto(u)}, nil
+	return &pb.CreateUserResponse{User: userToProto(u, false)}, nil
 }
 
 func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error) {
@@ -167,7 +169,7 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (
 	}
 
 	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
-	return &pb.GetUserByIDResponse{User: userToProto(u)}, nil
+	return &pb.GetUserByIDResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error) {
@@ -193,7 +195,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	}
 
 	l.Infow("user.get_user_by_username_success", "user_id", u.GetID())
-	return &pb.GetUserByUsernameResponse{User: userToProto(u)}, nil
+	return &pb.GetUserByUsernameResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error) {
@@ -219,7 +221,7 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 	}
 
 	l.Infow("user.get_user_by_email_success", "user_id", u.GetID())
-	return &pb.GetUserByEmailResponse{User: userToProto(u)}, nil
+	return &pb.GetUserByEmailResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
@@ -289,7 +291,7 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 
 	pbUsers := make([]*pb.User, len(users))
 	for i, u := range users {
-		pbUsers[i] = userToProto(u)
+		pbUsers[i] = userToProto(u, req.IncludePrivacySettings)
 	}
 
 	l.Infow("user.get_users_success", "count", len(pbUsers))
@@ -343,7 +345,7 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 	}
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
-	return &pb.ConfirmUserResponse{User: userToProto(u)}, nil
+	return &pb.ConfirmUserResponse{User: userToProto(u, false)}, nil
 }
 
 func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
