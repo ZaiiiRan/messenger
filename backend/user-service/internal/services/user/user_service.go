@@ -89,25 +89,21 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	defer uow.Close()
 
 	byEmail, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
-		Emails: []string{u.GetEmail()},
+		Emails:               []string{u.GetEmail()},
+		IsPermanentlyDeleted: utils.BoolPtr(false),
 	}, uow)
 	if err != nil {
 		l.Errorw("user.create_user_failed.get_by_email_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	if byEmail != nil && !isUniqueHolder(byEmail) {
-		byEmail = nil
-	}
 
 	byUsername, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
-		Usernames: []string{u.GetUsername()},
+		Usernames:            []string{u.GetUsername()},
+		IsPermanentlyDeleted: utils.BoolPtr(false),
 	}, uow)
 	if err != nil {
 		l.Errorw("user.create_user_failed.get_by_username_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
-	if byUsername != nil && !isUniqueHolder(byUsername) {
-		byUsername = nil
 	}
 
 	switch {
@@ -539,21 +535,4 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 	}
 
 	return len(users), nil
-}
-
-func isUniqueHolder(u *user.User) bool {
-	s := u.GetStatus()
-	if s.IsPermanentlyBanned() {
-		return true
-	}
-	if bu := s.GetBannedUntil(); bu != nil && bu.After(time.Now()) {
-		return true
-	}
-	if !s.IsDeleted() {
-		return true
-	}
-	if da := s.GetDeletedAt(); da != nil && time.Since(*da) < 30*24*time.Hour {
-		return true
-	}
-	return false
 }
