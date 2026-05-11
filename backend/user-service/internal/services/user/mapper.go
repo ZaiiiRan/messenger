@@ -2,20 +2,25 @@ package userservice
 
 import (
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
+	privacysettings "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/privacy_settings"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 )
 
-func userToProto(u *user.User) *pb.User {
-	return &pb.User{
+func userToProto(u *user.User, includePrivacySettings bool) *pb.User {
+	pbUser := &pb.User{
 		Id:       u.GetID(),
 		Username: u.GetUsername(),
 		Email:    u.GetEmail(),
 		Profile:  profileToProto(u.GetProfile()),
 		Status:   statusToProto(u.GetStatus()),
 	}
+	if includePrivacySettings {
+		pbUser.PrivacySettings = privacySettingsToProto(u.GetPrivacySettings())
+	}
+	return pbUser
 }
 
 func profileToProto(p *profile.Profile) *pb.Profile {
@@ -41,5 +46,28 @@ func statusToProto(s *status.Status) *pb.UserStatus {
 		BannedUntil:         utils.FormatTimestampPtr(s.GetBannedUntil()),
 		IsDeleted:           s.IsDeleted(),
 		DeletedAt:           utils.FormatTimestampPtr(s.GetDeletedAt()),
+	}
+}
+
+func privacySettingsToProto(s *privacysettings.PrivacySettings) *pb.UserPrivacySettings {
+	if s == nil {
+		return nil
+	}
+	return &pb.UserPrivacySettings{
+		Avatar:           privacySettingToProto(s.GetAvatar()),
+		Photos:           privacySettingToProto(s.GetPhotos()),
+		PhoneNumber:      privacySettingToProto(s.GetPhoneNumber()),
+		Email:            privacySettingToProto(s.GetEmail()),
+		OnlineStatus:     privacySettingToProto(s.GetOnlineStatus()),
+		FirstDialogsInit: privacySettingToProto(s.GetFirstDialogsInit()),
+		GroupChatInvites: privacySettingToProto(s.GetGroupChatInvites()),
+	}
+}
+
+func privacySettingToProto(s privacysettings.PrivacySetting) *pb.UserPrivacySetting {
+	return &pb.UserPrivacySetting{
+		Value:      s.GetValue().String(),
+		Favourites: s.GetFavourites(),
+		Exceptions: s.GetExceptions(),
 	}
 }

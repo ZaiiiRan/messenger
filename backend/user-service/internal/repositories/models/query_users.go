@@ -15,17 +15,20 @@ type UserFilterDal struct {
 	PhoneNumbers []string `db:"phone_numbers" json:"phone_numbers"`
 	PartialNames []string `db:"partial_names" json:"partial_names"`
 
-	IsConfirmed         *bool `db:"is_confirmed" json:"is_confirmed"`
-	IsDeleted           *bool `db:"is_deleted" json:"is_deleted"`
-	IsPermanentlyBanned *bool `db:"is_permanently_banned" json:"is_permanently_banned"`
-	IsTemporarilyBanned *bool `db:"is_temporarily_banned" json:"is_temporarily_banned"`
+	IsConfirmed          *bool `db:"is_confirmed" json:"is_confirmed"`
+	IsDeleted            *bool `db:"is_deleted" json:"is_deleted"`
+	IsPermanentlyBanned  *bool `db:"is_permanently_banned" json:"is_permanently_banned"`
+	IsTemporarilyBanned  *bool `db:"is_temporarily_banned" json:"is_temporarily_banned"`
+	IsPermanentlyDeleted *bool `db:"is_permanently_deleted" json:"is_permanently_deleted"`
 
-	DeletedFrom *time.Time `db:"deleted_from" json:"deleted_from"`
-	DeletedTo   *time.Time `db:"deleted_to" json:"deleted_to"`
-	CreatedFrom *time.Time `db:"created_from" json:"created_from"`
-	CreatedTo   *time.Time `db:"created_to" json:"created_to"`
-	UpdatedFrom *time.Time `db:"updated_from" json:"updated_from"`
-	UpdatedTo   *time.Time `db:"updated_to" json:"updated_to"`
+	DeletedFrom     *time.Time `db:"deleted_from" json:"deleted_from"`
+	DeletedTo       *time.Time `db:"deleted_to" json:"deleted_to"`
+	BannedUntilFrom *time.Time `db:"banned_until_from" json:"banned_until_from"`
+	BannedUntilTo   *time.Time `db:"banned_until_to" json:"banned_until_to"`
+	CreatedFrom     *time.Time `db:"created_from" json:"created_from"`
+	CreatedTo       *time.Time `db:"created_to" json:"created_to"`
+	UpdatedFrom     *time.Time `db:"updated_from" json:"updated_from"`
+	UpdatedTo       *time.Time `db:"updated_to" json:"updated_to"`
 }
 
 type QueryUsersDal struct {

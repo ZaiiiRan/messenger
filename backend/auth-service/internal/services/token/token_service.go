@@ -2,7 +2,6 @@ package tokenservice
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
@@ -29,9 +28,10 @@ type TokenService interface {
 	InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error
 	GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error)
 	UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error)
-	DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error
 	GetRefreshTokens(ctx context.Context, uow *uow.UnitOfWork, refreshToken *token.Token, userVersion *userversion.UserVersion, req *pb.GetActiveSessionsRequest) ([]*token.Token, error)
 	InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error
+	DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error
+	DeleteUserVersionAndTokensByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error
 }
 
 type tokenService struct {
@@ -65,8 +65,8 @@ func (s *tokenService) GenerateToken(
 	} else if userVersion != nil {
 		version = userVersion.GetVersion()
 	} else {
-		l.Errorw("token.get_user_version", "err", "user version or existed refresh token is not provided")
-		return nil, nil, fmt.Errorf("user version or existed refresh token is not provided")
+		l.Errorw("token.get_user_version", "err", ErrUserVersionOrExistedRefreshTokenNotProvided)
+		return nil, nil, ErrUserVersionOrExistedRefreshTokenNotProvided
 	}
 
 	c := &commonjwt.UserClaims{
@@ -252,8 +252,11 @@ func (s *tokenService) GetRefreshTokens(
 	return tokens, nil
 }
 
-func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfWork, batchSize uint, workerID string) error {
+func (s *tokenService) DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error {
 	l := s.log.With("op", "delete_expired_tokens", "worker_id", workerID)
+
+	uow := s.tokenDataProvider.newUOW()
+	defer uow.Close()
 
 	tokens, err := s.tokenDataProvider.deleteExpiredTokens(ctx, batchSize, uow)
 	if err != nil {
@@ -265,6 +268,33 @@ func (s *tokenService) DeleteExpiredTokens(ctx context.Context, uow *uow.UnitOfW
 		l.Infow("token.delete_expired_tokens.success", "count", len(tokens))
 	}
 
+	return nil
+}
+
+func (s *tokenService) DeleteUserVersionAndTokensByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error {
+	l := s.log.With("op", "delete_user_version_and_tokens_by_user_id", "worker_id", workerID, "user_id", userID)
+
+	err := s.tokenDataProvider.deleteByUserId(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+
+	uv, err := s.userVersionDataProvider.getByUserId(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+	if uv == nil {
+		return nil
+	}
+
+	if err := s.userVersionDataProvider.delete(ctx, uv, uow); err != nil {
+		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+		return err
+	}
+
+	l.Infow("token.delete_user_version_and_tokens_by_user_id.success")
 	return nil
 }
 

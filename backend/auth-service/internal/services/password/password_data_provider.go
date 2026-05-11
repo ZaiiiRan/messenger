@@ -79,3 +79,19 @@ func (pdp *passwordDataProvider) save(ctx context.Context, p *password.Password,
 
 	return nil
 }
+
+func (pdp *passwordDataProvider) delete(ctx context.Context, p *password.Password, uow *uow.UnitOfWork) error {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+
+	dbRepo := postgresimpl.NewPasswordRepository(pgConn)
+	if err := dbRepo.DeletePassword(ctx, p); err != nil {
+		return err
+	}
+
+	cacheRepo := redisimpl.NewPasswordCacheRepository(pdp.redis)
+	cacheRepo.DelPasswordByUserId(ctx, p.GetUserID())
+	return nil
+}

@@ -1,3 +1,5 @@
+metrics_server:
+  port: ":8080"
 shutdown:
   shutdown_timeout: 5
 vault:
@@ -6,3 +8,24 @@ expired_token_clearing_worker:
   interval_ms: 1000
   batch_size: 1000
   count: 5
+expired_reset_password_codes_clearing_worker:
+  interval_ms: 1000
+  batch_size: 1000
+  count: 5
+expired_activation_codes_clearing_worker:
+  interval_ms: 1000
+  batch_size: 1000
+  count: 5
+user_data_deletion_tasks_consumer:
+  count: 5
+  kafka_consumer:
+    group_id: "auth-service-consumer"
+    topic: "user-data-deletion-tasks"
+    batch_size: 1000
+    batch_timeout_ms: 1000
+    name: "user_data_deletion_tasks_consumer"
+user_data_deletion_tasks_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 1000

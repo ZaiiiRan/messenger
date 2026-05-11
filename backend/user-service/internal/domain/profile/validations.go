@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 	"unicode/utf8"
@@ -12,31 +11,54 @@ func validatePhone(phone string) error {
 		return nil
 	}
 
-	phoneRegex := regexp.MustCompile(`^\+7\(9\d{2}\)-\d{3}-\d{2}-\d{2}$`)
+	phoneRegex := regexp.MustCompile(`^\+\d{1,3}[-\s]?\(?\d{1,4}\)?(?:[-\s]?\d{1,4}){1,4}$`)
 	if !phoneRegex.MatchString(phone) {
-		return fmt.Errorf("phone must be in format +7(9xx)-xxx-xx-xx or empty")
+		return ErrInvalidPhoneFormat
 	}
+
+	phoneDigitRegex := regexp.MustCompile(`\D`)
+
+	digits := phoneDigitRegex.ReplaceAllString(phone, "")
+	if len(digits) < 8 || len(digits) > 15 {
+		return ErrInvalidPhoneLength
+	}
+
 	return nil
 }
 
 func validateName(name string, prefix string) error {
 	if name == "" {
-		return fmt.Errorf("%sname is empty", prefix)
+		return getNameIsEmptyError(prefix)
 	}
 	if utf8.RuneCountInString(name) < 2 {
-		return fmt.Errorf("%sname must be at least 2 characters", prefix)
+		return getNameTooShortError(prefix)
 	}
 
-	nameRegex := regexp.MustCompile(`^[A-ZА-Я][a-zа-я]+(-[A-ZА-Я][a-zа-я]+)?$`)
+	if utf8.RuneCountInString(name) > 50 {
+		return getNameTooLongError(prefix)
+	}
+
+	nameRegex := regexp.MustCompile(`^\p{Lu}[\p{L}'’]+(?:[-\s’'][\p{Lu}\p{Ll}][\p{L}'’]*)*$`)
 	if !nameRegex.MatchString(name) {
-		return fmt.Errorf("%sname must start with a capital letter", prefix)
+		return getInvalidNameFormatError(prefix)
 	}
 	return nil
 }
 
 func validateBirthdate(birthdate time.Time) error {
 	if birthdate.After(time.Now()) {
-		return fmt.Errorf("birthdate cannot be in the future")
+		return ErrBirthdateInFuture
+	}
+	return nil
+}
+
+func validateBio(bio string) error {
+	if bio == "" {
+		return nil
+	}
+
+	if utf8.RuneCountInString(bio) > 1000 {
+		return ErrBioTooLong
 	}
 	return nil
 }

@@ -10,11 +10,12 @@ import (
 )
 
 type WorkerConfig struct {
-	Shutdown          settings.ShutdownSettings          `mapstructure:"shutdown"`
-	Vault             settings.VaultSettings             `mapstructure:"vault"`
-	SMTPClient        settings.SMTPClientSettings        `mapstructure:"smtp_client"`
-	EmailSenderWorker settings.EmailSenderWorkerSettings `mapstructure:"email_sender_worker"`
-	HTMLGenerator     settings.HTMLGeneratorSettings     `mapstructure:"html_generator"`
+	MetricsServer          settings.MetricsServerSettings     `mapstructure:"metrics_server"`
+	Shutdown               settings.ShutdownSettings          `mapstructure:"shutdown"`
+	Vault                  settings.VaultSettings             `mapstructure:"vault"`
+	SMTPClient             settings.SMTPClientSettings        `mapstructure:"smtp_client"`
+	EmailCodesSenderWorker settings.EmailSenderWorkerSettings `mapstructure:"email_sender_worker"`
+	HTMLGenerator          settings.HTMLGeneratorSettings     `mapstructure:"html_generator"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -50,9 +51,10 @@ func LoadWorkerConfig() (*WorkerConfig, error) {
 }
 
 func setWorkerDefaults(v *viper.Viper) {
+	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
-	settings.SetEmailSenderWorkerDefaults(v, "email_sender_worker")
+	settings.SetEmailSenderWorkerDefaults(v, "email_sender_worker", "email-codes-tasks")
 	settings.SetSMTPClientDefaults(v, "smtp_client")
 	settings.SetHTMLGeneratorDefaults(v, "html_generator")
 }

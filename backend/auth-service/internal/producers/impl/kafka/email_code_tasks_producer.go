@@ -9,7 +9,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/producers/models"
 )
 
-func (p *Producer) ProduceEmailCodeTask(ctx context.Context, email string, c *code.Code, language string) error {
+func (p *BatchProducer) ProduceEmailCodeTask(ctx context.Context, email string, c *code.Code, language string) error {
 	msg := models.CodeMessageFromDomain(c, email, language)
 
 	value, err := json.Marshal(msg)

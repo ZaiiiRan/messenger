@@ -6,6 +6,7 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -16,6 +17,10 @@ type Server struct {
 
 func New(cfg settings.MetricsServerSettings) *Server {
 	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))

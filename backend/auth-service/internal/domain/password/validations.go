@@ -7,10 +7,10 @@ import (
 
 func ValidatePassword(password string) error {
 	if utf8.RuneCountInString(password) < 8 {
-		return NewPasswordValidationError("password must be at least 8 characters long")
+		return ErrPasswordTooShort
 	}
 	if utf8.RuneCountInString(password) > 72 {
-		return NewPasswordValidationError("password must be at most 72 characters long")
+		return ErrPasswordTooLong
 	}
 
 	var hasUpper, hasLower, hasDigit, hasSpecial bool
@@ -29,16 +29,16 @@ func ValidatePassword(password string) error {
 	}
 
 	if !hasUpper {
-		return NewPasswordValidationError("password must contain at least one uppercase letter")
+		return ErrPasswordNoUppercase
 	}
 	if !hasLower {
-		return NewPasswordValidationError("password must contain at least one lowercase letter")
+		return ErrPasswordNoLowercase
 	}
 	if !hasDigit {
-		return NewPasswordValidationError("password must contain at least one digit")
+		return ErrPasswordNoDigit
 	}
 	if !hasSpecial {
-		return NewPasswordValidationError("password must contain at least one special character")
+		return ErrPasswordNoSpecial
 	}
 
 	return nil

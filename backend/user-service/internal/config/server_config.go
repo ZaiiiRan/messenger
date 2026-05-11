@@ -10,12 +10,14 @@ import (
 )
 
 type ServerConfig struct {
-	GRPCServer settings.GRPCServerSettings `mapstructure:"grpc_server"`
-	DB         settings.PostgresSettings   `mapstructure:"db"`
-	Migrate    settings.MigrateSettings    `mapstructure:"migrate"`
-	Redis      settings.RedisSettings      `mapstructure:"redis"`
-	Shutdown   settings.ShutdownSettings   `mapstructure:"shutdown"`
-	Vault      settings.VaultSettings      `mapstructure:"vault"`
+	GRPCServer    settings.GRPCServerSettings    `mapstructure:"grpc_server"`
+	JWT           settings.JWTSettings           `mapstructure:"jwt"`
+	DB            settings.PostgresSettings      `mapstructure:"db"`
+	Migrate       settings.MigrateSettings       `mapstructure:"migrate"`
+	Redis         settings.RedisSettings         `mapstructure:"redis"`
+	Shutdown      settings.ShutdownSettings      `mapstructure:"shutdown"`
+	MetricsServer settings.MetricsServerSettings `mapstructure:"metrics_server"`
+	Vault         settings.VaultSettings         `mapstructure:"vault"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -52,9 +54,11 @@ func LoadServerConfig() (*ServerConfig, error) {
 
 func setServerDefaults(v *viper.Viper) {
 	settings.SetGRPCServerDefaults(v, "grpc_server", ":50051")
+	settings.SetJWTDefaults(v, "jwt")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetMigrateDefaults(v, "migrate")
 	settings.SetRedisDefaults(v, "redis")
 	settings.SetShutdownDefaults(v, "shutdown")
+	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetVaultDefaults(v, "vault")
 }

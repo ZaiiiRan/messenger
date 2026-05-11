@@ -7,13 +7,14 @@ import (
 )
 
 type V1StatusDal struct {
-	Id                  int64      `db:"id" json:"id"`
-	UserId              string     `db:"user_id" json:"user_id"`
-	IsConfirmed         bool       `db:"is_confirmed" json:"is_confirmed"`
-	IsPermanentlyBanned bool       `db:"is_permanently_banned" json:"is_permanently_banned"`
-	BannedUntil         *time.Time `db:"banned_until" json:"banned_until"`
-	IsDeleted           bool       `db:"is_deleted" json:"is_deleted"`
-	DeletedAt           *time.Time `db:"deleted_at" json:"deleted_at"`
+	Id                   int64      `db:"id" json:"id"`
+	UserId               string     `db:"user_id" json:"user_id"`
+	IsConfirmed          bool       `db:"is_confirmed" json:"is_confirmed"`
+	IsPermanentlyBanned  bool       `db:"is_permanently_banned" json:"is_permanently_banned"`
+	BannedUntil          *time.Time `db:"banned_until" json:"banned_until"`
+	IsDeleted            bool       `db:"is_deleted" json:"is_deleted"`
+	DeletedAt            *time.Time `db:"deleted_at" json:"deleted_at"`
+	IsPermanentlyDeleted bool       `db:"is_permanently_deleted" json:"is_permanently_deleted"`
 }
 
 func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
@@ -21,12 +22,13 @@ func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
 		return V1StatusDal{UserId: userId}
 	}
 	return V1StatusDal{
-		UserId:              userId,
-		IsConfirmed:         s.IsConfirmed(),
-		IsPermanentlyBanned: s.IsPermanentlyBanned(),
-		BannedUntil:         s.GetBannedUntil(),
-		IsDeleted:           s.IsDeleted(),
-		DeletedAt:           s.GetDeletedAt(),
+		UserId:               userId,
+		IsConfirmed:          s.IsConfirmed(),
+		IsPermanentlyBanned:  s.IsPermanentlyBanned(),
+		BannedUntil:          s.GetBannedUntil(),
+		IsDeleted:            s.IsDeleted(),
+		DeletedAt:            s.GetDeletedAt(),
+		IsPermanentlyDeleted: s.IsPermanentlyDeleted(),
 	}
 }
 
@@ -47,6 +49,8 @@ func (s V1StatusDal) Index(i int) any {
 		return s.IsDeleted
 	case 6:
 		return s.DeletedAt
+	case 7:
+		return s.IsPermanentlyDeleted
 	default:
 		return nil
 	}
@@ -59,5 +63,6 @@ func (s V1StatusDal) ToDomain() *status.Status {
 		s.BannedUntil,
 		s.IsDeleted,
 		s.DeletedAt,
+		s.IsPermanentlyDeleted,
 	)
 }

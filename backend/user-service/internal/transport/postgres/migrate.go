@@ -11,7 +11,18 @@ import (
 )
 
 func Migrate(ctx context.Context, cfg settings.PostgresSettings) error {
-	db, err := sql.Open("pgx", cfg.ConnectionString)
+	connectionString := fmt.Sprintf(
+		"postgres://%s:%s@%s/%s",
+		cfg.User,
+		cfg.Password,
+		cfg.Address,
+		cfg.Database,
+	)
+	if cfg.Options != "" {
+		connectionString = fmt.Sprintf("%s?%s", connectionString, cfg.Options)
+	}
+
+	db, err := sql.Open("pgx", connectionString)
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}

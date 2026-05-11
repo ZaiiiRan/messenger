@@ -105,21 +105,21 @@ func (c *Code) GenerateCode() error {
 	maxVerif := c.codeType.maxVerifications()
 
 	if c.verificationsLeft <= 0 && time.Since(c.updatedAt) < blockWindow {
-		return NewCodeValidationError("too many failed confirmation attempts, please try again later")
+		return ErrTooManyConfirmationAttempts
 	}
 	if c.verificationsLeft <= 0 {
 		c.generationsLeft = maxGenerationsLeft
 	}
 
 	if c.generationsLeft <= 0 && time.Since(c.updatedAt) < blockWindow {
-		return NewCodeValidationError("the number of code resends has been exhausted")
+		return ErrCodeResendExhausted
 	}
 	if c.generationsLeft <= 0 {
 		c.generationsLeft = maxGenerationsLeft
 	}
 
 	if !c.updatedAt.IsZero() && time.Since(c.updatedAt) < resendCooldown {
-		return NewCodeValidationError("please wait before requesting a new code")
+		return ErrWaitBeforeNewCode
 	}
 
 	c.generationsLeft--
@@ -144,13 +144,13 @@ func (c *Code) GenerateCode() error {
 
 func (c *Code) CheckCode(rawCode string) (bool, error) {
 	if time.Now().After(c.expiresAt) {
-		return false, NewCodeValidationError("code has been expired")
+		return false, ErrCodeExpired
 	}
 
 	maxVerif := c.codeType.maxVerifications()
 
 	if c.verificationsLeft <= 0 && time.Since(c.updatedAt) < blockWindow {
-		return false, NewCodeValidationError("too many failed confirmation attempts, please try again later")
+		return false, ErrTooManyFailedAttempts
 	}
 	if c.verificationsLeft <= 0 {
 		c.verificationsLeft = maxVerif

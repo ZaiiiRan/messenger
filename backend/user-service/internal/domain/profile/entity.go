@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"errors"
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
@@ -29,12 +30,17 @@ func New(
 		verr["profile.last_name"] = err.Error()
 	}
 	if err := p.SetPhone(phone); err != nil {
-		verr["profile.phone"] = err.Error()
+		var validationErr *ProfileValidationError
+		if errors.As(err, &validationErr) {
+			verr["profile.phone"] = err.Error()
+		}
 	}
 	if err := p.SetBirthdate(birthdate); err != nil {
 		verr["profile.birthdate"] = err.Error()
 	}
-	p.SetBio(bio)
+	if err := p.SetBio(bio); err != nil {
+		verr["profile.bio"] = err.Error()
+	}
 
 	if len(verr) > 0 {
 		return nil, verr
@@ -87,7 +93,11 @@ func (p *Profile) SetPhone(phone *string) error {
 	if err := validatePhone(*phone); err != nil {
 		return err
 	}
-	p.phone = phone
+	formatted, err := FormatPhone(*phone, "")
+	if err != nil {
+		return err
+	}
+	p.phone = &formatted
 	return nil
 }
 
@@ -102,6 +112,13 @@ func (p *Profile) SetBirthdate(birthdate *time.Time) error {
 	return nil
 }
 
-func (p *Profile) SetBio(bio *string) {
+func (p *Profile) SetBio(bio *string) error {
+	if bio == nil || *bio == "" {
+		return nil
+	}
+	if err := validateBio(*bio); err != nil {
+		return err
+	}
 	p.bio = bio
+	return nil
 }

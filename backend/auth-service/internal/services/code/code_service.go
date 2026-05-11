@@ -17,6 +17,8 @@ type CodeService interface {
 	GenerateCode(ctx context.Context, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) (*codedomain.Code, error)
 	CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string, codeType codedomain.CodeType) (bool, error)
 	CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string, codeType codedomain.CodeType) (userID string, valid bool, err error)
+	DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error
+	DeleteExpiredCodes(ctx context.Context, workerID string, batchSize uint, codeType codedomain.CodeType) error
 }
 
 type codeService struct {
@@ -75,7 +77,7 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 		return false, err
 	}
 	if c == nil {
-		l.Warnw("code.check_by_code_failed", "err", "code not found")
+		l.Warnw("code.check_by_code_failed", "err", ErrCodeNotFound)
 		return false, nil
 	}
 
@@ -85,7 +87,7 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 		return false, err
 	}
 	if !valid {
-		l.Warnw("code.check_by_code_failed", "err", "invalid code")
+		l.Warnw("code.check_by_code_failed", "err", codedomain.ErrInvalidCode)
 		if err := s.codeDataProvider.save(ctx, c, uow); err != nil {
 			l.Errorw("code.check_by_code_failed", "err", err)
 			return false, err
@@ -115,7 +117,7 @@ func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfW
 	}
 
 	if time.Now().After(c.GetExpiresAt()) {
-		return "", false, codedomain.NewCodeValidationError("link has expired")
+		return "", false, codedomain.ErrLinkExpired
 	}
 
 	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {
@@ -125,4 +127,44 @@ func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfW
 
 	l.Infow("code.check_by_link_token.success")
 	return c.GetUserID(), true, nil
+}
+
+func (s *codeService) DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error {
+	l := s.log.With("op", "delete_code_by_user_id", "code_type", codeType, "worker_id", workerID, "user_id", userID)
+
+	c, err := s.codeDataProvider.getByUserID(ctx, userID, codeType, uow)
+	if err != nil {
+		l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+		return err
+	}
+	if c == nil {
+		return nil
+	}
+
+	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {
+		l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+		return err
+	}
+
+	l.Infow("code.delete_code_by_user_id.success")
+	return nil
+}
+
+func (s *codeService) DeleteExpiredCodes(ctx context.Context, workerID string, batchSize uint, codeType codedomain.CodeType) error {
+	l := s.log.With("op", "delete_expired_codes", "code_type", codeType, "worker_id", workerID)
+
+	uow := s.codeDataProvider.newUOW()
+	defer uow.Close()
+
+	codes, err := s.codeDataProvider.deleteExpiredCodes(ctx, batchSize, codeType, uow)
+	if err != nil {
+		l.Errorw("code.delete_expired_codes_failed", "err", err)
+		return err
+	}
+
+	if len(codes) > 0 {
+		l.Infow("code.delete_expired_codes.success", "count", len(codes))
+	}
+
+	return nil
 }

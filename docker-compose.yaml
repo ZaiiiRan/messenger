@@ -58,7 +58,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - user-db-data:/var/lib/postgresql/data/
+      - user-db-data:/var/lib/postgresql/
     networks:
       - messenger-network
   
@@ -87,18 +87,115 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@user-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: user-db:5432
+      DB_DATABASE: postgres
       MIGRATE_NEED_TO_MIGRATE: true
       REDIS_ADDRESS: user-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
     volumes:
-      - ./backend/configs/user-service:/etc/user-service
+      - ./backend/configs/user-service/server:/etc/user-service
     ports:
       - "50051:50051"
+    networks:
+      - messenger-network
+  
+  user-data-deletion-kafka:
+    image: public.ecr.aws/bitnami/kafka:3.9
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@user-data-deletion-kafka:9093
+      KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://user-data-deletion-kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_CLIENT_USERS: ${KAFKA_USER}
+      KAFKA_CLIENT_PASSWORDS: ${KAFKA_PASSWORD}
+      KAFKA_INTER_BROKER_USER: ${KAFKA_USER}
+      KAFKA_INTER_BROKER_PASSWORD: ${KAFKA_PASSWORD}
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "printf \"security.protocol=SASL_PLAINTEXT\\nsasl.mechanism=PLAIN\\nsasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\\\"$$KAFKA_CLIENT_USERS\\\" password=\\\"$$KAFKA_CLIENT_PASSWORDS\\\";\\n\" > /tmp/client.properties && kafka-topics.sh --bootstrap-server localhost:9092 --command-config /tmp/client.properties --list"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - user-data-deletion-kafka-data:/bitnami/kafka
+    networks:
+      - messenger-network
+
+  user-data-deletion-kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    depends_on:
+      email-codes-kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: user-data-deletion-tasks
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: user-data-deletion-kafka:9092
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_USER}\" password=\"${KAFKA_PASSWORD}\";"
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    networks:
+      - messenger-network
+  
+  user-worker:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    entrypoint: ["./worker"]
+    depends_on:
+      user-db:
+        condition: service_healthy
+      user-redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      user-data-deletion-kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: user-db:5432
+      DB_DATABASE: postgres
+      REDIS_ADDRESS: user-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "user-data-deletion-kafka:9092"
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
+    volumes:
+      - ./backend/configs/user-service/worker:/etc/user-service
     networks:
       - messenger-network
   
@@ -115,7 +212,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - auth-db-data:/var/lib/postgresql/data/
+      - auth-db-data:/var/lib/postgresql/
     networks:
       - messenger-network
   
@@ -142,14 +239,23 @@ services:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
-      email-kafka:
+      email-codes-kafka:
         condition: service_healthy
       vault:
         condition: service_healthy
       user-service:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: auth-db:5432
+      DB_DATABASE: postgres
       MIGRATE_NEED_TO_MIGRATE: true
       REDIS_ADDRESS: auth-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -159,14 +265,13 @@ services:
       JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       JWT_REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
-      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "email-kafka:9092"
+      EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "email-codes-kafka:9092"
       EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
       EMAIL_CODES_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
     volumes:
       - ./backend/configs/auth-service/server:/etc/auth-service
     ports:
       - "50052:50051"
-      - "8002:8080"
     networks:
       - messenger-network
   
@@ -182,26 +287,42 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-data-deletion-kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
-      DB_CONNECTION_STRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/postgres?sslmode=disable
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: auth-db:5432
+      DB_DATABASE: postgres
       REDIS_ADDRESS: auth-redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_BROKERS: "user-data-deletion-kafka:9092"
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
     volumes:
       - ./backend/configs/auth-service/worker:/etc/auth-service
     networks:
       - messenger-network
 
-  email-kafka:
+  email-codes-kafka:
     image: public.ecr.aws/bitnami/kafka:3.9
     environment:
       KAFKA_CFG_NODE_ID: 0
       KAFKA_CFG_PROCESS_ROLES: controller,broker
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@email-kafka:9093
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@email-codes-kafka:9093
       KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://email-kafka:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://email-codes-kafka:9092
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
@@ -220,24 +341,24 @@ services:
       retries: 5
       start_period: 30s
     volumes:
-      - email-kafka-data:/bitnami/kafka
+      - email-codes-kafka-data:/bitnami/kafka
     networks:
       - messenger-network
 
-  email-kafka-ui:
+  email-codes-kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     depends_on:
-      email-kafka:
+      email-codes-kafka:
         condition: service_healthy
     environment:
       KAFKA_CLUSTERS_0_NAME: email-codes-tasks
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: email-kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: email-codes-kafka:9092
       KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_USER}\" password=\"${KAFKA_PASSWORD}\";"
       SERVER_PORT: 8081
     ports:
-      - "8081:8081"
+      - "8082:8081"
     networks:
       - messenger-network
   
@@ -246,7 +367,7 @@ services:
       context: ./backend/email-service
       dockerfile: Dockerfile
     depends_on:
-      email-kafka:
+      email-codes-kafka:
         condition: service_healthy
       vault:
         condition: service_healthy
@@ -256,17 +377,23 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
-      EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_BROKERS: "email-kafka:9092"
+      EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_BROKERS: "email-codes-kafka:9092"
       EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
       EMAIL_SENDER_WORKER_KAFKA_CONSUMER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
       SMTP_CLIENT_HOST: mailhog
       SMTP_CLIENT_PORT: 1025
       SMTP_CLIENT_FROM: ${SMTP_USER}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
     volumes:
       - ./backend/configs/email-service/worker:/etc/email-service
     networks:
       - messenger-network
-  
+
   mailhog:
     image: mailhog/mailhog:v1.0.1
     ports:
@@ -279,12 +406,57 @@ services:
       start_period: 10s
     networks:
       - messenger-network
+  
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    depends_on:
+      user-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-worker:
+        condition: service_healthy
+      auth-worker:
+        condition: service_healthy
+      email-worker:
+        condition: service_healthy
+    volumes:
+      - ./backend/configs/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "9090:9090"
+    networks:
+      - messenger-network
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./backend/configs/grafana/provisioning:/etc/grafana/provisioning
+      - ./backend/configs/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - messenger-network
 
 volumes:
   # old-messenger-db:
   user-db-data:
   auth-db-data:
-  email-kafka-data:
+  user-data-deletion-kafka-data:
+  email-codes-kafka-data:
+  grafana-data:
 
 networks:
   messenger-network:

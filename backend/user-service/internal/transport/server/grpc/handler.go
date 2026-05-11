@@ -51,6 +51,10 @@ func (h *userHandler) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*p
 	return h.userService.GetUsers(ctx, req)
 }
 
+func (h *userHandler) GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error) {
+	return h.userService.GetMeByUser(ctx, req)
+}
+
 func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
 	utils.SanitizeBanUserRequest(req)
 	return nil, status.Error(codes.Unimplemented, "BanUser not implemented")

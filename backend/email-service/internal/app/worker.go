@@ -9,8 +9,9 @@ import (
 	senderservice "github.com/ZaiiiRan/messenger/backend/email-service/internal/services/sender"
 	appi18n "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/i18n"
 	kafkatransport "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/kafka"
+	prommetrics "github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/email-service/internal/transport/smtp"
-	emailsenderworker "github.com/ZaiiiRan/messenger/backend/email-service/internal/workers/email_sender"
+	emailcodessenderworker "github.com/ZaiiiRan/messenger/backend/email-service/internal/workers/email_codes_sender"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -19,10 +20,14 @@ type WorkerApp struct {
 	cfg *config.WorkerConfig
 	log *zap.SugaredLogger
 
-	kafkaClient *kafkatransport.KafkaClient
-	smtpClient  *smtp.SMTPClient
+	emailCodesKafkaClient *kafkatransport.KafkaClient
+	smtpClient            *smtp.SMTPClient
 
 	senderService senderservice.SenderService
+
+	metricsServer    *prommetrics.Server
+	workerMetrics    *prommetrics.WorkerMetrics
+	isMetricsStarted chan bool
 
 	workersCtx    context.Context
 	workersCancel context.CancelFunc
@@ -41,26 +46,31 @@ func NewWorkerApp() (*WorkerApp, error) {
 	}
 
 	return &WorkerApp{
-		cfg: cfg,
-		log: log,
+		cfg:              cfg,
+		log:              log,
+		isMetricsStarted: make(chan bool),
 	}, nil
 }
 
 func (a *WorkerApp) Run(ctx context.Context) error {
 	appi18n.Init()
 
-	if err := a.initKafkaClient(); err != nil {
+	if err := a.initEmailCodesKafkaClient(); err != nil {
 		return err
 	}
 	a.initSMTPClient()
 	a.initSenderService()
 
+	a.initMetricsServer()
+	a.startMetricsServer()
+
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
-	if err := a.startEmailSenderWorkers(); err != nil {
+	if err := a.startEmailCodesSenderWorkers(); err != nil {
 		return err
 	}
 
+	<-a.isMetricsStarted
 	a.log.Infow("app.started")
 	return nil
 }
@@ -87,20 +97,24 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 		a.log.Warnw("app.workers_shutdown_timeout")
 	}
 
-	a.kafkaClient.Close()
+	if a.metricsServer != nil {
+		a.metricsServer.Stop(shCtx)
+	}
+
+	a.emailCodesKafkaClient.Close()
 	a.smtpClient.Close()
 
 	a.log.Infow("app.stopped")
 }
 
-func (a *WorkerApp) initKafkaClient() error {
-	kafkaClient, err := kafkatransport.New(a.cfg.EmailSenderWorker.KafkaConsumerSettings.KafkaSettings)
+func (a *WorkerApp) initEmailCodesKafkaClient() error {
+	kafkaClient, err := kafkatransport.New(a.cfg.EmailCodesSenderWorker.KafkaConsumerSettings.KafkaSettings)
 	if err != nil {
-		a.log.Errorw("app.kafka_connect_failed", "err", err)
+		a.log.Errorw("app.email_codes_kafka_connect_failed", "err", err)
 		return err
 	}
-	a.kafkaClient = kafkaClient
-	a.log.Infow("app.kafka_connected")
+	a.emailCodesKafkaClient = kafkaClient
+	a.log.Infow("app.email_codes_kafka_connected")
 	return nil
 }
 
@@ -112,9 +126,24 @@ func (a *WorkerApp) initSenderService() {
 	a.senderService = senderservice.NewSenderService(a.cfg.HTMLGenerator, a.smtpClient, a.log)
 }
 
-func (a *WorkerApp) startEmailSenderWorkers() error {
-	for i := 0; i < int(a.cfg.EmailSenderWorker.Count); i++ {
-		w, err := emailsenderworker.New(a.cfg.EmailSenderWorker.KafkaConsumerSettings, a.kafkaClient, a.senderService, a.log)
+func (a *WorkerApp) initMetricsServer() {
+	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
+	a.workerMetrics = prommetrics.NewWorkerMetrics(a.metricsServer.Registry())
+}
+
+func (a *WorkerApp) startMetricsServer() {
+	go func() {
+		a.log.Infow("app.metrics_serve_start", "port", a.cfg.MetricsServer.Port)
+		a.isMetricsStarted <- true
+		if err := a.metricsServer.Start(); err != nil {
+			a.log.Fatalw("app.metrics_serve_error", "err", err)
+		}
+	}()
+}
+
+func (a *WorkerApp) startEmailCodesSenderWorkers() error {
+	for i := 0; i < int(a.cfg.EmailCodesSenderWorker.Count); i++ {
+		w, err := emailcodessenderworker.New(a.cfg.EmailCodesSenderWorker.KafkaConsumerSettings, a.emailCodesKafkaClient, a.senderService, a.log, a.workerMetrics)
 		if err != nil {
 			a.log.Errorw("app.email_sender_worker_init_failed", "err", err, "worker_id", i)
 			return err

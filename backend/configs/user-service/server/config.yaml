@@ -1,5 +1,7 @@
 grpc_server:
   port: ":50051"
+metrics_server:
+  port: ":8080"
 shutdown:
   shutdown_timeout: 5
 vault:

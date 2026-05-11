@@ -8,6 +8,7 @@ type KafkaConsumerSettings struct {
 	Topic          string        `mapstructure:"topic"`
 	BatchSize      uint          `mapstructure:"batch_size"`
 	BatchTimeoutMs uint          `mapstructure:"batch_timeout_ms"`
+	Name           string        `mapstructure:"name"`
 }
 
 func SetKafkaConsumerDefaults(v *viper.Viper, prefix string, defaultTopic string) {
@@ -16,4 +17,5 @@ func SetKafkaConsumerDefaults(v *viper.Viper, prefix string, defaultTopic string
 	v.SetDefault(prefix+".topic", defaultTopic)
 	v.SetDefault(prefix+".batch_size", 100)
 	v.SetDefault(prefix+".batch_timeout_ms", 1000)
+	v.SetDefault(prefix+".name", defaultTopic+"_consumer")
 }

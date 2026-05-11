@@ -3,7 +3,6 @@ package passwordservice
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	userpb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1"
 	passworddomain "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/password"
@@ -19,6 +18,7 @@ type PasswordService interface {
 	CheckPassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (bool, error)
 	UpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error)
 	ForceUpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error)
+	DeletePasswordByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error
 }
 
 type passwordService struct {
@@ -74,8 +74,8 @@ func (s *passwordService) CheckPassword(ctx context.Context, uow *uow.UnitOfWork
 		return false, err
 	}
 	if p == nil {
-		l.Errorw("password.check_password_failed", "err", "password not found")
-		return false, fmt.Errorf("password not found")
+		l.Errorw("password.check_password_failed", "err", ErrPasswordNotFound)
+		return false, ErrPasswordNotFound
 	}
 
 	correct := p.CheckPassword(rawPassword)
@@ -92,8 +92,8 @@ func (s *passwordService) UpdatePassword(ctx context.Context, uow *uow.UnitOfWor
 		return nil, err
 	}
 	if p == nil {
-		l.Errorw("password.update_password_failed", "err", "password not found")
-		return nil, fmt.Errorf("password not found")
+		l.Errorw("password.update_password_failed", "err", ErrPasswordNotFound)
+		return nil, ErrPasswordNotFound
 	}
 
 	if err := p.SetPassword(rawPassword); err != nil {
@@ -124,8 +124,8 @@ func (s *passwordService) ForceUpdatePassword(ctx context.Context, uow *uow.Unit
 		return nil, err
 	}
 	if p == nil {
-		l.Errorw("password.force_update_password_failed", "err", "password not found")
-		return nil, fmt.Errorf("password not found")
+		l.Errorw("password.force_update_password_failed", "err", ErrPasswordNotFound)
+		return nil, ErrPasswordNotFound
 	}
 
 	if err := p.ForceSetPassword(rawPassword); err != nil {
@@ -145,4 +145,25 @@ func (s *passwordService) ForceUpdatePassword(ctx context.Context, uow *uow.Unit
 
 	l.Infow("password.force_update_password.success")
 	return p, nil
+}
+
+func (s *passwordService) DeletePasswordByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error {
+	l := s.log.With("op", "delete_password_by_user_id", "worker_id", workerID, "user_id", userID)
+
+	p, err := s.passwordDataProvider.getByUserID(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("password.delete_password_by_user_id_failed", "err", err)
+		return err
+	}
+	if p == nil {
+		return nil
+	}
+
+	if err := s.passwordDataProvider.delete(ctx, p, uow); err != nil {
+		l.Errorw("password.delete_password_by_user_id_failed", "err", err)
+		return err
+	}
+
+	l.Infow("password.delete_password_by_user_id.success")
+	return nil
 }

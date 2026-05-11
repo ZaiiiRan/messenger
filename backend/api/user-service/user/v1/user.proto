@@ -12,6 +12,8 @@ service UserService {
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
     rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
 
+    rpc GetMeByUser(GetMeByUserRequest) returns (GetMeByUserResponse);
+
     rpc BanUser(BanUserRequest) returns (BanUserResponse);
     rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
@@ -33,12 +35,29 @@ message UserStatus {
     optional string deleted_at = 5;
 }
 
+message UserPrivacySetting {
+    string value = 1;
+    repeated string favourites = 2;
+    repeated string exceptions = 3;
+}
+
+message UserPrivacySettings {
+    UserPrivacySetting avatar = 1;
+    UserPrivacySetting photos = 2;
+    UserPrivacySetting phone_number = 3;
+    UserPrivacySetting email = 4;
+    UserPrivacySetting online_status = 5;
+    UserPrivacySetting first_dialogs_init = 6;
+    UserPrivacySetting group_chat_invites = 7;
+}
+
 message User {
     string id = 1;
     string username = 2;
     string email = 3;
     Profile profile = 4;
     UserStatus status = 5;
+    UserPrivacySettings privacy_settings = 6;
 }
 
 message CreateUserRequest {
@@ -61,6 +80,7 @@ message ConfirmUserResponse {
 
 message GetUserByIDRequest {
     string user_id = 1;
+    bool include_privacy_settings = 2;
 }
 
 message GetUserByIDResponse {
@@ -69,6 +89,7 @@ message GetUserByIDResponse {
 
 message GetUserByUsernameRequest {
     string username = 1;
+    bool include_privacy_settings = 2;
 }
 
 message GetUserByUsernameResponse {
@@ -77,6 +98,7 @@ message GetUserByUsernameResponse {
 
 message GetUserByEmailRequest {
     string email = 1;
+    bool include_privacy_settings = 3;
 }
 
 message GetUserByEmailResponse {
@@ -106,6 +128,8 @@ message GetUsersRequest {
     optional string created_to = 17;
     optional string updated_from = 18;
     optional string updated_to = 19;
+    
+    bool include_privacy_settings = 20;
 }
 
 message GetUsersResponse {
@@ -135,5 +159,13 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {
+    User user = 1;
+}
+
+message GetMeByUserRequest {
+    bool include_privacy_settings = 1;
+}
+
+message GetMeByUserResponse {
     User user = 1;
 }
