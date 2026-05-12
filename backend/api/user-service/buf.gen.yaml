@@ -9,6 +9,17 @@ plugins:
     opt: [paths=source_relative]
 
   - name: go
+    out: auth-service/gen/go
+    opt:
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1
+  - name: go-grpc
+    out: auth-service/gen/go
+    opt:
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/user/v1
+
+  - name: go
     out: api-gateway/gen/go
     opt:
       - paths=source_relative
