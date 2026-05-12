@@ -13,10 +13,12 @@ service UserService {
     rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
 
     rpc GetMeByUser(GetMeByUserRequest) returns (GetMeByUserResponse);
+    rpc UpdateMeByUser(UpdateMeByUserRequest) returns (UpdateMeByUserResponse);
+    rpc UpdateMyPrivacySettingsByUser(UpdateMyPrivacySettingsByUserRequest) returns (UpdateMyPrivacySettingsByUserResponse);
+    rpc DeleteMeByUser(DeleteMeByUserRequest) returns (DeleteMeByUserResponse);
 
     rpc BanUser(BanUserRequest) returns (BanUserResponse);
     rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
-    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
 message Profile {
@@ -154,18 +156,63 @@ message UnbanUserResponse {
     User user = 1;
 }
 
-message DeleteUserRequest {
-    string user_id = 1;
-}
-
-message DeleteUserResponse {
-    User user = 1;
-}
-
 message GetMeByUserRequest {
     bool include_privacy_settings = 1;
 }
 
 message GetMeByUserResponse {
+    User user = 1;
+}
+
+message UpdateProfile {
+    optional string first_name = 1;
+    optional string last_name = 2;
+    optional string phone = 3;
+    optional string birthdate = 4;
+    optional string bio = 5;
+}
+
+message UpdateUser {
+    optional string username = 1;
+    Profile profile = 2;
+}
+
+message UpdateMeByUserRequest {
+    repeated string fields = 1;
+    UpdateUser user = 2;
+}
+
+message UpdateMeByUserResponse {
+    User user = 1;
+}
+
+
+message UpdateUserPrivacySetting {
+    optional string value = 1;
+    repeated string favourites = 2;
+    repeated string exceptions = 3;
+}
+
+message UpdateUserPrivacySettings {
+    string fields = 1;
+    UserPrivacySetting avatar = 2;
+    UserPrivacySetting photos = 3;
+    UserPrivacySetting phone_number = 4;
+    UserPrivacySetting email = 5;
+    UserPrivacySetting online_status = 6;
+    UserPrivacySetting first_dialogs_init = 7;
+    UserPrivacySetting group_chat_invites = 8;
+}
+
+message UpdateMyPrivacySettingsByUserRequest {
+    UpdateUserPrivacySettings privacy_settings = 1;
+}
+
+message UpdateMyPrivacySettingsByUserResponse {
+    UserPrivacySettings privacy_settings  = 1;
+}
+
+message DeleteMeByUserRequest {}
+message DeleteMeByUserResponse {
     User user = 1;
 }
