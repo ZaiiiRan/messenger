@@ -22,6 +22,21 @@ func (p PrivacySetting) GetValue() PrivacyValue  { return PrivacyValue(p.value) 
 func (p PrivacySetting) GetFavourites() []string { return p.favourites }
 func (p PrivacySetting) GetExceptions() []string { return p.exceptions }
 
+func (p PrivacySetting) WithValue(v PrivacyValue) PrivacySetting {
+	p.value = int16(v)
+	return p
+}
+
+func (p PrivacySetting) WithFavourites(ids []string) PrivacySetting {
+	p.favourites = ids
+	return p
+}
+
+func (p PrivacySetting) WithExceptions(ids []string) PrivacySetting {
+	p.exceptions = ids
+	return p
+}
+
 type PrivacySettings struct {
 	avatar           PrivacySetting
 	photos           PrivacySetting
@@ -106,3 +121,11 @@ func (p *PrivacySettings) GetEmail() PrivacySetting            { return p.email 
 func (p *PrivacySettings) GetOnlineStatus() PrivacySetting     { return p.onlineStatus }
 func (p *PrivacySettings) GetFirstDialogsInit() PrivacySetting { return p.firstDialogsInit }
 func (p *PrivacySettings) GetGroupChatInvites() PrivacySetting { return p.groupChatInvites }
+
+func (p *PrivacySettings) SetAvatar(s PrivacySetting)           { p.avatar = s }
+func (p *PrivacySettings) SetPhotos(s PrivacySetting)           { p.photos = s }
+func (p *PrivacySettings) SetPhoneNumber(s PrivacySetting)      { p.phoneNumber = s }
+func (p *PrivacySettings) SetEmail(s PrivacySetting)            { p.email = s }
+func (p *PrivacySettings) SetOnlineStatus(s PrivacySetting)     { p.onlineStatus = s }
+func (p *PrivacySettings) SetFirstDialogsInit(s PrivacySetting) { p.firstDialogsInit = s }
+func (p *PrivacySettings) SetGroupChatInvites(s PrivacySetting) { p.groupChatInvites = s }

@@ -212,7 +212,7 @@ func (udp *userDataProvider) saveCache(ctx context.Context, u *user.User) {
 	if u == nil || u.GetID() == "" {
 		return
 	}
-	
+
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	cacheRepo.SetUser(ctx, u)
 	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)

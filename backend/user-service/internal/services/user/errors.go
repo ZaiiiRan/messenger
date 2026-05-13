@@ -30,4 +30,6 @@ var (
 	ErrDeleteUnconfirmedUsersFailed      = newUserServiceError("service.user.error.delete_unconfirmed_users_failed")
 	ErrClearDeletedUsersFailed           = newUserServiceError("service.user.error.clear_deleted_users_failed")
 	ErrUnbanTemporarilyBannedUsersFailed = newUserServiceError("service.user.error.unban_temporarily_banned_users_failed")
+	ErrPrivacyListTooLong                = newUserServiceError("service.user.error.privacy_list_too_long")
+	ErrInvalidUserInPrivacyList          = newUserServiceError("service.user.error.invalid_user_in_privacy_list")
 )

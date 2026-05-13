@@ -60,6 +60,11 @@ func (h *userHandler) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUser
 	return h.userService.UpdateMeByUser(ctx, req)
 }
 
+func (h *userHandler) UpdateMyPrivacySettingsByUserRequest(ctx context.Context, req *pb.UpdateMyPrivacySettingsByUserRequest) (*pb.UpdateMyPrivacySettingsByUserResponse, error) {
+	utils.SanitizeUpdateMyPrivacySettingsByUserRequest(req)
+	return h.userService.UpdateMyPrivacySettingsByUserRequest(ctx, req)
+}
+
 func (h *userHandler) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error) {
 	return h.userService.DeleteMeByUser(ctx, req)
 }

@@ -2,6 +2,8 @@ package userservice
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
@@ -31,6 +33,7 @@ type UserService interface {
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
 	GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error)
 	UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error)
+	UpdateMyPrivacySettingsByUserRequest(ctx context.Context, req *pb.UpdateMyPrivacySettingsByUserRequest) (*pb.UpdateMyPrivacySettingsByUserResponse, error)
 	DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error)
 	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
@@ -450,6 +453,98 @@ func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequ
 	return &pb.UpdateMeByUserResponse{User: userToProto(u, false)}, nil
 }
 
+func (s *service) UpdateMyPrivacySettingsByUserRequest(
+	ctx context.Context,
+	req *pb.UpdateMyPrivacySettingsByUserRequest,
+) (*pb.UpdateMyPrivacySettingsByUserResponse, error) {
+	l := s.log.With("op", "update_my_privacy_settings_by_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	now := time.Now()
+
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	if req.Fields == nil {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrFieldsAreRequired.Error())
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, claims.Id, uow)
+	if err != nil {
+		l.Errorw("user.update_my_privacy_settings_by_user_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if u == nil || u.GetStatus().IsDeleted() {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if !u.GetStatus().IsConfirmed() || u.GetStatus().IsPermanentlyBanned() || u.GetStatus().IsTemporarilyBanned(&now) {
+		return nil, grpcstatus.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+
+	isUpdated, verr, err := s.updateUserPrivacySettings(
+		u,
+		req.Fields,
+		req.PrivacySettings,
+		func(ids []string) (map[string]struct{}, error) {
+			isDeleted := false
+			isPermanentlyDeleted := false
+			list, err := s.dataProvider.getUserList(ctx, models.NewQueryUsersDal(
+				models.UserFilterDal{
+					Ids:                  ids,
+					IsDeleted:            &isDeleted,
+					IsPermanentlyDeleted: &isPermanentlyDeleted,
+				},
+				1,
+				len(ids),
+			), uow)
+			if err != nil {
+				return nil, err
+			}
+			result := make(map[string]struct{}, len(list))
+			for _, u := range list {
+				result[u.GetID()] = struct{}{}
+			}
+			return result, nil
+		},
+		now,
+	)
+	if err != nil {
+		l.Errorw("user.update_my_privacy_settings_by_user_failed.update_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(verr) > 0 {
+		l.Warnw("user.update_my_privacy_settings_by_user_failed.validation_error", "err", verr)
+		return nil, verr.ToStatus()
+	}
+	if !isUpdated {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrNothingToUpdate.Error())
+	}
+	u.SetUpdatedAt(&now)
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("user.update_my_privacy_settings_by_user_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.update_my_privacy_settings_by_user_failed.save_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.update_my_privacy_settings_by_user_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	s.dataProvider.saveCache(ctx, u)
+
+	l.Infow("user.update_my_privacy_settings_by_user_success", "user_id", u.GetID())
+	return &pb.UpdateMyPrivacySettingsByUserResponse{
+		PrivacySettings: privacySettingsToProto(u.GetPrivacySettings()),
+	}, nil
+}
+
 func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error) {
 	l := s.log.With("op", "delete_me_by_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
@@ -474,7 +569,7 @@ func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequ
 	if !u.GetStatus().IsConfirmed() || u.GetStatus().IsPermanentlyBanned() || u.GetStatus().IsTemporarilyBanned(&now) {
 		return nil, grpcstatus.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
 	}
-	
+
 	u.GetStatus().SetDeleted(true, &now)
 	u.SetUpdatedAt(&now)
 
@@ -765,4 +860,195 @@ func (s *service) updateUserFields(u *user.User, fields []string, update *pb.Upd
 		u.SetUpdatedAt(&now)
 	}
 	return isUpdated, nil
+}
+
+const maxPrivacySettingListSize = 1000
+
+func (s *service) updateUserPrivacySettings(
+	u *user.User,
+	fields []string,
+	update *pb.UpdateUserPrivacySettings,
+	validateIDs func(ids []string) (map[string]struct{}, error),
+	now time.Time,
+) (bool, validationerror.ValidationError, error) {
+	if update == nil {
+		return false, nil, nil
+	}
+
+	ps := u.GetPrivacySettings()
+
+	type accessor struct {
+		getUpdate  func() *pb.UpdateUserPrivacySetting
+		getCurrent func() privacysettings.PrivacySetting
+		set        func(privacysettings.PrivacySetting)
+	}
+
+	accessors := map[string]accessor{
+		"avatar": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.Avatar },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetAvatar() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetAvatar(v) },
+		},
+		"photos": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.Photos },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetPhotos() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetPhotos(v) },
+		},
+		"phone_number": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.PhoneNumber },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetPhoneNumber() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetPhoneNumber(v) },
+		},
+		"email": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.Email },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetEmail() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetEmail(v) },
+		},
+		"online_status": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.OnlineStatus },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetOnlineStatus() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetOnlineStatus(v) },
+		},
+		"first_dialogs_init": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.FirstDialogsInit },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetFirstDialogsInit() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetFirstDialogsInit(v) },
+		},
+		"group_chat_invites": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.GroupChatInvites },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetGroupChatInvites() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetGroupChatInvites(v) },
+		},
+	}
+
+	allIDs := make(map[string]struct{})
+	verr := make(validationerror.ValidationError)
+
+	for _, field := range fields {
+		settingName, subField, ok := strings.Cut(field, ".")
+		if !ok {
+			continue
+		}
+		acc, ok := accessors[settingName]
+		if !ok {
+			continue
+		}
+		updateSetting := acc.getUpdate()
+		if updateSetting == nil {
+			continue
+		}
+
+		var list []string
+		switch subField {
+		case "favourites":
+			list = updateSetting.Favourites
+		case "exceptions":
+			list = updateSetting.Exceptions
+		default:
+			continue
+		}
+
+		if len(list) > maxPrivacySettingListSize {
+			verr[field] = ErrPrivacyListTooLong.Error()
+			continue
+		}
+		for _, id := range list {
+			allIDs[id] = struct{}{}
+		}
+	}
+
+	if len(verr) > 0 {
+		return false, verr, nil
+	}
+
+	validUserIDs := make(map[string]struct{})
+	if len(allIDs) > 0 {
+		ids := make([]string, 0, len(allIDs))
+		for id := range allIDs {
+			ids = append(ids, id)
+		}
+		var infraErr error
+		validUserIDs, infraErr = validateIDs(ids)
+		if infraErr != nil {
+			return false, nil, infraErr
+		}
+	}
+
+	isUpdated := false
+	for _, field := range fields {
+		settingName, subField, ok := strings.Cut(field, ".")
+		if !ok {
+			continue
+		}
+		acc, ok := accessors[settingName]
+		if !ok {
+			continue
+		}
+		updateSetting := acc.getUpdate()
+		if updateSetting == nil {
+			continue
+		}
+		current := acc.getCurrent()
+
+		switch subField {
+		case "value":
+			if updateSetting.Value == nil {
+				break
+			}
+			pv, err := privacysettings.ToPrivacyValue(*updateSetting.Value)
+			if err != nil {
+				verr[field] = err.Error()
+				break
+			}
+			if pv == current.GetValue() {
+				break
+			}
+			acc.set(current.WithValue(pv))
+			isUpdated = true
+		case "favourites":
+			newList := updateSetting.Favourites
+			allValid := true
+			for _, id := range newList {
+				if _, ok := validUserIDs[id]; !ok {
+					verr[field] = ErrInvalidUserInPrivacyList.Error()
+					allValid = false
+					break
+				}
+			}
+			if !allValid {
+				break
+			}
+			if slices.Equal(newList, current.GetFavourites()) {
+				break
+			}
+			acc.set(current.WithFavourites(newList))
+			isUpdated = true
+		case "exceptions":
+			newList := updateSetting.Exceptions
+			allValid := true
+			for _, id := range newList {
+				if _, ok := validUserIDs[id]; !ok {
+					verr[field] = ErrInvalidUserInPrivacyList.Error()
+					allValid = false
+					break
+				}
+			}
+			if !allValid {
+				break
+			}
+			if slices.Equal(newList, current.GetExceptions()) {
+				break
+			}
+			acc.set(current.WithExceptions(newList))
+			isUpdated = true
+		}
+	}
+
+	if len(verr) > 0 {
+		return false, verr, nil
+	}
+	if isUpdated {
+		u.SetUpdatedAt(&now)
+	}
+	return isUpdated, nil, nil
 }
