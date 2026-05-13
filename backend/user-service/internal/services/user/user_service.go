@@ -27,6 +27,7 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error)
 	ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error)
+	UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRequest) (*pb.UpdateUserEmailResponse, error)
 	GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error)
 	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
@@ -149,6 +150,71 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
 	return &pb.CreateUserResponse{User: userToProto(u, false)}, nil
+}
+
+func (s *service) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRequest) (*pb.UpdateUserEmailResponse, error) {
+	l := s.log.With("op", "update_user_email", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.UserId == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdIsRequired.Error())
+	}
+	if req.NewEmail == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrEmailIsRequired.Error())
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, req.UserId, uow)
+	if err != nil {
+		l.Errorw("user.update_user_email_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if u == nil || u.GetStatus().IsPermanentlyDeleted() {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+	}
+
+	byEmail, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
+		Emails:               []string{req.NewEmail},
+		IsPermanentlyDeleted: utils.BoolPtr(false),
+	}, uow)
+	if err != nil {
+		l.Errorw("user.update_user_email_failed.get_by_email_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if byEmail != nil && byEmail.GetID() != u.GetID() {
+		verr := make(validationerror.ValidationError)
+		verr["email"] = ErrUserWithEmailExists.Error()
+		return nil, verr.ToStatus()
+	}
+
+	now := time.Now()
+	if err := u.SetEmail(req.NewEmail, &now); err != nil {
+		if err == user.ErrSameEmail {
+			return &pb.UpdateUserEmailResponse{User: userToProto(u, false)}, nil
+		}
+		verr := make(validationerror.ValidationError)
+		verr["email"] = err.Error()
+		return nil, verr.ToStatus()
+	}
+	u.SetUpdatedAt(&now)
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("user.update_user_email_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.update_user_email_failed.save_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.update_user_email_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	s.dataProvider.saveCache(ctx, u)
+
+	l.Infow("user.update_user_email_success", "user_id", u.GetID())
+	return &pb.UpdateUserEmailResponse{User: userToProto(u, false)}, nil
 }
 
 func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error) {

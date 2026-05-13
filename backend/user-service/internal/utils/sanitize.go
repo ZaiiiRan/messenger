@@ -79,6 +79,14 @@ func SanitizeUnbanUserRequest(req *pb.UnbanUserRequest) {
 	req.UserId = strings.TrimSpace(req.UserId)
 }
 
+func SanitizeUpdateUserEmailRequest(req *pb.UpdateUserEmailRequest) {
+	if req == nil {
+		return
+	}
+	req.UserId = strings.TrimSpace(req.UserId)
+	req.NewEmail = strings.ToLower(strings.TrimSpace(req.NewEmail))
+}
+
 func SanitizeUpdateMeByUserRequest(req *pb.UpdateMeByUserRequest) {
 	if req == nil {
 		return

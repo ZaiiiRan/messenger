@@ -7,6 +7,7 @@ option go_package = "user-service/gen/go/user;user";
 service UserService {
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc ConfirmUser(ConfirmUserRequest) returns (ConfirmUserResponse);
+    rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserEmailResponse);
     rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDResponse);
     rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse);
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
@@ -77,6 +78,15 @@ message ConfirmUserRequest {
 }
 
 message ConfirmUserResponse {
+    User user = 1;
+}
+
+message UpdateUserEmailRequest {
+    string user_id = 1;
+    string new_email = 2;
+}
+
+message UpdateUserEmailResponse {
     User user = 1;
 }
 

@@ -15,6 +15,8 @@ type V1StatusDal struct {
 	IsDeleted            bool       `db:"is_deleted" json:"is_deleted"`
 	DeletedAt            *time.Time `db:"deleted_at" json:"deleted_at"`
 	IsPermanentlyDeleted bool       `db:"is_permanently_deleted" json:"is_permanently_deleted"`
+	OldEmail             *string    `db:"old_email" json:"old_email"`
+	EmailUpdatedAt       time.Time  `db:"email_updated_at" json:"email_updated_at"`
 }
 
 func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
@@ -29,6 +31,8 @@ func V1StatusDalFromDomain(userId string, s *status.Status) V1StatusDal {
 		IsDeleted:            s.IsDeleted(),
 		DeletedAt:            s.GetDeletedAt(),
 		IsPermanentlyDeleted: s.IsPermanentlyDeleted(),
+		OldEmail:             s.GetOldEmail(),
+		EmailUpdatedAt:       s.GetEmailUpdatedAt(),
 	}
 }
 
@@ -51,6 +55,10 @@ func (s V1StatusDal) Index(i int) any {
 		return s.DeletedAt
 	case 7:
 		return s.IsPermanentlyDeleted
+	case 8:
+		return s.OldEmail
+	case 9:
+		return s.EmailUpdatedAt
 	default:
 		return nil
 	}
@@ -64,5 +72,7 @@ func (s V1StatusDal) ToDomain() *status.Status {
 		s.IsDeleted,
 		s.DeletedAt,
 		s.IsPermanentlyDeleted,
+		s.OldEmail,
+		s.EmailUpdatedAt,
 	)
 }

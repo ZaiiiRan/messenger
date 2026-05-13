@@ -31,6 +31,11 @@ func (h *userHandler) ConfirmUser(ctx context.Context, req *pb.ConfirmUserReques
 	return h.userService.ConfirmUser(ctx, req)
 }
 
+func (h *userHandler) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRequest) (*pb.UpdateUserEmailResponse, error) {
+	utils.SanitizeUpdateUserEmailRequest(req)
+	return h.userService.UpdateUserEmail(ctx, req)
+}
+
 func (h *userHandler) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error) {
 	utils.SanitizeGetUserByIDRequest(req)
 	return h.userService.GetUserByID(ctx, req)

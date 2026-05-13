@@ -48,7 +48,7 @@ func (c cachedUserDal) toDomain() (*user.User, error) {
 		return nil, err
 	}
 
-	return c.User.ToDomain(c.Profile.ToDomain(), ps, c.Status.ToDomain()), nil
+	return c.User.ToDomain(c.Profile.ToDomain(), ps, c.Status), nil
 }
 
 type UserCacheRepository struct {

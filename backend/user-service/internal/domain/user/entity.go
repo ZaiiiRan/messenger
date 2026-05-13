@@ -8,6 +8,11 @@ import (
 	privacysettings "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/privacy_settings"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
+)
+
+const (
+	EmailUpdateCooldown = 24 * time.Hour
 )
 
 type User struct {
@@ -34,10 +39,12 @@ func New(
 		privacySettings: privacySettings,
 	}
 
+	now := time.Now()
+
 	if err := u.SetUsername(username); err != nil {
 		verr["username"] = err.Error()
 	}
-	if err := u.SetEmail(email); err != nil {
+	if err := u.SetEmail(email, &now); err != nil {
 		verr["email"] = err.Error()
 	}
 
@@ -45,7 +52,6 @@ func New(
 		return nil, verr
 	}
 
-	now := time.Now()
 	u.createdAt = now
 	u.updatedAt = now
 	return u, nil
@@ -97,7 +103,7 @@ func (u *User) SetUsername(username string) error {
 	return nil
 }
 
-func (u *User) SetEmail(email string) error {
+func (u *User) SetEmail(email string, now *time.Time) error {
 	if u.email == email {
 		return ErrSameEmail
 	}
@@ -105,7 +111,23 @@ func (u *User) SetEmail(email string) error {
 	if err := validateEmail(email); err != nil {
 		return err
 	}
+
+	if time.Since(u.status.GetEmailUpdatedAt()) < EmailUpdateCooldown {
+		return ErrWaitBeforeEmailChanging
+	}
+
+	var oldEmailPtr *string
+	if u.email != "" {
+		oldEmail := u.email
+		oldEmailPtr = &oldEmail
+	}
+	u.status.SetOldEmail(oldEmailPtr)
 	u.email = strings.ToLower(email)
+
+	if now == nil {
+		now = utils.TimePtr(time.Now())
+	}
+	u.status.SetEmailUpdatedAt(*now)
 	return nil
 }
 
