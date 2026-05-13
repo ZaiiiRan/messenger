@@ -2,6 +2,8 @@ package status
 
 import (
 	"time"
+
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 )
 
 type Status struct {
@@ -80,11 +82,13 @@ func (s *Status) SetBannedUntil(bannedUntil *time.Time) error {
 	return nil
 }
 
-func (s *Status) SetDeleted(deleted bool) {
+func (s *Status) SetDeleted(deleted bool, now *time.Time) {
 	s.isDeleted = deleted
+	if now == nil {
+		now = utils.TimePtr(time.Now())
+	}
 	if deleted {
-		now := time.Now()
-		s.deletedAt = &now
+		s.deletedAt = now
 	} else {
 		s.deletedAt = nil
 	}

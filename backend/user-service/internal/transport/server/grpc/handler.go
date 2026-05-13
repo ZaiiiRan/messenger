@@ -60,6 +60,10 @@ func (h *userHandler) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUser
 	return h.userService.UpdateMeByUser(ctx, req)
 }
 
+func (h *userHandler) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error) {
+	return h.userService.DeleteMeByUser(ctx, req)
+}
+
 func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
 	utils.SanitizeBanUserRequest(req)
 	return nil, status.Error(codes.Unimplemented, "BanUser not implemented")

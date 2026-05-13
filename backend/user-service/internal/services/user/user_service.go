@@ -31,6 +31,7 @@ type UserService interface {
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
 	GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error)
 	UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error)
+	DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error)
 	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
@@ -141,6 +142,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 		l.Errorw("user.create_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
+	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
 	return &pb.CreateUserResponse{User: userToProto(u, false)}, nil
@@ -366,6 +368,7 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 		l.Errorw("user.confirm_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
+	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
 	return &pb.ConfirmUserResponse{User: userToProto(u, false)}, nil
@@ -441,9 +444,56 @@ func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequ
 		l.Errorw("user.update_me_by_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
+	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.update_me_by_user_success", "user_id", u.GetID())
 	return &pb.UpdateMeByUserResponse{User: userToProto(u, false)}, nil
+}
+
+func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error) {
+	l := s.log.With("op", "delete_me_by_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	now := time.Now()
+
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, claims.Id, uow)
+	if err != nil {
+		l.Errorw("user.delete_me_by_user_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if u == nil || u.GetStatus().IsDeleted() {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if !u.GetStatus().IsConfirmed() || u.GetStatus().IsPermanentlyBanned() || u.GetStatus().IsTemporarilyBanned(&now) {
+		return nil, grpcstatus.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+	
+	u.GetStatus().SetDeleted(true, &now)
+	u.SetUpdatedAt(&now)
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("user.delete_me_by_user_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.delete_me_by_user_failed.save_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.delete_me_by_user_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	s.dataProvider.saveCache(ctx, u)
+
+	l.Infow("user.delete_me_by_user_success", "user_id", u.GetID())
+	return &pb.DeleteMeByUserResponse{User: userToProto(u, false)}, nil
 }
 
 func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {

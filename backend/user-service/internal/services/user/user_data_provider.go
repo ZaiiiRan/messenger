@@ -198,7 +198,7 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 	}
 
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
-	cacheRepo.SetUser(ctx, u)
+	cacheRepo.DeleteUser(ctx, u.GetID())
 
 	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)
 	cacheRepo.InvalidateUserList(ctx, emailQuery)
@@ -206,4 +206,17 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 	cacheRepo.InvalidateUserList(ctx, usernameQuery)
 
 	return nil
+}
+
+func (udp *userDataProvider) saveCache(ctx context.Context, u *user.User) {
+	if u == nil || u.GetID() == "" {
+		return
+	}
+	
+	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+	cacheRepo.SetUser(ctx, u)
+	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)
+	cacheRepo.SetUserList(ctx, emailQuery, []*user.User{u})
+	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, 1, 1)
+	cacheRepo.SetUserList(ctx, usernameQuery, []*user.User{u})
 }
