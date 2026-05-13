@@ -28,9 +28,9 @@ func (h *authHandler) GetNewConfirmationCode(ctx context.Context, req *pb.GetNew
 	return h.authService.GetNewConfirmationCode(ctx, req)
 }
 
-func (h *authHandler) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.ConfirmResponse, error) {
-	utils.SanitizeConfirmRequest(req)
-	return h.authService.Confirm(ctx, req)
+func (h *authHandler) ConfirmByCode(ctx context.Context, req *pb.ConfirmByCodeRequest) (*pb.ConfirmByCodeResponse, error) {
+	utils.SanitizeConfirmByCodeRequest(req)
+	return h.authService.ConfirmByCode(ctx, req)
 }
 
 func (h *authHandler) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error) {
@@ -69,6 +69,21 @@ func (h *authHandler) ResetPasswordByCode(ctx context.Context, req *pb.ResetPass
 func (h *authHandler) ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error) {
 	utils.SanitizeResetPasswordByLinkRequest(req)
 	return h.authService.ResetPasswordByLink(ctx, req)
+}
+
+func (h *authHandler) ChangeEmail(ctx context.Context, req *pb.ChangeEmailRequest) (*pb.ChangeEmailResponse, error) {
+	utils.SanitizeChangeEmailRequest(req)
+	return h.authService.ChangeEmail(ctx, req)
+}
+
+func (h *authHandler) ConfirmNewEmailByCode(ctx context.Context, req *pb.ConfirmNewEmailByCodeRequest) (*pb.ConfirmNewEmailByCodeResponse, error) {
+	utils.SanitizeConfirmNewEmailByCodeRequest(req)
+	return h.authService.ConfirmNewEmailByCode(ctx, req)
+}
+
+func (h *authHandler) ConfirmNewEmailByLink(ctx context.Context, req *pb.ConfirmNewEmailByLinkRequest) (*pb.ConfirmNewEmailByLinkResponse, error) {
+	utils.SanitizeConfirmNewEmailByLinkRequest(req)
+	return h.authService.ConfirmNewEmailByLink(ctx, req)
 }
 
 func (h *authHandler) GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error) {

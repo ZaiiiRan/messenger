@@ -12,10 +12,10 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/utils"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -102,6 +102,9 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/auth.v1.AuthService/ChangePassword",
 				"/auth.v1.AuthService/GetActiveSessions",
 				"/auth.v1.AuthService/InvalidateSessions",
+				"/auth.v1.AuthService/ChangeEmail",
+				"/auth.v1.AuthService/ConfirmNewEmailByCode",
+				"/auth.v1.AuthService/ConfirmNewEmailByLink",
 			),
 		),
 
@@ -110,6 +113,9 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/auth.v1.AuthService/ChangePassword",
 				"/auth.v1.AuthService/GetActiveSessions",
 				"/auth.v1.AuthService/InvalidateSessions",
+				"/auth.v1.AuthService/ChangeEmail",
+				"/auth.v1.AuthService/ConfirmNewEmailByCode",
+				"/auth.v1.AuthService/ConfirmNewEmailByLink",
 			),
 		),
 	)

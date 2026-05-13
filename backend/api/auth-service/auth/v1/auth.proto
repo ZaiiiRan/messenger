@@ -9,7 +9,7 @@ import "user/v1/user.proto";
 service AuthService {
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc GetNewConfirmationCode(GetNewConfirmationCodeRequest) returns (GetNewConfirmationCodeResponse);
-    rpc Confirm(ConfirmRequest) returns (ConfirmResponse);
+    rpc ConfirmByCode(ConfirmByCodeRequest) returns (ConfirmByCodeResponse);
     rpc ConfirmByLink(ConfirmByLinkRequest) returns (ConfirmByLinkResponse);
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc Refresh(RefreshRequest) returns (RefreshResponse);
@@ -18,6 +18,9 @@ service AuthService {
     rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
     rpc ResetPasswordByCode(ResetPasswordByCodeRequest) returns (ResetPasswordByCodeResponse);
     rpc ResetPasswordByLink(ResetPasswordByLinkRequest) returns (ResetPasswordByLinkResponse);
+    rpc ChangeEmail(ChangeEmailRequest) returns (ChangeEmailResponse);
+    rpc ConfirmNewEmailByCode(ConfirmNewEmailByCodeRequest) returns (ConfirmNewEmailByCodeResponse);
+    rpc ConfirmNewEmailByLink(ConfirmNewEmailByLinkRequest) returns (ConfirmNewEmailByLinkResponse);
     rpc GetActiveSessions(GetActiveSessionsRequest) returns (GetActiveSessionsResponse);
     rpc InvalidateSessions(InvalidateSessionsRequest) returns (InvalidateSessionsResponse);
 }
@@ -38,11 +41,11 @@ message RegisterResponse {
 message GetNewConfirmationCodeRequest {}
 message GetNewConfirmationCodeResponse {}
 
-message ConfirmRequest {
+message ConfirmByCodeRequest {
     string code = 1;
 }
 
-message ConfirmResponse {
+message ConfirmByCodeResponse {
     user.v1.User user = 1;
     string access_token = 2;
     string refresh_token = 3;
@@ -113,6 +116,31 @@ message ResetPasswordByCodeResponse {
 }
 
 message ResetPasswordByLinkResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
+    string refresh_token = 3;
+}
+
+message ChangeEmailRequest {
+    string new_email = 1;
+}
+message ChangeEmailResponse {}
+
+message ConfirmNewEmailByCodeRequest {
+    string code = 1;
+}
+
+message ConfirmNewEmailByCodeResponse {
+    user.v1.User user    = 1;
+    string access_token  = 2;
+    string refresh_token = 3;
+}
+
+message ConfirmNewEmailByLinkRequest {
+    string token = 1;
+}
+
+message ConfirmNewEmailByLinkResponse {
     user.v1.User user    = 1;
     string access_token  = 2;
     string refresh_token = 3;

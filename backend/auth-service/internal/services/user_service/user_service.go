@@ -14,9 +14,11 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, username, email string, profile *pb.Profile) (*pb.User, error)
 	ConfirmUser(ctx context.Context, userId string) (*pb.User, error)
+	UpdateUserEmail(ctx context.Context, userId string, newEmail string) (*pb.User, error)
 	GetUserByID(ctx context.Context, userId string) (*pb.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*pb.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*pb.User, error)
+	GetUsers(ctx context.Context, req *pb.GetUsersRequest) ([]*pb.User, error)
 }
 
 type service struct {
@@ -71,6 +73,29 @@ func (s *service) ConfirmUser(ctx context.Context, userId string) (*pb.User, err
 	}
 
 	l.Infow("user.confirm_user.success", "user_id", resp.User.Id)
+	return resp.User, nil
+}
+
+func (s *service) UpdateUserEmail(ctx context.Context, userId string, newEmail string) (*pb.User, error) {
+	l := s.log.With("op", "update_user_email", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	resp, err := s.userClient.UserClient().UpdateUserEmail(ctx, &pb.UpdateUserEmailRequest{
+		UserId:   userId,
+		NewEmail: newEmail,
+	})
+	if err != nil {
+		if status.Code(err) == codes.InvalidArgument {
+			l.Warnw("user.update_user_email_failed.invalid_argument", "err", err)
+		} else if status.Code(err) == codes.NotFound {
+			l.Warnw("user.update_user_email_failed.not_found", "err", err)
+			return nil, nil
+		} else {
+			l.Errorw("user.update_user_email_failed.update_user_email_error", "err", err)
+		}
+		return nil, err
+	}
+
+	l.Infow("user.update_user_email.success", "user_id", resp.User.Id)
 	return resp.User, nil
 }
 
@@ -138,4 +163,21 @@ func (s *service) GetUserByEmail(ctx context.Context, email string) (*pb.User, e
 
 	l.Infow("user.get_user_by_email.success", "user_id", resp.User.Id)
 	return resp.User, nil
+}
+
+func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) ([]*pb.User, error) {
+	l := s.log.With("op", "get_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	resp, err := s.userClient.UserClient().GetUsers(ctx, req)
+	if err != nil {
+		if status.Code(err) == codes.InvalidArgument {
+			l.Warnw("user.get_users_failed.invalid_argument", "err", err)
+		} else {
+			l.Errorw("user.get_users_failed.get_user_by_email_error", "err", err)
+		}
+		return nil, err
+	}
+
+	l.Infow("user.get_users.success", "count", len(resp.Users))
+	return resp.Users, nil
 }

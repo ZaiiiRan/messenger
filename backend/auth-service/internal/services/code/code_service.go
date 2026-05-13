@@ -6,6 +6,7 @@ import (
 	"time"
 
 	codedomain "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
+	emailchangecode "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code/email_change_code"
 	uow "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	pgclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/postgres"
 	redisclient "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/redis"
@@ -19,6 +20,10 @@ type CodeService interface {
 	CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string, codeType codedomain.CodeType) (userID string, valid bool, err error)
 	DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error
 	DeleteExpiredCodes(ctx context.Context, workerID string, batchSize uint, codeType codedomain.CodeType) error
+	GenerateEmailChangeCode(ctx context.Context, uow *uow.UnitOfWork, userID, email string) (*emailchangecode.EmailChangeCode, error)
+	CheckEmailChangeCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string) (*emailchangecode.EmailChangeCode, bool, error)
+	CheckEmailChangeCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string) (*emailchangecode.EmailChangeCode, bool, error)
+	DeleteExpiredEmailChangeCodes(ctx context.Context, workerID string, batchSize uint) error
 }
 
 type codeService struct {
@@ -164,6 +169,124 @@ func (s *codeService) DeleteExpiredCodes(ctx context.Context, workerID string, b
 
 	if len(codes) > 0 {
 		l.Infow("code.delete_expired_codes.success", "count", len(codes))
+	}
+
+	return nil
+}
+
+func (s *codeService) GenerateEmailChangeCode(ctx context.Context, uow *uow.UnitOfWork, userID, email string) (*emailchangecode.EmailChangeCode, error) {
+	l := s.log.With("op", "generate_email_change_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	existedCode, err := s.codeDataProvider.getEmailChangeCodeByUserIDLocked(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("email_change_code.generate_failed", "err", err)
+		return nil, err
+	}
+
+	var c *emailchangecode.EmailChangeCode
+	if existedCode != nil {
+		c = existedCode
+		if err := c.SetEmail(email); err != nil {
+			l.Warnw("email_change_code.generate_failed.validation_error", "err", err)
+			return nil, err
+		}
+		if err := c.GenerateCode(); err != nil {
+			l.Warnw("email_change_code.generate_failed.generate_code_error", "err", err)
+			return nil, err
+		}
+	} else {
+		baseCode, err := codedomain.New(userID, codedomain.CodeTypeEmailChange)
+		if err != nil {
+			l.Errorw("email_change_code.generate_failed", "err", err)
+			return nil, err
+		}
+		c = emailchangecode.NewEmailChangeCode(baseCode, email)
+	}
+
+	if err := s.codeDataProvider.saveEmailChangeCode(ctx, c, uow); err != nil {
+		l.Errorw("email_change_code.generate_failed", "err", err)
+		return nil, err
+	}
+
+	l.Infow("email_change_code.generate.success")
+	return c, nil
+}
+
+func (s *codeService) CheckEmailChangeCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string) (*emailchangecode.EmailChangeCode, bool, error) {
+	l := s.log.With("op", "check_email_change_code_by_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	c, err := s.codeDataProvider.getEmailChangeCodeByUserID(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("email_change_code.check_by_code_failed", "err", err)
+		return nil, false, err
+	}
+	if c == nil {
+		l.Warnw("email_change_code.check_by_code_failed", "err", ErrCodeNotFound)
+		return nil, false, nil
+	}
+
+	valid, err := c.CheckCode(rawCode)
+	if err != nil {
+		l.Warnw("email_change_code.check_by_code_failed", "err", err)
+		return nil, false, err
+	}
+	if !valid {
+		l.Warnw("email_change_code.check_by_code_failed", "err", codedomain.ErrInvalidCode)
+		if err := s.codeDataProvider.saveEmailChangeCode(ctx, c, uow); err != nil {
+			l.Errorw("email_change_code.check_by_code_failed", "err", err)
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+
+	if err := s.codeDataProvider.deleteEmailChangeCode(ctx, c, uow); err != nil {
+		l.Errorw("email_change_code.check_by_code_failed", "err", err)
+		return nil, false, err
+	}
+
+	l.Infow("email_change_code.check_by_code.success")
+	return c, true, nil
+}
+
+func (s *codeService) CheckEmailChangeCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string) (*emailchangecode.EmailChangeCode, bool, error) {
+	l := s.log.With("op", "check_email_change_code_by_link_token", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	c, err := s.codeDataProvider.getEmailChangeCodeByLinkTokenLocked(ctx, linkToken, uow)
+	if err != nil {
+		l.Errorw("email_change_code.check_by_link_token_failed", "err", err)
+		return nil, false, err
+	}
+	if c == nil {
+		return nil, false, nil
+	}
+
+	if time.Now().After(c.GetExpiresAt()) {
+		return nil, false, codedomain.ErrLinkExpired
+	}
+
+	if err := s.codeDataProvider.deleteEmailChangeCode(ctx, c, uow); err != nil {
+		l.Errorw("email_change_code.check_by_link_token_failed", "err", err)
+		return nil, false, err
+	}
+
+	l.Infow("email_change_code.check_by_link_token.success")
+	return c, true, nil
+}
+
+func (s *codeService) DeleteExpiredEmailChangeCodes(ctx context.Context, workerID string, batchSize uint) error {
+	l := s.log.With("op", "delete_expired_email_change_codes", "worker_id", workerID)
+
+	uow := s.codeDataProvider.newUOW()
+	defer uow.Close()
+
+	codes, err := s.codeDataProvider.deleteExpiredEmailChangeCodes(ctx, batchSize, uow)
+	if err != nil {
+		l.Errorw("email_change_code.delete_expired_codes_failed", "err", err)
+		return err
+	}
+
+	if len(codes) > 0 {
+		l.Infow("email_change_code.delete_expired_codes.success", "count", len(codes))
 	}
 
 	return nil

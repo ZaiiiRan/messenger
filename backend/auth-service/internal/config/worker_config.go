@@ -16,8 +16,9 @@ type WorkerConfig struct {
 	Shutdown                                settings.ShutdownSettings                      `mapstructure:"shutdown"`
 	Vault                                   settings.VaultSettings                         `mapstructure:"vault"`
 	ExpiredTokenClearingWorker              settings.ExpiredTokenClearingWorkerSettings    `mapstructure:"expired_token_clearing_worker"`
-	ExpiredResetPasswordCodesClearingWorker settings.ExpiredCodesClearingWorkerSettings    `mapstructure:"expired_reset_password_codes_clearing_worker"`
-	ExpiredActivationCodesClearingWorker    settings.ExpiredCodesClearingWorkerSettings    `mapstructure:"expired_activation_codes_clearing_worker"`
+	ExpiredResetPasswordCodesClearingWorker  settings.ExpiredCodesClearingWorkerSettings    `mapstructure:"expired_reset_password_codes_clearing_worker"`
+	ExpiredActivationCodesClearingWorker     settings.ExpiredCodesClearingWorkerSettings    `mapstructure:"expired_activation_codes_clearing_worker"`
+	ExpiredEmailChangeCodesClearingWorker    settings.ExpiredCodesClearingWorkerSettings    `mapstructure:"expired_email_change_codes_clearing_worker"`
 	UserDataDeletionTasksConsumer           settings.UserDataDeletionTasksConsumerSettings `mapstructure:"user_data_deletion_tasks_consumer"`
 	UserDataDeletionTasksWorker             settings.UserDataDeletionTasksWorkerSettings   `mapstructure:"user_data_deletion_tasks_worker"`
 }
@@ -63,6 +64,7 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetExpiredTokenClearingWorkerDefaults(v, "expired_token_clearing_worker")
 	settings.SetExpiredCodesClearingWorkerDefaults(v, "expired_reset_password_codes_clearing_worker")
 	settings.SetExpiredCodesClearingWorkerDefaults(v, "expired_activation_codes_clearing_worker")
+	settings.SetExpiredCodesClearingWorkerDefaults(v, "expired_email_change_codes_clearing_worker")
 	settings.SetUserDataDeletionTasksConsumerDefaults(v, "user_data_deletion_tasks_consumer")
 	settings.SetUserDataDeletionTasksWorkerDefaults(v, "user_data_deletion_tasks_worker")
 }

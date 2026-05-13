@@ -11,4 +11,5 @@ var (
 	ErrInvalidToken                   = NewCodeValidationError("domain.code.validation.error.invalid_token")
 	ErrInvalidOrExpiredActivationLink = NewCodeValidationError("domain.code.validation.error.invalid_or_expired_activation_link")
 	ErrInvalidOrExpiredResetLink      = NewCodeValidationError("domain.code.validation.error.invalid_or_expired_reset_link")
+	ErrInvalidOrExpiredEmailChangeLink = NewCodeValidationError("domain.code.validation.error.invalid_or_expired_email_change_link")
 )

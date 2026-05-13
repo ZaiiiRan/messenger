@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
+	emailchangecode "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code/email_change_code"
 	postgresimpl "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/impl/postgres"
 	redisimpl "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/impl/redis"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/interfaces"
@@ -159,4 +160,92 @@ func (cdp *codeDataProvider) deleteExpiredCodes(ctx context.Context, batchSize u
 	}
 
 	return codes, nil
+}
+
+func (cdp *codeDataProvider) getEmailChangeCodeByUserID(ctx context.Context, userID string, uow *uow.UnitOfWork) (*emailchangecode.EmailChangeCode, error) {
+	cacheRepo := redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis)
+	if c, err := cacheRepo.GetCodeByUserId(ctx, userID); err == nil && c != nil {
+		return c, nil
+	}
+
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := postgresimpl.NewEmailChangeCodeRepository(pgConn).QueryCode(ctx, models.NewQueryCodeDal(nil, &userID))
+	if err != nil {
+		return nil, err
+	}
+	if c != nil {
+		cacheRepo.SetCodeByUserId(ctx, c)
+	}
+	return c, nil
+}
+
+func (cdp *codeDataProvider) getEmailChangeCodeByUserIDLocked(ctx context.Context, userID string, uow *uow.UnitOfWork) (*emailchangecode.EmailChangeCode, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	q := models.NewQueryCodeDal(nil, &userID)
+	q.ForUpdate = true
+	return postgresimpl.NewEmailChangeCodeRepository(pgConn).QueryCode(ctx, q)
+}
+
+func (cdp *codeDataProvider) getEmailChangeCodeByLinkTokenLocked(ctx context.Context, linkToken string, uow *uow.UnitOfWork) (*emailchangecode.EmailChangeCode, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	q := models.NewQueryCodeDal(nil, nil)
+	q.LinkToken = &linkToken
+	q.ForUpdate = true
+	return postgresimpl.NewEmailChangeCodeRepository(pgConn).QueryCode(ctx, q)
+}
+
+func (cdp *codeDataProvider) saveEmailChangeCode(ctx context.Context, c *emailchangecode.EmailChangeCode, uow *uow.UnitOfWork) error {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+
+	dbRepo := postgresimpl.NewEmailChangeCodeRepository(pgConn)
+	if c.GetID() == 0 {
+		if err := dbRepo.CreateCode(ctx, c); err != nil {
+			return err
+		}
+	} else {
+		if err := dbRepo.UpdateCode(ctx, c); err != nil {
+			return err
+		}
+	}
+
+	cacheRepo := redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis)
+	if err := cacheRepo.SetCodeByUserId(ctx, c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cdp *codeDataProvider) deleteEmailChangeCode(ctx context.Context, c *emailchangecode.EmailChangeCode, uow *uow.UnitOfWork) error {
+	redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis).DelCodeByUserId(ctx, c.GetUserID())
+
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return err
+	}
+
+	return postgresimpl.NewEmailChangeCodeRepository(pgConn).DeleteCode(ctx, c)
+}
+
+func (cdp *codeDataProvider) deleteExpiredEmailChangeCodes(ctx context.Context, batchSize uint, uow *uow.UnitOfWork) ([]*emailchangecode.EmailChangeCode, error) {
+	pgConn, err := uow.GetConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return postgresimpl.NewEmailChangeCodeRepository(pgConn).DeleteExpiredCodes(ctx, models.NewQueryExpiredCodesDal(int(batchSize)))
 }

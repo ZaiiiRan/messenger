@@ -10,7 +10,7 @@ func SanitizeRegisterRequest(req *pb.RegisterRequest) {
 	req.Password = strings.TrimSpace(req.Password)
 }
 
-func SanitizeConfirmRequest(req *pb.ConfirmRequest) {
+func SanitizeConfirmByCodeRequest(req *pb.ConfirmByCodeRequest) {
 	req.Code = strings.TrimSpace(req.Code)
 }
 
@@ -41,4 +41,16 @@ func SanitizeResetPasswordByCodeRequest(req *pb.ResetPasswordByCodeRequest) {
 func SanitizeResetPasswordByLinkRequest(req *pb.ResetPasswordByLinkRequest) {
 	req.Token = strings.TrimSpace(req.Token)
 	req.NewPassword = strings.TrimSpace(req.NewPassword)
+}
+
+func SanitizeChangeEmailRequest(req *pb.ChangeEmailRequest) {
+	req.NewEmail = strings.ToLower(strings.TrimSpace(req.NewEmail))
+}
+
+func SanitizeConfirmNewEmailByCodeRequest(req *pb.ConfirmNewEmailByCodeRequest) {
+	req.Code = strings.TrimSpace(req.Code)
+}
+
+func SanitizeConfirmNewEmailByLinkRequest(req *pb.ConfirmNewEmailByLinkRequest) {
+	req.Token = strings.TrimSpace(req.Token)
 }

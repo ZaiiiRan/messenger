@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AuthService_Register_FullMethodName               = "/auth.v1.AuthService/Register"
 	AuthService_GetNewConfirmationCode_FullMethodName = "/auth.v1.AuthService/GetNewConfirmationCode"
-	AuthService_Confirm_FullMethodName                = "/auth.v1.AuthService/Confirm"
+	AuthService_ConfirmByCode_FullMethodName          = "/auth.v1.AuthService/ConfirmByCode"
 	AuthService_ConfirmByLink_FullMethodName          = "/auth.v1.AuthService/ConfirmByLink"
 	AuthService_Login_FullMethodName                  = "/auth.v1.AuthService/Login"
 	AuthService_Refresh_FullMethodName                = "/auth.v1.AuthService/Refresh"
@@ -30,6 +30,9 @@ const (
 	AuthService_ForgotPassword_FullMethodName         = "/auth.v1.AuthService/ForgotPassword"
 	AuthService_ResetPasswordByCode_FullMethodName    = "/auth.v1.AuthService/ResetPasswordByCode"
 	AuthService_ResetPasswordByLink_FullMethodName    = "/auth.v1.AuthService/ResetPasswordByLink"
+	AuthService_ChangeEmail_FullMethodName            = "/auth.v1.AuthService/ChangeEmail"
+	AuthService_ConfirmNewEmailByCode_FullMethodName  = "/auth.v1.AuthService/ConfirmNewEmailByCode"
+	AuthService_ConfirmNewEmailByLink_FullMethodName  = "/auth.v1.AuthService/ConfirmNewEmailByLink"
 	AuthService_GetActiveSessions_FullMethodName      = "/auth.v1.AuthService/GetActiveSessions"
 	AuthService_InvalidateSessions_FullMethodName     = "/auth.v1.AuthService/InvalidateSessions"
 )
@@ -40,7 +43,7 @@ const (
 type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	GetNewConfirmationCode(ctx context.Context, in *GetNewConfirmationCodeRequest, opts ...grpc.CallOption) (*GetNewConfirmationCodeResponse, error)
-	Confirm(ctx context.Context, in *ConfirmRequest, opts ...grpc.CallOption) (*ConfirmResponse, error)
+	ConfirmByCode(ctx context.Context, in *ConfirmByCodeRequest, opts ...grpc.CallOption) (*ConfirmByCodeResponse, error)
 	ConfirmByLink(ctx context.Context, in *ConfirmByLinkRequest, opts ...grpc.CallOption) (*ConfirmByLinkResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -49,6 +52,9 @@ type AuthServiceClient interface {
 	ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error)
 	ResetPasswordByCode(ctx context.Context, in *ResetPasswordByCodeRequest, opts ...grpc.CallOption) (*ResetPasswordByCodeResponse, error)
 	ResetPasswordByLink(ctx context.Context, in *ResetPasswordByLinkRequest, opts ...grpc.CallOption) (*ResetPasswordByLinkResponse, error)
+	ChangeEmail(ctx context.Context, in *ChangeEmailRequest, opts ...grpc.CallOption) (*ChangeEmailResponse, error)
+	ConfirmNewEmailByCode(ctx context.Context, in *ConfirmNewEmailByCodeRequest, opts ...grpc.CallOption) (*ConfirmNewEmailByCodeResponse, error)
+	ConfirmNewEmailByLink(ctx context.Context, in *ConfirmNewEmailByLinkRequest, opts ...grpc.CallOption) (*ConfirmNewEmailByLinkResponse, error)
 	GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error)
 	InvalidateSessions(ctx context.Context, in *InvalidateSessionsRequest, opts ...grpc.CallOption) (*InvalidateSessionsResponse, error)
 }
@@ -81,10 +87,10 @@ func (c *authServiceClient) GetNewConfirmationCode(ctx context.Context, in *GetN
 	return out, nil
 }
 
-func (c *authServiceClient) Confirm(ctx context.Context, in *ConfirmRequest, opts ...grpc.CallOption) (*ConfirmResponse, error) {
+func (c *authServiceClient) ConfirmByCode(ctx context.Context, in *ConfirmByCodeRequest, opts ...grpc.CallOption) (*ConfirmByCodeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConfirmResponse)
-	err := c.cc.Invoke(ctx, AuthService_Confirm_FullMethodName, in, out, cOpts...)
+	out := new(ConfirmByCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ConfirmByCode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +177,36 @@ func (c *authServiceClient) ResetPasswordByLink(ctx context.Context, in *ResetPa
 	return out, nil
 }
 
+func (c *authServiceClient) ChangeEmail(ctx context.Context, in *ChangeEmailRequest, opts ...grpc.CallOption) (*ChangeEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeEmailResponse)
+	err := c.cc.Invoke(ctx, AuthService_ChangeEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ConfirmNewEmailByCode(ctx context.Context, in *ConfirmNewEmailByCodeRequest, opts ...grpc.CallOption) (*ConfirmNewEmailByCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmNewEmailByCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ConfirmNewEmailByCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ConfirmNewEmailByLink(ctx context.Context, in *ConfirmNewEmailByLinkRequest, opts ...grpc.CallOption) (*ConfirmNewEmailByLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmNewEmailByLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_ConfirmNewEmailByLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetActiveSessionsResponse)
@@ -197,7 +233,7 @@ func (c *authServiceClient) InvalidateSessions(ctx context.Context, in *Invalida
 type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	GetNewConfirmationCode(context.Context, *GetNewConfirmationCodeRequest) (*GetNewConfirmationCodeResponse, error)
-	Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error)
+	ConfirmByCode(context.Context, *ConfirmByCodeRequest) (*ConfirmByCodeResponse, error)
 	ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -206,6 +242,9 @@ type AuthServiceServer interface {
 	ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error)
 	ResetPasswordByCode(context.Context, *ResetPasswordByCodeRequest) (*ResetPasswordByCodeResponse, error)
 	ResetPasswordByLink(context.Context, *ResetPasswordByLinkRequest) (*ResetPasswordByLinkResponse, error)
+	ChangeEmail(context.Context, *ChangeEmailRequest) (*ChangeEmailResponse, error)
+	ConfirmNewEmailByCode(context.Context, *ConfirmNewEmailByCodeRequest) (*ConfirmNewEmailByCodeResponse, error)
+	ConfirmNewEmailByLink(context.Context, *ConfirmNewEmailByLinkRequest) (*ConfirmNewEmailByLinkResponse, error)
 	GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error)
 	InvalidateSessions(context.Context, *InvalidateSessionsRequest) (*InvalidateSessionsResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -224,8 +263,8 @@ func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest
 func (UnimplementedAuthServiceServer) GetNewConfirmationCode(context.Context, *GetNewConfirmationCodeRequest) (*GetNewConfirmationCodeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNewConfirmationCode not implemented")
 }
-func (UnimplementedAuthServiceServer) Confirm(context.Context, *ConfirmRequest) (*ConfirmResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Confirm not implemented")
+func (UnimplementedAuthServiceServer) ConfirmByCode(context.Context, *ConfirmByCodeRequest) (*ConfirmByCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmByCode not implemented")
 }
 func (UnimplementedAuthServiceServer) ConfirmByLink(context.Context, *ConfirmByLinkRequest) (*ConfirmByLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConfirmByLink not implemented")
@@ -250,6 +289,15 @@ func (UnimplementedAuthServiceServer) ResetPasswordByCode(context.Context, *Rese
 }
 func (UnimplementedAuthServiceServer) ResetPasswordByLink(context.Context, *ResetPasswordByLinkRequest) (*ResetPasswordByLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResetPasswordByLink not implemented")
+}
+func (UnimplementedAuthServiceServer) ChangeEmail(context.Context, *ChangeEmailRequest) (*ChangeEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeEmail not implemented")
+}
+func (UnimplementedAuthServiceServer) ConfirmNewEmailByCode(context.Context, *ConfirmNewEmailByCodeRequest) (*ConfirmNewEmailByCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmNewEmailByCode not implemented")
+}
+func (UnimplementedAuthServiceServer) ConfirmNewEmailByLink(context.Context, *ConfirmNewEmailByLinkRequest) (*ConfirmNewEmailByLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmNewEmailByLink not implemented")
 }
 func (UnimplementedAuthServiceServer) GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetActiveSessions not implemented")
@@ -314,20 +362,20 @@ func _AuthService_GetNewConfirmationCode_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_Confirm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConfirmRequest)
+func _AuthService_ConfirmByCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmByCodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServiceServer).Confirm(ctx, in)
+		return srv.(AuthServiceServer).ConfirmByCode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AuthService_Confirm_FullMethodName,
+		FullMethod: AuthService_ConfirmByCode_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).Confirm(ctx, req.(*ConfirmRequest))
+		return srv.(AuthServiceServer).ConfirmByCode(ctx, req.(*ConfirmByCodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -476,6 +524,60 @@ func _AuthService_ResetPasswordByLink_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ChangeEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ChangeEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ChangeEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ChangeEmail(ctx, req.(*ChangeEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ConfirmNewEmailByCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmNewEmailByCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ConfirmNewEmailByCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ConfirmNewEmailByCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ConfirmNewEmailByCode(ctx, req.(*ConfirmNewEmailByCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ConfirmNewEmailByLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmNewEmailByLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ConfirmNewEmailByLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ConfirmNewEmailByLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ConfirmNewEmailByLink(ctx, req.(*ConfirmNewEmailByLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_GetActiveSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetActiveSessionsRequest)
 	if err := dec(in); err != nil {
@@ -528,8 +630,8 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_GetNewConfirmationCode_Handler,
 		},
 		{
-			MethodName: "Confirm",
-			Handler:    _AuthService_Confirm_Handler,
+			MethodName: "ConfirmByCode",
+			Handler:    _AuthService_ConfirmByCode_Handler,
 		},
 		{
 			MethodName: "ConfirmByLink",
@@ -562,6 +664,18 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResetPasswordByLink",
 			Handler:    _AuthService_ResetPasswordByLink_Handler,
+		},
+		{
+			MethodName: "ChangeEmail",
+			Handler:    _AuthService_ChangeEmail_Handler,
+		},
+		{
+			MethodName: "ConfirmNewEmailByCode",
+			Handler:    _AuthService_ConfirmNewEmailByCode_Handler,
+		},
+		{
+			MethodName: "ConfirmNewEmailByLink",
+			Handler:    _AuthService_ConfirmNewEmailByLink_Handler,
 		},
 		{
 			MethodName: "GetActiveSessions",

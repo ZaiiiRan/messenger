@@ -36,8 +36,8 @@ func New(ctx context.Context, cfg settings.PostgresSettings) (*PostgresClient, e
 			"v1_password", "_v1_password",
 			"v1_refresh_token", "_v1_refresh_token",
 			"v1_user_version", "_v1_user_version",
-			"v1_confirmation_code", "_v1_confirmation_code",
-			"v1_password_reset_token", "_v1_password_reset_token",
+			"v1_code", "_v1_code",
+			"v1_email_code", "_v1_email_code",
 			"v1_inbox_event", "_v1_inbox_event",
 		}
 

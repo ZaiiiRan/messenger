@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	pb "github.com/ZaiiiRan/messenger/backend/auth-service/gen/go/auth/v1"
@@ -28,7 +29,7 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error)
 	GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConfirmationCodeRequest) (*pb.GetNewConfirmationCodeResponse, error)
-	Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.ConfirmResponse, error)
+	ConfirmByCode(ctx context.Context, req *pb.ConfirmByCodeRequest) (*pb.ConfirmByCodeResponse, error)
 	ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkRequest) (*pb.ConfirmByLinkResponse, error)
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error)
@@ -37,6 +38,9 @@ type AuthService interface {
 	ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error)
 	ResetPasswordByCode(ctx context.Context, req *pb.ResetPasswordByCodeRequest) (*pb.ResetPasswordByCodeResponse, error)
 	ResetPasswordByLink(ctx context.Context, req *pb.ResetPasswordByLinkRequest) (*pb.ResetPasswordByLinkResponse, error)
+	ChangeEmail(ctx context.Context, req *pb.ChangeEmailRequest) (*pb.ChangeEmailResponse, error)
+	ConfirmNewEmailByCode(ctx context.Context, req *pb.ConfirmNewEmailByCodeRequest) (*pb.ConfirmNewEmailByCodeResponse, error)
+	ConfirmNewEmailByLink(ctx context.Context, req *pb.ConfirmNewEmailByLinkRequest) (*pb.ConfirmNewEmailByLinkResponse, error)
 	GetActiveSessions(ctx context.Context, req *pb.GetActiveSessionsRequest) (*pb.GetActiveSessionsResponse, error)
 	InvalidateSessions(ctx context.Context, req *pb.InvalidateSessionsRequest) (*pb.InvalidateSessionsResponse, error)
 }
@@ -91,7 +95,7 @@ func (s *service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 	if err != nil {
 		var pve *password.PasswordValidationError
 		if errors.As(err, &pve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -154,7 +158,7 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -172,7 +176,7 @@ func (s *service) GetNewConfirmationCode(ctx context.Context, req *pb.GetNewConf
 	return &pb.GetNewConfirmationCodeResponse{}, nil
 }
 
-func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.ConfirmResponse, error) {
+func (s *service) ConfirmByCode(ctx context.Context, req *pb.ConfirmByCodeRequest) (*pb.ConfirmByCodeResponse, error) {
 	l := s.log.With("op", "confirm", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	user, err := s.getAndCheckUserForConfirmation(ctx)
@@ -182,7 +186,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 
 	if utf8.RuneCountInString(req.Code) != 6 {
 		l.Errorw("auth.confirm_failed", "err", "invalid code")
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -197,12 +201,12 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
 	}
 
 	user, err = s.userService.ConfirmUser(ctx, user.Id)
@@ -229,7 +233,7 @@ func (s *service) Confirm(ctx context.Context, req *pb.ConfirmRequest) (*pb.Conf
 	}
 
 	l.Infow("auth.confirm.success")
-	return &pb.ConfirmResponse{
+	return &pb.ConfirmByCodeResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
 		RefreshToken: refresh.GetToken(),
@@ -240,7 +244,7 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 	l := s.log.With("op", "confirm_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.Token == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidToken.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidToken.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -255,12 +259,12 @@ func (s *service) ConfirmByLink(ctx context.Context, req *pb.ConfirmByLinkReques
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidOrExpiredActivationLink.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidOrExpiredActivationLink.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, userID)
@@ -450,7 +454,7 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 	}
 
 	if req.OldPassword == req.NewPassword {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", password.ErrOldAndNewPasswordSame.Error())
+		return nil, status.Error(codes.InvalidArgument, password.ErrOldAndNewPasswordSame.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, claims.Id)
@@ -477,14 +481,14 @@ func (s *service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequ
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", password.ErrOldPasswordIncorrect.Error())
+		return nil, status.Error(codes.InvalidArgument, password.ErrOldPasswordIncorrect.Error())
 	}
 
 	_, err = s.passwordService.UpdatePassword(ctx, uow, user, req.NewPassword)
 	if err != nil {
 		var pve *password.PasswordValidationError
 		if errors.As(err, &pve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -591,11 +595,11 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 	}
 
 	if utf8.RuneCountInString(req.Code) != 6 {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
 	}
 
 	if err := password.ValidatePassword(req.NewPassword); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -609,18 +613,18 @@ func (s *service) ResetPasswordByCode(ctx context.Context, req *pb.ResetPassword
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidCode.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
 	}
 
 	if _, err := s.passwordService.ForceUpdatePassword(ctx, uow, user, req.NewPassword); err != nil {
 		var pve *password.PasswordValidationError
 		if errors.As(err, &pve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -652,11 +656,11 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 	l := s.log.With("op", "reset_password_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	if req.Token == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidToken.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidToken.Error())
 	}
 
 	if err := password.ValidatePassword(req.NewPassword); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	uow := s.authDataProvider.newUOW()
@@ -670,12 +674,12 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 	if err != nil {
 		var cve *codedomain.CodeValidationError
 		if errors.As(err, &cve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 	if !valid {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", codedomain.ErrInvalidOrExpiredResetLink.Error())
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidOrExpiredResetLink.Error())
 	}
 
 	user, err := s.userService.GetUserByID(ctx, userID)
@@ -692,7 +696,7 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 	if _, err := s.passwordService.ForceUpdatePassword(ctx, uow, user, req.NewPassword); err != nil {
 		var pve *password.PasswordValidationError
 		if errors.As(err, &pve) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -714,6 +718,241 @@ func (s *service) ResetPasswordByLink(ctx context.Context, req *pb.ResetPassword
 
 	l.Infow("auth.reset_password_by_link.success")
 	return &pb.ResetPasswordByLinkResponse{
+		User:         user,
+		AccessToken:  access.GetToken(),
+		RefreshToken: refresh.GetToken(),
+	}, nil
+}
+
+func (s *service) ChangeEmail(ctx context.Context, req *pb.ChangeEmailRequest) (*pb.ChangeEmailResponse, error) {
+	l := s.log.With("op", "change_email", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	user, err := s.getAndCheckActiveUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Email == req.NewEmail {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrSameEmail.Error())
+	}
+	emailUpdatedAt, err := utils.ParseTimestampPtr(&user.Status.EmailUpdatedAt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if emailUpdatedAt != nil && time.Since(*emailUpdatedAt) < time.Hour*24 {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrWaitBeforeEmailChanging.Error())
+	}
+
+	candidateByEmail, err := s.userService.GetUserByEmail(ctx, req.NewEmail)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if candidateByEmail != nil {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrUserWithEmailExists.Error())
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+
+	_, err = uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("auth.change_email_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	c, err := s.codeService.GenerateEmailChangeCode(ctx, uow, user.Id, req.NewEmail)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		l.Errorw("auth.change_email_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.change_email_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	lang := ctxmetadata.GetLangFromIncomingContext(ctx)
+	s.emailCodeTasksProducer.ProduceEmailCodeTask(ctx, c.GetEmail(), &c.Code, lang)
+
+	l.Infow("auth.change_email.success")
+	return &pb.ChangeEmailResponse{}, nil
+}
+
+func (s *service) ConfirmNewEmailByCode(ctx context.Context, req *pb.ConfirmNewEmailByCodeRequest) (*pb.ConfirmNewEmailByCodeResponse, error) {
+	l := s.log.With("op", "confirm_new_email_by_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	user, err := s.getAndCheckActiveUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if utf8.RuneCountInString(req.Code) != 6 {
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	c, valid, err := s.codeService.CheckEmailChangeCodeByCode(ctx, uow, user.Id, req.Code)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if !valid {
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidCode.Error())
+	}
+
+	if user.Email == c.GetEmail() {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrSameEmail.Error())
+	}
+	emailUpdatedAt, err := utils.ParseTimestampPtr(&user.Status.EmailUpdatedAt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if emailUpdatedAt != nil && time.Since(*emailUpdatedAt) < time.Hour*24 {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrWaitBeforeEmailChanging.Error())
+	}
+
+	candidateByEmail, err := s.userService.GetUserByEmail(ctx, c.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if candidateByEmail != nil {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrUserWithEmailExists.Error())
+	}
+
+	user, err = s.userService.UpdateUserEmail(ctx, user.Id, c.GetEmail())
+	if err != nil {
+		if status.Code(err) == codes.InvalidArgument {
+			return nil, err
+		} else if status.Code(err) == codes.NotFound {
+			return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
+		}
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.confirm_new_email_by_code_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("auth.confirm_new_email_by_code.success")
+	return &pb.ConfirmNewEmailByCodeResponse{
+		User:         user,
+		AccessToken:  access.GetToken(),
+		RefreshToken: refresh.GetToken(),
+	}, nil
+}
+
+func (s *service) ConfirmNewEmailByLink(ctx context.Context, req *pb.ConfirmNewEmailByLinkRequest) (*pb.ConfirmNewEmailByLinkResponse, error) {
+	l := s.log.With("op", "confirm_new_email_by_link", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidToken.Error())
+	}
+
+	user, err := s.getAndCheckActiveUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	uow := s.authDataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("auth.confirm_new_email_by_link_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	c, valid, err := s.codeService.CheckEmailChangeCodeByLinkToken(ctx, uow, req.Token)
+	if err != nil {
+		var cve *codedomain.CodeValidationError
+		if errors.As(err, &cve) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		l.Errorw("auth.confirm_new_email_by_link_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if !valid {
+		return nil, status.Error(codes.InvalidArgument, codedomain.ErrInvalidOrExpiredEmailChangeLink.Error())
+	}
+
+	if c.GetUserID() != user.Id {
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+
+	if user.Email == c.GetEmail() {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrSameEmail.Error())
+	}
+	emailUpdatedAt, err := utils.ParseTimestampPtr(&user.Status.EmailUpdatedAt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if emailUpdatedAt != nil && time.Since(*emailUpdatedAt) < time.Hour*24 {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrWaitBeforeEmailChanging.Error())
+	}
+
+	candidateByEmail, err := s.userService.GetUserByEmail(ctx, c.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if candidateByEmail != nil {
+		return nil, status.Error(codes.InvalidArgument, userservice.ErrUserWithEmailExists.Error())
+	}
+
+	user, err = s.userService.UpdateUserEmail(ctx, user.Id, c.GetEmail())
+	if err != nil {
+		if status.Code(err) == codes.InvalidArgument {
+			return nil, err
+		} else if status.Code(err) == codes.NotFound {
+			return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
+		}
+		l.Errorw("auth.confirm_new_email_by_link_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	uv, err := s.tokenService.UpdateUserVersion(ctx, uow, user)
+	if err != nil {
+		l.Errorw("auth.confirm_new_email_by_link_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	access, refresh, err := s.tokenService.GenerateToken(ctx, uow, user, uv, nil)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("auth.confirm_new_email_by_link_failed", "err", err)
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("auth.confirm_new_email_by_link.success")
+	return &pb.ConfirmNewEmailByLinkResponse{
 		User:         user,
 		AccessToken:  access.GetToken(),
 		RefreshToken: refresh.GetToken(),
@@ -835,6 +1074,28 @@ func (s *service) InvalidateSessions(ctx context.Context, req *pb.InvalidateSess
 		AccessToken:  utils.StringPtr(access.GetToken()),
 		RefreshToken: utils.StringPtr(refresh.GetToken()),
 	}, nil
+}
+
+func (s *service) getAndCheckActiveUser(ctx context.Context) (*userpb.User, error) {
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if claims.IsDeleted {
+		return nil, status.Error(codes.PermissionDenied, userservice.ErrUserIsDeleted.Error())
+	}
+
+	user, err := s.userService.GetUserByID(ctx, claims.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if user == nil || user.Status.IsDeleted {
+		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if user.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(user.Status.BannedUntil) || !user.Status.IsConfirmed {
+		return nil, status.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+	return user, nil
 }
 
 func (s *service) getAndCheckUserForConfirmation(ctx context.Context) (*userpb.User, error) {

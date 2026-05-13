@@ -10,6 +10,7 @@ type CodeType string
 const (
 	CodeTypeActivation    CodeType = "activation"
 	CodeTypePasswordReset CodeType = "password_reset"
+	CodeTypeEmailChange   CodeType = "email_change"
 )
 
 const (
@@ -22,11 +23,17 @@ func (ct CodeType) ttl() time.Duration {
 	if ct == CodeTypePasswordReset {
 		return 5 * time.Minute
 	}
+	if ct == CodeTypeEmailChange {
+		return 5 * time.Minute
+	}
 	return 10 * time.Minute
 }
 
 func (ct CodeType) maxVerifications() int {
 	if ct == CodeTypePasswordReset {
+		return 5
+	}
+	if ct == CodeTypeEmailChange {
 		return 5
 	}
 	return 10

@@ -13,27 +13,24 @@ import (
 )
 
 type codeRepository struct {
-	conn       *pgxpool.Conn
-	tableName  string
-	pgTypeName string
-	codeType   code.CodeType
+	conn      *pgxpool.Conn
+	tableName string
+	codeType  code.CodeType
 }
 
 func NewActivationCodeRepository(conn *pgxpool.Conn) interfaces.CodeRepository {
 	return &codeRepository{
-		conn:       conn,
-		tableName:  "confirmation_codes",
-		pgTypeName: "v1_confirmation_code",
-		codeType:   code.CodeTypeActivation,
+		conn:      conn,
+		tableName: "confirmation_codes",
+		codeType:  code.CodeTypeActivation,
 	}
 }
 
 func NewPasswordResetCodeRepository(conn *pgxpool.Conn) interfaces.CodeRepository {
 	return &codeRepository{
-		conn:       conn,
-		tableName:  "password_reset_tokens",
-		pgTypeName: "v1_password_reset_token",
-		codeType:   code.CodeTypePasswordReset,
+		conn:      conn,
+		tableName: "password_reset_tokens",
+		codeType:  code.CodeTypePasswordReset,
 	}
 }
 
@@ -42,9 +39,9 @@ func (r *codeRepository) CreateCode(ctx context.Context, c *code.Code) error {
 	sql := fmt.Sprintf(`
 		INSERT INTO %s (user_id, code, link_token, generations_left, verifications_left, expires_at)
 		SELECT (i).user_id, (i).code, (i).link_token, (i).generations_left, (i).verifications_left, (i).expires_at
-		FROM UNNEST($1::%s[]) i
+		FROM UNNEST($1::v1_code[]) i
 		RETURNING id, user_id, code, link_token, generations_left, verifications_left, expires_at, created_at, updated_at
-	`, r.tableName, r.pgTypeName)
+	`, r.tableName)
 
 	var res models.V1CodeDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1CodeDal{dal}).Scan(
@@ -67,10 +64,10 @@ func (r *codeRepository) UpdateCode(ctx context.Context, c *code.Code) error {
 			verifications_left = u.verifications_left,
 			expires_at         = u.expires_at,
 			updated_at         = u.updated_at
-		FROM UNNEST($1::%s[]) AS u
+		FROM UNNEST($1::v1_code[]) AS u
 		WHERE t.id = u.id
 		RETURNING t.id, t.user_id, t.code, t.link_token, t.generations_left, t.verifications_left, t.expires_at, t.created_at, t.updated_at
-	`, r.tableName, r.pgTypeName)
+	`, r.tableName)
 
 	var res models.V1CodeDal
 	if err := r.conn.QueryRow(ctx, sql, []models.V1CodeDal{dal}).Scan(

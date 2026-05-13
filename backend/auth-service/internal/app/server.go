@@ -39,8 +39,8 @@ type ServerApp struct {
 	userService     userservice.UserService
 	codeService     codeservice.CodeService
 	passwordService passwordservice.PasswordService
-	tokenService    tokenservice.TokenService
-	authService     authservice.AuthService
+	tokenService           tokenservice.TokenService
+	authService            authservice.AuthService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
