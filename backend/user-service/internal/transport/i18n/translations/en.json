@@ -15,6 +15,7 @@
     { "id": "domain.profile.validation.error.bio_too_long", "translation": "bio must be at most 1000 characters long" },
 
     { "id": "domain.status.validation.error.banned_until_in_past", "translation": "banned until time cannot be in the past" },
+    { "id": "domain.status.validation.error.permanently_delete_if_not_deleted", "translation": "cannot permanently delete a user that is not marked as deleted" },
 
     { "id": "domain.user.validation.error.email_is_empty", "translation": "email is empty" },
     { "id": "domain.user.validation.error.invalid_email_format", "translation": "invalid email format" },
@@ -25,9 +26,15 @@
     { "id": "domain.user.validation.error.username_too_long", "translation": "username must be at most 30 characters long" },
     { "id": "domain.user.validation.error.same_username", "translation": "username is the same as the current one" },
     { "id": "domain.user.validation.error.same_email", "translation": "email is the same as the current one" },
+    { "id": "domain.user.validation.error.wait_before_email_changing", "translation": "you must wait before changing your email again" },
 
-    { "id": "service.user.error.user_with_this_username_exists", "translation": "user with this email already exists" },
-    { "id": "service.user.error.user_with_this_email_exists", "translation": "user with this username already exists" },
+    { "id": "domain.privacy_settings.error.unknown_privacy_value", "translation": "unknown privacy value" },
+
+    { "id": "domain.outbox_event.error.max_attempts_reached", "translation": "maximum delivery attempts reached" },
+    { "id": "domain.outbox_event.error.cannot_update_status", "translation": "cannot update outbox event status" },
+
+    { "id": "service.user.error.user_with_this_username_exists", "translation": "user with this username already exists" },
+    { "id": "service.user.error.user_with_this_email_exists", "translation": "user with this email already exists" },
     { "id": "service.user.error.user_id_is_required", "translation": "user_id is required" },
     { "id": "service.user.error.username_is_required", "translation": "username is required" },
     { "id": "service.user.error.email_is_required", "translation": "email is required" },
@@ -36,6 +43,13 @@
     { "id": "service.user.error.deleted_user_cannot_be_activated", "translation": "deleted user cannot be activated" },
     { "id": "service.user.error.banned_user_cannot_be_activated", "translation": "banned user cannot be activated" },
     { "id": "service.user.error.invalid_timestamp", "translation": "invalid timestamp format, use RFC3339" },
+    { "id": "service.user.error.fields_are_required", "translation": "required fields are missing" },
+    { "id": "service.user.error.nothing_to_update", "translation": "nothing to update" },
+    { "id": "service.user.error.delete_unconfirmed_users_failed", "translation": "failed to delete unconfirmed users" },
+    { "id": "service.user.error.clear_deleted_users_failed", "translation": "failed to clear deleted users" },
+    { "id": "service.user.error.unban_temporarily_banned_users_failed", "translation": "failed to unban temporarily banned users" },
+    { "id": "service.user.error.privacy_list_too_long", "translation": "privacy list is too long" },
+    { "id": "service.user.error.invalid_user_in_privacy_list", "translation": "invalid user in privacy list" },
 
     { "id": "error.internal_server_error", "translation": "internal server error" },
     { "id": "error.unauthorized", "translation": "unauthorized" },

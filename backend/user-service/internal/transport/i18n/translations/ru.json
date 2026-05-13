@@ -15,6 +15,7 @@
     { "id": "domain.profile.validation.error.bio_too_long", "translation": "о себе должно содержать не более 1000 символов" },
 
     { "id": "domain.status.validation.error.banned_until_in_past", "translation": "дата окончания блокировки не может быть в прошлом" },
+    { "id": "domain.status.validation.error.permanently_delete_if_not_deleted", "translation": "нельзя окончательно удалить пользователя, не помеченного как удалённый" },
 
     { "id": "domain.user.validation.error.email_is_empty", "translation": "email не указан" },
     { "id": "domain.user.validation.error.invalid_email_format", "translation": "неверный формат email" },
@@ -25,9 +26,15 @@
     { "id": "domain.user.validation.error.username_too_long", "translation": "имя пользователя должно содержать не более 30 символов" },
     { "id": "domain.user.validation.error.same_username", "translation": "имя пользователя совпадает с текущим" },
     { "id": "domain.user.validation.error.same_email", "translation": "email совпадает с текущим" },
+    { "id": "domain.user.validation.error.wait_before_email_changing", "translation": "необходимо подождать перед повторной сменой email" },
 
-    { "id": "service.user.error.user_with_this_username_exists", "translation": "пользователь с таким email уже существует" },
-    { "id": "service.user.error.user_with_this_email_exists", "translation": "пользователь с таким именем пользователя уже существует" },
+    { "id": "domain.privacy_settings.error.unknown_privacy_value", "translation": "неизвестное значение настройки приватности" },
+
+    { "id": "domain.outbox_event.error.max_attempts_reached", "translation": "превышено максимальное количество попыток доставки" },
+    { "id": "domain.outbox_event.error.cannot_update_status", "translation": "не удалось обновить статус события outbox" },
+
+    { "id": "service.user.error.user_with_this_username_exists", "translation": "пользователь с таким именем пользователя уже существует" },
+    { "id": "service.user.error.user_with_this_email_exists", "translation": "пользователь с таким email уже существует" },
     { "id": "service.user.error.user_id_is_required", "translation": "user_id обязателен" },
     { "id": "service.user.error.username_is_required", "translation": "имя пользователя обязательно" },
     { "id": "service.user.error.email_is_required", "translation": "email обязателен" },
@@ -36,6 +43,13 @@
     { "id": "service.user.error.deleted_user_cannot_be_activated", "translation": "удалённый пользователь не может быть активирован" },
     { "id": "service.user.error.banned_user_cannot_be_activated", "translation": "заблокированный пользователь не может быть активирован" },
     { "id": "service.user.error.invalid_timestamp", "translation": "неверный формат времени, используйте RFC3339" },
+    { "id": "service.user.error.fields_are_required", "translation": "обязательные поля не заполнены" },
+    { "id": "service.user.error.nothing_to_update", "translation": "нечего обновлять" },
+    { "id": "service.user.error.delete_unconfirmed_users_failed", "translation": "не удалось удалить неподтверждённых пользователей" },
+    { "id": "service.user.error.clear_deleted_users_failed", "translation": "не удалось очистить удалённых пользователей" },
+    { "id": "service.user.error.unban_temporarily_banned_users_failed", "translation": "не удалось снять временную блокировку с пользователей" },
+    { "id": "service.user.error.privacy_list_too_long", "translation": "список приватности слишком длинный" },
+    { "id": "service.user.error.invalid_user_in_privacy_list", "translation": "недопустимый пользователь в списке приватности" },
 
     { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
     { "id": "error.unauthorized", "translation": "не авторизован" },
