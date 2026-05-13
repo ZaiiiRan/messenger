@@ -141,8 +141,10 @@ message GetUsersRequest {
     optional string created_to = 18;
     optional string updated_from = 19;
     optional string updated_to = 20;
+    optional string email_updated_from = 21;
+    optional string email_updated_to = 22;
     
-    bool include_privacy_settings = 21;
+    bool include_privacy_settings = 23;
 }
 
 message GetUsersResponse {

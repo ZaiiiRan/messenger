@@ -322,6 +322,14 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 	if err != nil {
 		verr["updated_to"] = ErrInvalidTimestamp.Error()
 	}
+	emailUpdatedFrom, err := utils.ParseTimestampPtr(req.EmailUpdatedFrom)
+	if err != nil {
+		verr["email_updated_from"] = ErrInvalidTimestamp.Error()
+	}
+	emailUpdatedTo, err := utils.ParseTimestampPtr(req.EmailUpdatedTo)
+	if err != nil {
+		verr["email_updated_to"] = ErrInvalidTimestamp.Error()
+	}
 
 	if len(verr) > 0 {
 		l.Warnw("user.get_users_failed.validation_error", "err", verr)
@@ -347,6 +355,8 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 		CreatedTo:            createdTo,
 		UpdatedFrom:          updatedFrom,
 		UpdatedTo:            updatedTo,
+		EmailUpdatedFrom:     emailUpdatedFrom,
+		EmailUpdatedTo:       emailUpdatedTo,
 	}
 
 	uow := s.dataProvider.newUOW()

@@ -208,6 +208,7 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	appendRange(&sb, "s.banned_until", query.Filter.BannedUntilFrom, query.Filter.BannedUntilTo, &args, &argPos)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
+	appendRange(&sb, "s.email_updated_at", query.Filter.EmailUpdatedFrom, query.Filter.EmailUpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.id", true)
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
@@ -292,6 +293,7 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	appendRange(&sb, "s.banned_until", query.Filter.BannedUntilFrom, query.Filter.BannedUntilTo, &args, &argPos)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
+	appendRange(&sb, "s.email_updated_at", query.Filter.EmailUpdatedFrom, query.Filter.EmailUpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.updated_at", true)
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
