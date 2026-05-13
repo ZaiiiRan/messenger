@@ -174,7 +174,7 @@ message UpdateProfile {
 
 message UpdateUser {
     optional string username = 1;
-    Profile profile = 2;
+    UpdateProfile profile = 2;
 }
 
 message UpdateMeByUserRequest {
@@ -186,7 +186,6 @@ message UpdateMeByUserResponse {
     User user = 1;
 }
 
-
 message UpdateUserPrivacySetting {
     optional string value = 1;
     repeated string favourites = 2;
@@ -194,18 +193,18 @@ message UpdateUserPrivacySetting {
 }
 
 message UpdateUserPrivacySettings {
-    string fields = 1;
-    UserPrivacySetting avatar = 2;
-    UserPrivacySetting photos = 3;
-    UserPrivacySetting phone_number = 4;
-    UserPrivacySetting email = 5;
-    UserPrivacySetting online_status = 6;
-    UserPrivacySetting first_dialogs_init = 7;
-    UserPrivacySetting group_chat_invites = 8;
+    UpdateUserPrivacySetting avatar = 1;
+    UpdateUserPrivacySetting photos = 2;
+    UpdateUserPrivacySetting phone_number = 3;
+    UpdateUserPrivacySetting email = 4;
+    UpdateUserPrivacySetting online_status = 5;
+    UpdateUserPrivacySetting first_dialogs_init = 6;
+    UpdateUserPrivacySetting group_chat_invites = 7;
 }
 
 message UpdateMyPrivacySettingsByUserRequest {
-    UpdateUserPrivacySettings privacy_settings = 1;
+    repeated string fields = 1;
+    UpdateUserPrivacySettings privacy_settings = 2;
 }
 
 message UpdateMyPrivacySettingsByUserResponse {
