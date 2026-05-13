@@ -252,7 +252,8 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	defer uow.Close()
 
 	u, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
-		Usernames: []string{req.Username},
+		Usernames:            []string{req.Username},
+		IsPermanentlyDeleted: utils.BoolPtr(false),
 	}, uow)
 	if err != nil {
 		l.Errorw("user.get_user_by_username_failed.get_by_username_error", "err", err)
@@ -278,7 +279,8 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 	defer uow.Close()
 
 	u, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
-		Emails: []string{req.Email},
+		Emails:               []string{req.Email},
+		IsPermanentlyDeleted: utils.BoolPtr(false),
 	}, uow)
 	if err != nil {
 		l.Errorw("user.get_user_by_email_failed.get_by_email_error", "err", err)
