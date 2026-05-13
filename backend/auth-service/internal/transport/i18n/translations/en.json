@@ -9,6 +9,15 @@
     { "id": "domain.code.validation.error.invalid_token", "translation": "invalid token" },
     { "id": "domain.code.validation.error.invalid_or_expired_activation_link", "translation": "invalid or expired activation link" },
     { "id": "domain.code.validation.error.invalid_or_expired_reset_link", "translation": "invalid or expired reset link" },
+    { "id": "domain.code.validation.error.invalid_or_expired_email_change_link", "translation": "invalid or expired email change link" },
+
+    { "id": "domain.email_change_code.validation.error.email_is_empty", "translation": "email is empty" },
+    { "id": "domain.email_change_code.validation.error.invalid_email_format", "translation": "invalid email format" },
+    { "id": "domain.email_change_code.validation.error.email_too_long", "translation": "email must be at most 254 characters long" },
+    { "id": "domain.email_change_code.validation.error.same_email", "translation": "new email is the same as the current one" },
+
+    { "id": "domain.outbox_inbox.error.max_attempts_reached", "translation": "maximum delivery attempts reached" },
+    { "id": "domain.outbox_inbox.error.cannot_update_status", "translation": "cannot update inbox event status" },
 
     { "id": "domain.password.validation.error.password_can_be_changed_only_once_per_24_hours", "translation": "password can be changed only once per 24 hours" },
     { "id": "domain.password.validation.error.password_must_be_at_least_8_characters_long", "translation": "password must be at least 8 characters long" },
@@ -22,10 +31,20 @@
 
     { "id": "service.user.error.user_is_deleted", "translation": "user is deleted" },
     { "id": "service.user.error.user_is_already_activated", "translation": "user is already activated" },
+    { "id": "service.user.error.same_email", "translation": "new email is the same as the current one" },
+    { "id": "service.user.error.wait_before_email_changing", "translation": "you must wait before changing your email again" },
+    { "id": "service.user.error.user_with_this_email_exists", "translation": "user with this email already exists" },
+
+    { "id": "service.code.error.code_not_found", "translation": "code not found" },
+
+    { "id": "service.password.error.password_not_found", "translation": "password not found" },
+
+    { "id": "service.user_data_deletion_tasks.create_user_data_deletion_tasks_error", "translation": "failed to create user data deletion tasks" },
+    { "id": "service.user_data_deletion_tasks.process_user_data_deletion_tasks_error", "translation": "failed to process user data deletion tasks" },
 
     { "id": "service.auth.error.invalid_login_or_password", "translation": "invalid login or password" },
     { "id": "service.auth.error.invalid_credentials", "translation": "invalid credentials" },
-    { "id": "service.auth.error.too_many_sessions", "translation": "to many sessions" },
+    { "id": "service.auth.error.too_many_sessions", "translation": "too many sessions" },
 
 
     { "id": "error.internal_server_error", "translation": "internal server error" },
