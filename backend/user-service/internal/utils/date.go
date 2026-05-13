@@ -49,3 +49,7 @@ func FormatTimestampPtr(t *time.Time) *string {
 	s := t.Format(time.RFC3339)
 	return &s
 }
+
+func FormatTimestamp(t time.Time) string {
+	return t.Format(time.RFC3339)
+}

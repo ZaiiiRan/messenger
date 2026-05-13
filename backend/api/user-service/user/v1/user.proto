@@ -36,6 +36,7 @@ message UserStatus {
     optional string banned_until = 3;
     bool is_deleted = 4;
     optional string deleted_at = 5;
+    string email_updated_at = 6;
 }
 
 message UserPrivacySetting {

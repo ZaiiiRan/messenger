@@ -46,6 +46,7 @@ func statusToProto(s *status.Status) *pb.UserStatus {
 		BannedUntil:         utils.FormatTimestampPtr(s.GetBannedUntil()),
 		IsDeleted:           s.IsDeleted(),
 		DeletedAt:           utils.FormatTimestampPtr(s.GetDeletedAt()),
+		EmailUpdatedAt:      utils.FormatTimestamp(s.GetEmailUpdatedAt()),
 	}
 }
 
