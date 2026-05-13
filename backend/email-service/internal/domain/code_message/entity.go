@@ -14,6 +14,7 @@ type CodeType string
 const (
 	CodeTypeActivation    CodeType = "activation"
 	CodeTypePasswordReset CodeType = "password_reset"
+	CodeTypeEmailChange   CodeType = "email_change"
 )
 
 type CodeMessage struct {
@@ -61,6 +62,8 @@ func (m *CodeMessage) GenerateHTML(cfg *settings.HTMLGeneratorSettings, localize
 		return m.generateActivationHTML(cfg.BaseUrlForActivation, localizer)
 	case CodeTypePasswordReset:
 		return m.generatePasswordResetHTML(cfg.BaseUrlForPasswordReset, localizer)
+	case CodeTypeEmailChange:
+		return m.generateEmailChangeHTML(cfg.BaseUrlForEmailChange, localizer)
 	default:
 		return fmt.Errorf("unsupported code type: %s", m.codeType)
 	}
@@ -72,6 +75,8 @@ func (m *CodeMessage) GetSubject(localizer *i18n.Localizer) string {
 		return loc(localizer, "email.activation.subject")
 	case CodeTypePasswordReset:
 		return loc(localizer, "email.password_reset.subject")
+	case CodeTypeEmailChange:
+		return loc(localizer, "email.email_change.subject")
 	default:
 		return ""
 	}
@@ -116,12 +121,30 @@ func loc(localizer *i18n.Localizer, id string) string {
 	return s
 }
 
+func (m *CodeMessage) generateEmailChangeHTML(baseURL string, localizer *i18n.Localizer) error {
+	r := strings.NewReplacer(
+		"{SUBTITLE}", loc(localizer, "email.email_change.subtitle"),
+		"{WARNING}", loc(localizer, "email.email_change.warning"),
+		"{BODY}", loc(localizer, "email.email_change.body"),
+		"{CODE_LABEL}", loc(localizer, "email.code_label"),
+		"{CODE}", m.code,
+		"{DIVIDER}", loc(localizer, "email.divider"),
+		"{TOKEN_URL}", baseURL+"?token="+url.QueryEscape(m.linkToken),
+		"{BUTTON}", loc(localizer, "email.email_change.button"),
+		"{FOOTER}", loc(localizer, "email.email_change.footer"),
+	)
+	m.html = r.Replace(emailChangeHTMLTpl)
+	return nil
+}
+
 func toCodeType(codeType string) (CodeType, error) {
 	switch codeType {
 	case "activation":
 		return CodeTypeActivation, nil
 	case "password_reset":
 		return CodeTypePasswordReset, nil
+	case "email_change":
+		return CodeTypeEmailChange, nil
 	default:
 		return "", fmt.Errorf("invalid code type: %s", codeType)
 	}

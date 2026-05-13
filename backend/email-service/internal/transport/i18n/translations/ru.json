@@ -13,5 +13,12 @@
   { "id": "email.password_reset.body",          "translation": "Введите код подтверждения ниже, чтобы сбросить пароль. Или нажмите кнопку — мы всё сделаем за вас." },
   { "id": "email.password_reset.button",        "translation": "Сбросить пароль" },
   { "id": "email.password_reset.footer",        "translation": "Код действителен&nbsp;<strong>5&nbsp;минут</strong>." },
-  { "id": "email.password_reset.subject",       "translation": "Сброс пароля" }
+  { "id": "email.password_reset.subject",       "translation": "Сброс пароля" },
+
+  { "id": "email.email_change.subtitle",        "translation": "Смена email" },
+  { "id": "email.email_change.warning",         "translation": "Если вы не запрашивали смену email — немедленно смените пароль от аккаунта." },
+  { "id": "email.email_change.body",            "translation": "Введите код подтверждения ниже, чтобы подтвердить новый email. Или нажмите кнопку — мы всё сделаем за вас." },
+  { "id": "email.email_change.button",          "translation": "Подтвердить новый email" },
+  { "id": "email.email_change.footer",          "translation": "Код действителен&nbsp;<strong>5&nbsp;минут</strong>." },
+  { "id": "email.email_change.subject",         "translation": "Подтверждение смены email" }
 ]
