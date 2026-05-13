@@ -115,7 +115,9 @@ func (cdp *codeDataProvider) save(ctx context.Context, c *code.Code, uow *uow.Un
 	}
 
 	cacheRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
-	cacheRepo.SetCodeByUserId(ctx, c)
+	if err := cacheRepo.SetCodeByUserId(ctx, c); err != nil {
+		return err
+	}
 	return nil
 }
 
