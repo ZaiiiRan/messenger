@@ -20,13 +20,13 @@ func SanitizeGetUsersRequest(req *pb.GetUsersRequest) {
 		return
 	}
 
-	req.Ids = sanitizeStringArray(req.Ids)
-	req.FullUsernames = sanitizeLowerStringArray(req.FullUsernames)
-	req.PartialUsernames = sanitizeLowerStringArray(req.PartialUsernames)
-	req.FullEmails = sanitizeLowerStringArray(req.FullEmails)
-	req.PartialEmails = sanitizeLowerStringArray(req.PartialEmails)
-	req.PhoneNumbers = sanitizeStringArray(req.PhoneNumbers)
-	req.PartialNames = sanitizeStringArray(req.PartialNames)
+	req.Ids = sanitizeStringArray(sanitizeUniqueArray(req.Ids))
+	req.FullUsernames = sanitizeLowerStringArray(sanitizeUniqueArray(req.FullUsernames))
+	req.PartialUsernames = sanitizeLowerStringArray(sanitizeUniqueArray(req.PartialUsernames))
+	req.FullEmails = sanitizeLowerStringArray(sanitizeUniqueArray(req.FullEmails))
+	req.PartialEmails = sanitizeLowerStringArray(sanitizeUniqueArray(req.PartialEmails))
+	req.PhoneNumbers = sanitizeStringArray(sanitizeUniqueArray(req.PhoneNumbers))
+	req.PartialNames = sanitizeStringArray(sanitizeUniqueArray(req.PartialNames))
 
 	req.DeletedFrom = sanitizeStringPtr(req.DeletedFrom)
 	req.DeletedTo = sanitizeStringPtr(req.DeletedTo)
@@ -79,11 +79,26 @@ func SanitizeUnbanUserRequest(req *pb.UnbanUserRequest) {
 	req.UserId = strings.TrimSpace(req.UserId)
 }
 
-func SanitizeDeleteUserRequest(req *pb.DeleteUserRequest) {
+func SanitizeUpdateMeByUserRequest(req *pb.UpdateMeByUserRequest) {
 	if req == nil {
 		return
 	}
-	req.UserId = strings.TrimSpace(req.UserId)
+	if req.Fields == nil {
+		return
+	}
+	req.Fields = sanitizeUniqueArray(req.Fields)
+	sanitizeUpdateUser(req.User)
+}
+
+func SanitizeUpdateMyPrivacySettingsByUserRequest(req *pb.UpdateMyPrivacySettingsByUserRequest) {
+	if req == nil {
+		return
+	}
+	if req.Fields == nil {
+		return
+	}
+	req.Fields = sanitizeUniqueArray(req.Fields)
+	sanitizeUpdateUserPrivacySettings(req.PrivacySettings)
 }
 
 func sanitizeProfile(p *pb.Profile) {
@@ -95,6 +110,47 @@ func sanitizeProfile(p *pb.Profile) {
 	p.Phone = sanitizeStringPtr(p.Phone)
 	p.Birthdate = sanitizeStringPtr(p.Birthdate)
 	p.Bio = sanitizeStringPtr(p.Bio)
+}
+
+func sanitizeUpdateUser(u *pb.UpdateUser) {
+	if u == nil {
+		return
+	}
+	u.Username = sanitizeStringPtr(u.Username)
+	sanitizeUpdateProfile(u.Profile)
+}
+
+func sanitizeUpdateProfile(p *pb.UpdateProfile) {
+	if p == nil {
+		return
+	}
+	p.FirstName = sanitizeStringPtr(p.FirstName)
+	p.LastName = sanitizeStringPtr(p.LastName)
+	p.Phone = sanitizeStringPtr(p.Phone)
+	p.Birthdate = sanitizeStringPtr(p.Birthdate)
+	p.Bio = sanitizeStringPtr(p.Bio)
+}
+
+func sanitizeUpdateUserPrivacySettings(s *pb.UpdateUserPrivacySettings) {
+	if s == nil {
+		return
+	}
+	sanitizeUpdateUserPrivacySetting(s.Avatar)
+	sanitizeUpdateUserPrivacySetting(s.Photos)
+	sanitizeUpdateUserPrivacySetting(s.PhoneNumber)
+	sanitizeUpdateUserPrivacySetting(s.Email)
+	sanitizeUpdateUserPrivacySetting(s.OnlineStatus)
+	sanitizeUpdateUserPrivacySetting(s.FirstDialogsInit)
+	sanitizeUpdateUserPrivacySetting(s.GroupChatInvites)
+}
+
+func sanitizeUpdateUserPrivacySetting(s *pb.UpdateUserPrivacySetting) {
+	if s == nil {
+		return
+	}
+	s.Value = sanitizeStringPtr(s.Value)
+	s.Favourites = sanitizeStringArray(sanitizeUniqueArray(s.Favourites))
+	s.Exceptions = sanitizeStringArray(sanitizeUniqueArray(s.Exceptions))
 }
 
 func sanitizeStringArray(arr []string) []string {
@@ -125,4 +181,16 @@ func sanitizeStringPtr(s *string) *string {
 	}
 	trimmed := strings.TrimSpace(*s)
 	return &trimmed
+}
+
+func sanitizeUniqueArray[T comparable](s []T) []T {
+	seen := make(map[T]struct{}, len(s))
+	out := s[:0]
+	for _, v := range s {
+		if _, ok := seen[v]; !ok {
+			seen[v] = struct{}{}
+			out = append(out, v)
+		}
+	}
+	return out
 }

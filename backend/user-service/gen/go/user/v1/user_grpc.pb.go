@@ -19,16 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName        = "/user.v1.UserService/CreateUser"
-	UserService_ConfirmUser_FullMethodName       = "/user.v1.UserService/ConfirmUser"
-	UserService_GetUserByID_FullMethodName       = "/user.v1.UserService/GetUserByID"
-	UserService_GetUserByUsername_FullMethodName = "/user.v1.UserService/GetUserByUsername"
-	UserService_GetUserByEmail_FullMethodName    = "/user.v1.UserService/GetUserByEmail"
-	UserService_GetUsers_FullMethodName          = "/user.v1.UserService/GetUsers"
-	UserService_GetMeByUser_FullMethodName       = "/user.v1.UserService/GetMeByUser"
-	UserService_BanUser_FullMethodName           = "/user.v1.UserService/BanUser"
-	UserService_UnbanUser_FullMethodName         = "/user.v1.UserService/UnbanUser"
-	UserService_DeleteUser_FullMethodName        = "/user.v1.UserService/DeleteUser"
+	UserService_CreateUser_FullMethodName                    = "/user.v1.UserService/CreateUser"
+	UserService_ConfirmUser_FullMethodName                   = "/user.v1.UserService/ConfirmUser"
+	UserService_GetUserByID_FullMethodName                   = "/user.v1.UserService/GetUserByID"
+	UserService_GetUserByUsername_FullMethodName             = "/user.v1.UserService/GetUserByUsername"
+	UserService_GetUserByEmail_FullMethodName                = "/user.v1.UserService/GetUserByEmail"
+	UserService_GetUsers_FullMethodName                      = "/user.v1.UserService/GetUsers"
+	UserService_GetMeByUser_FullMethodName                   = "/user.v1.UserService/GetMeByUser"
+	UserService_UpdateMeByUser_FullMethodName                = "/user.v1.UserService/UpdateMeByUser"
+	UserService_UpdateMyPrivacySettingsByUser_FullMethodName = "/user.v1.UserService/UpdateMyPrivacySettingsByUser"
+	UserService_DeleteMeByUser_FullMethodName                = "/user.v1.UserService/DeleteMeByUser"
+	UserService_BanUser_FullMethodName                       = "/user.v1.UserService/BanUser"
+	UserService_UnbanUser_FullMethodName                     = "/user.v1.UserService/UnbanUser"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -42,9 +44,11 @@ type UserServiceClient interface {
 	GetUserByEmail(ctx context.Context, in *GetUserByEmailRequest, opts ...grpc.CallOption) (*GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, in *GetUsersRequest, opts ...grpc.CallOption) (*GetUsersResponse, error)
 	GetMeByUser(ctx context.Context, in *GetMeByUserRequest, opts ...grpc.CallOption) (*GetMeByUserResponse, error)
+	UpdateMeByUser(ctx context.Context, in *UpdateMeByUserRequest, opts ...grpc.CallOption) (*UpdateMeByUserResponse, error)
+	UpdateMyPrivacySettingsByUser(ctx context.Context, in *UpdateMyPrivacySettingsByUserRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsByUserResponse, error)
+	DeleteMeByUser(ctx context.Context, in *DeleteMeByUserRequest, opts ...grpc.CallOption) (*DeleteMeByUserResponse, error)
 	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
 	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
-	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 }
 
 type userServiceClient struct {
@@ -125,6 +129,36 @@ func (c *userServiceClient) GetMeByUser(ctx context.Context, in *GetMeByUserRequ
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateMeByUser(ctx context.Context, in *UpdateMeByUserRequest, opts ...grpc.CallOption) (*UpdateMeByUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMeByUserResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateMeByUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateMyPrivacySettingsByUser(ctx context.Context, in *UpdateMyPrivacySettingsByUserRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsByUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMyPrivacySettingsByUserResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateMyPrivacySettingsByUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteMeByUser(ctx context.Context, in *DeleteMeByUserRequest, opts ...grpc.CallOption) (*DeleteMeByUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteMeByUserResponse)
+	err := c.cc.Invoke(ctx, UserService_DeleteMeByUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -145,16 +179,6 @@ func (c *userServiceClient) UnbanUser(ctx context.Context, in *UnbanUserRequest,
 	return out, nil
 }
 
-func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteUserResponse)
-	err := c.cc.Invoke(ctx, UserService_DeleteUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -166,9 +190,11 @@ type UserServiceServer interface {
 	GetUserByEmail(context.Context, *GetUserByEmailRequest) (*GetUserByEmailResponse, error)
 	GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error)
 	GetMeByUser(context.Context, *GetMeByUserRequest) (*GetMeByUserResponse, error)
+	UpdateMeByUser(context.Context, *UpdateMeByUserRequest) (*UpdateMeByUserResponse, error)
+	UpdateMyPrivacySettingsByUser(context.Context, *UpdateMyPrivacySettingsByUserRequest) (*UpdateMyPrivacySettingsByUserResponse, error)
+	DeleteMeByUser(context.Context, *DeleteMeByUserRequest) (*DeleteMeByUserResponse, error)
 	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
 	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
-	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -200,14 +226,20 @@ func (UnimplementedUserServiceServer) GetUsers(context.Context, *GetUsersRequest
 func (UnimplementedUserServiceServer) GetMeByUser(context.Context, *GetMeByUserRequest) (*GetMeByUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMeByUser not implemented")
 }
+func (UnimplementedUserServiceServer) UpdateMeByUser(context.Context, *UpdateMeByUserRequest) (*UpdateMeByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMeByUser not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateMyPrivacySettingsByUser(context.Context, *UpdateMyPrivacySettingsByUserRequest) (*UpdateMyPrivacySettingsByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMyPrivacySettingsByUser not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteMeByUser(context.Context, *DeleteMeByUserRequest) (*DeleteMeByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteMeByUser not implemented")
+}
 func (UnimplementedUserServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BanUser not implemented")
 }
 func (UnimplementedUserServiceServer) UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnbanUser not implemented")
-}
-func (UnimplementedUserServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -356,6 +388,60 @@ func _UserService_GetMeByUser_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateMeByUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMeByUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateMeByUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateMeByUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateMeByUser(ctx, req.(*UpdateMeByUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateMyPrivacySettingsByUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMyPrivacySettingsByUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateMyPrivacySettingsByUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateMyPrivacySettingsByUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateMyPrivacySettingsByUser(ctx, req.(*UpdateMyPrivacySettingsByUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteMeByUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMeByUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteMeByUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteMeByUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteMeByUser(ctx, req.(*DeleteMeByUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -388,24 +474,6 @@ func _UserService_UnbanUser_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).UnbanUser(ctx, req.(*UnbanUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).DeleteUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_DeleteUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -446,16 +514,24 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_GetMeByUser_Handler,
 		},
 		{
+			MethodName: "UpdateMeByUser",
+			Handler:    _UserService_UpdateMeByUser_Handler,
+		},
+		{
+			MethodName: "UpdateMyPrivacySettingsByUser",
+			Handler:    _UserService_UpdateMyPrivacySettingsByUser_Handler,
+		},
+		{
+			MethodName: "DeleteMeByUser",
+			Handler:    _UserService_DeleteMeByUser_Handler,
+		},
+		{
 			MethodName: "BanUser",
 			Handler:    _UserService_BanUser_Handler,
 		},
 		{
 			MethodName: "UnbanUser",
 			Handler:    _UserService_UnbanUser_Handler,
-		},
-		{
-			MethodName: "DeleteUser",
-			Handler:    _UserService_DeleteUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
