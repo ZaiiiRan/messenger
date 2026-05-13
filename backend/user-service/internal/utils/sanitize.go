@@ -116,7 +116,7 @@ func sanitizeUpdateUser(u *pb.UpdateUser) {
 	if u == nil {
 		return
 	}
-	u.Username = sanitizeStringPtr(u.Username)
+	u.Username = sanitizeLowerStringPtr(u.Username)
 	sanitizeUpdateProfile(u.Profile)
 }
 
@@ -180,6 +180,14 @@ func sanitizeStringPtr(s *string) *string {
 		return nil
 	}
 	trimmed := strings.TrimSpace(*s)
+	return &trimmed
+}
+
+func sanitizeLowerStringPtr(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	trimmed := strings.ToLower(strings.TrimSpace(*s))
 	return &trimmed
 }
 

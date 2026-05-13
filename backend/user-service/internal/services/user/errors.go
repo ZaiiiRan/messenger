@@ -24,6 +24,8 @@ var (
 	ErrUserIsAlreadyActivated            = newUserServiceError("service.user.error.user_is_already_activated")
 	ErrDeletedUserCannotBeActivated      = newUserServiceError("service.user.error.deleted_user_cannot_be_activated")
 	ErrBannedUserCannotBeActivated       = newUserServiceError("service.user.error.banned_user_cannot_be_activated")
+	ErrFieldsAreRequired                 = newUserServiceError("service.user.error.fields_are_required")
+	ErrNothingToUpdate                   = newUserServiceError("service.user.error.nothing_to_update")
 	ErrInvalidTimestamp                  = newUserServiceError("service.user.error.invalid_timestamp")
 	ErrDeleteUnconfirmedUsersFailed      = newUserServiceError("service.user.error.delete_unconfirmed_users_failed")
 	ErrClearDeletedUsersFailed           = newUserServiceError("service.user.error.clear_deleted_users_failed")

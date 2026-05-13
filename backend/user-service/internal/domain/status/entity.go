@@ -48,6 +48,21 @@ func (s *Status) GetBannedUntil() *time.Time { return s.bannedUntil }
 func (s *Status) IsDeleted() bool            { return s.isDeleted }
 func (s *Status) GetDeletedAt() *time.Time   { return s.deletedAt }
 func (s *Status) IsPermanentlyDeleted() bool { return s.isPermanentlyDeleted }
+func (s *Status) IsTemporarilyBanned(t *time.Time) bool {
+	if s.bannedUntil == nil {
+		return false
+	}
+
+	var checkTime time.Time
+	if t == nil {
+		checkTime = time.Now()
+	} else {
+		checkTime = *t
+	}
+
+	bannedUntil := *s.bannedUntil
+	return bannedUntil.After(checkTime)
+}
 
 func (s *Status) SetConfirmed(confirmed bool) {
 	s.isConfirmed = confirmed

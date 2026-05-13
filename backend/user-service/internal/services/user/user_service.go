@@ -30,6 +30,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error)
 	GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error)
 	GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (*pb.GetMeByUserResponse, error)
+	UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error)
 	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
 	UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
@@ -308,7 +309,7 @@ func (s *service) GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (
 
 	u, err := s.dataProvider.getByID(ctx, claims.Id, uow)
 	if err != nil {
-		l.Errorw("user.get_get_me_by_user_failed.get_by_id_error", "err", err)
+		l.Errorw("user.get_me_by_user_failed.get_by_id_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -368,6 +369,81 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
 	return &pb.ConfirmUserResponse{User: userToProto(u, false)}, nil
+}
+
+func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error) {
+	l := s.log.With("op", "update_me_by_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	now := time.Now()
+
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	if req.Fields == nil {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrFieldsAreRequired.Error())
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	u, err := s.dataProvider.getByID(ctx, claims.Id, uow)
+	if err != nil {
+		l.Errorw("user.update_me_by_user_failed.get_by_id_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if u == nil || u.GetStatus().IsDeleted() {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if !u.GetStatus().IsConfirmed() || u.GetStatus().IsPermanentlyBanned() || u.GetStatus().IsTemporarilyBanned(&now) {
+		return nil, grpcstatus.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+
+	originalUsername := u.GetUsername()
+
+	isUpdated, verr := s.updateUserFields(u, req.Fields, req.User, now)
+	if len(verr) > 0 {
+		l.Warnw("user.update_me_by_user_failed.validation_error", "err", verr)
+		return nil, verr.ToStatus()
+	}
+	if !isUpdated {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrNothingToUpdate.Error())
+	}
+
+	if u.GetUsername() != originalUsername {
+		byUsername, err := s.dataProvider.getUserByFilter(ctx, models.UserFilterDal{
+			Usernames:            []string{u.GetUsername()},
+			IsPermanentlyDeleted: utils.BoolPtr(false),
+		}, uow)
+		if err != nil {
+			l.Errorw("user.update_me_by_user_failed.get_by_username_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+		if byUsername != nil {
+			verr = make(validationerror.ValidationError)
+			verr["profile.username"] = ErrUserWithUsernameExists.Error()
+			l.Warnw("user.update_me_by_user_failed.uniqueness_conflict", "err", verr)
+			return nil, verr.ToStatus()
+		}
+	}
+
+	_, err = uow.BeginTransaction(ctx)
+	if err != nil {
+		l.Errorw("user.update_me_by_user_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.update_me_by_user_failed.save_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("user.update_me_by_user_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.update_me_by_user_success", "user_id", u.GetID())
+	return &pb.UpdateMeByUserResponse{User: userToProto(u, false)}, nil
 }
 
 func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
@@ -535,4 +611,108 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 	}
 
 	return len(users), nil
+}
+
+func (s *service) updateUserFields(u *user.User, fields []string, update *pb.UpdateUser, now time.Time) (bool, validationerror.ValidationError) {
+	if update == nil {
+		return false, nil
+	}
+	isUpdated := false
+	verr := make(validationerror.ValidationError)
+	for _, field := range fields {
+		switch field {
+		case "username":
+			if update.Username == nil {
+				break
+			}
+			username := *update.Username
+			if username == u.GetUsername() {
+				break
+			}
+			if err := u.SetUsername(username); err != nil {
+				verr["username"] = err.Error()
+			}
+			isUpdated = true
+		case "profile.first_name":
+			var firstName string
+			if update.Profile != nil && update.Profile.FirstName != nil {
+				firstName = *update.Profile.FirstName
+			}
+			if firstName == u.GetProfile().GetFirstName() {
+				break
+			}
+			if err := u.GetProfile().SetFirstName(firstName); err != nil {
+				verr["profile.first_name"] = err.Error()
+			}
+			isUpdated = true
+		case "profile.last_name":
+			var lastName string
+			if update.Profile != nil && update.Profile.LastName != nil {
+				lastName = *update.Profile.LastName
+			}
+			if lastName == u.GetProfile().GetLastName() {
+				break
+			}
+			if err := u.GetProfile().SetLastName(lastName); err != nil {
+				verr["profile.last_name"] = err.Error()
+			}
+			isUpdated = true
+		case "profile.phone":
+			var phone *string
+			if update.Profile != nil && update.Profile.Phone != nil {
+				phone = update.Profile.Phone
+			}
+			if phone == nil && u.GetProfile().GetPhone() == nil {
+				break
+			}
+			if phone != nil && u.GetProfile().GetPhone() != nil && *phone == *u.GetProfile().GetPhone() {
+				break
+			}
+			if err := u.GetProfile().SetPhone(phone); err != nil {
+				verr["profile.phone"] = err.Error()
+			}
+			isUpdated = true
+		case "profile.birthdate":
+			if update.Profile == nil {
+				update.Profile = &pb.UpdateProfile{}
+			}
+			birthdate, berr := utils.ParseDatePtr(update.Profile.Birthdate)
+			if berr != nil {
+				verr["profile.birthdate"] = berr.Error()
+			} else {
+				if birthdate == nil && u.GetProfile().GetBirthdate() == nil {
+					break
+				}
+				if birthdate != nil && u.GetProfile().GetBirthdate() != nil && birthdate.Equal(*u.GetProfile().GetBirthdate()) {
+					break
+				}
+				if err := u.GetProfile().SetBirthdate(birthdate); err != nil {
+					verr["profile.birthdate"] = err.Error()
+				}
+				isUpdated = true
+			}
+		case "profile.bio":
+			var bio *string
+			if update.Profile != nil && update.Profile.Bio != nil {
+				bio = update.Profile.Bio
+			}
+			if bio == nil && u.GetProfile().GetBio() == nil {
+				break
+			}
+			if bio != nil && u.GetProfile().GetBio() != nil && *bio == *u.GetProfile().GetBio() {
+				break
+			}
+			if err := u.GetProfile().SetBio(bio); err != nil {
+				verr["profile.bio"] = err.Error()
+			}
+			isUpdated = true
+		}
+	}
+	if len(verr) > 0 {
+		return false, verr
+	}
+	if isUpdated {
+		u.SetUpdatedAt(&now)
+	}
+	return isUpdated, nil
 }

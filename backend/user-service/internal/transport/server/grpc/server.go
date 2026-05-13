@@ -98,11 +98,18 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 			[]byte(jwtSettings.AccessTokenSecret),
 			commonmiddleware.MiddlewareOnly(
 				"/user.v1.UserService/GetMeByUser",
+				"/user.v1.UserService/UpdateMeByUser",
+				"/user.v1.UserService/UpdateMyPrivacySettingsByUser",
+				"/user.v1.UserService/DeleteMeByUser",
 			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/user.v1.UserService/UpdateMeByUser",
+				"/user.v1.UserService/UpdateMyPrivacySettingsByUser",
+				"/user.v1.UserService/DeleteMeByUser",
+			),
 		),
 	)
 }

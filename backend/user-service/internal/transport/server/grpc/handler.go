@@ -55,6 +55,11 @@ func (h *userHandler) GetMeByUser(ctx context.Context, req *pb.GetMeByUserReques
 	return h.userService.GetMeByUser(ctx, req)
 }
 
+func (h *userHandler) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error) {
+	utils.SanitizeUpdateMeByUserRequest(req)
+	return h.userService.UpdateMeByUser(ctx, req)
+}
+
 func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
 	utils.SanitizeBanUserRequest(req)
 	return nil, status.Error(codes.Unimplemented, "BanUser not implemented")
@@ -63,9 +68,4 @@ func (h *userHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.
 func (h *userHandler) UnbanUser(ctx context.Context, req *pb.UnbanUserRequest) (*pb.UnbanUserResponse, error) {
 	utils.SanitizeUnbanUserRequest(req)
 	return nil, status.Error(codes.Unimplemented, "UnbanUser not implemented")
-}
-
-func (h *userHandler) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
-	utils.SanitizeDeleteUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "DeleteUser not implemented")
 }
