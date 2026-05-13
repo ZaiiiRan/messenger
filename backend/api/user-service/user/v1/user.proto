@@ -118,20 +118,21 @@ message GetUsersRequest {
 
     optional bool is_confirmed = 8;
     optional bool is_deleted = 9;
-    optional bool is_permanently_banned = 10;
-    optional bool is_temporarily_banned = 11;
+    optional bool is_permanently_deleted = 10;
+    optional bool is_permanently_banned = 11;
+    optional bool is_temporarily_banned = 12;
 
-    int32 page = 12;
-    int32 page_size = 13;
+    int32 page = 13;
+    int32 page_size = 14;
 
-    optional string deleted_from = 14;
-    optional string deleted_to = 15;
-    optional string created_from = 16;
-    optional string created_to = 17;
-    optional string updated_from = 18;
-    optional string updated_to = 19;
+    optional string deleted_from = 15;
+    optional string deleted_to = 16;
+    optional string created_from = 17;
+    optional string created_to = 18;
+    optional string updated_from = 19;
+    optional string updated_to = 20;
     
-    bool include_privacy_settings = 20;
+    bool include_privacy_settings = 21;
 }
 
 message GetUsersResponse {
