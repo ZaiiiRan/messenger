@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package social.v1;
+
+option go_package = "social-service/gen/go/social;social";
+
+service SocialService {
+
+}

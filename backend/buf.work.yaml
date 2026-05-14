@@ -3,3 +3,4 @@ version: v1
 directories:
   - api/user-service
   - api/auth-service
+  - api/social-service
