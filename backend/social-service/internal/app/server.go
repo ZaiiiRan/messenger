@@ -7,6 +7,7 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config"
+	usergrpcclient "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/prom_metrics"
@@ -22,6 +23,8 @@ type ServerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+
+	userGrpcClient *usergrpcclient.Client
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -54,6 +57,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		return err
 	}
 	if err := a.initRedisClient(ctx); err != nil {
+		return err
+	}
+	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
 
@@ -136,6 +142,22 @@ func (a *ServerApp) startMetricsServer() {
 			a.log.Fatalw("app.metrics_serve_error", "err", err)
 		}
 	}()
+}
+
+func (a *ServerApp) initUserGrpcClient(ctx context.Context) error {
+	userClient, err := usergrpcclient.New(ctx, a.cfg.UserServiceGRPCClient, nil, nil)
+	if err != nil {
+		a.log.Errorw("app.user_grpc_client_init_failed", "err", err)
+		return err
+	}
+	a.userGrpcClient = userClient
+
+	if a.cfg.UserServiceGRPCClient.AutoConnect {
+		a.log.Infow("app.user_grpc_client_connected")
+	} else {
+		a.log.Infow("app.user_grpc_client_initialized")
+	}
+	return nil
 }
 
 func (a *ServerApp) initGrpcServer() error {
