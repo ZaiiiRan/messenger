@@ -735,9 +735,14 @@
             "selected": false,
             "text": "auth-service",
             "value": "auth-service"
+          },
+          {
+            "selected": false,
+            "text": "social-service",
+            "value": "social-service"
           }
         ],
-        "query": "user-service,auth-service",
+        "query": "user-service,auth-service, social-service",
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"

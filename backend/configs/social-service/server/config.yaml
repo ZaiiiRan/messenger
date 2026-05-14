@@ -1,0 +1,10 @@
+grpc_server:
+  port: ":50051"
+metrics_server:
+  port: ":8080"
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/social-service"
+user_service_grpc_client:
+  auto_connect: true
