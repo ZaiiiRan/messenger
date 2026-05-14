@@ -407,12 +407,84 @@ services:
     networks:
       - messenger-network
   
+  social-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - social-db-data:/var/lib/postgresql/
+    networks:
+      - messenger-network
+  
+  social-redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - messenger-network
+  
+  social-service:
+    build:
+      context: ./backend/social-service
+      dockerfile: Dockerfile
+    depends_on:
+      social-db:
+        condition: service_healthy
+      social-redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: social-db:5432
+      DB_DATABASE: postgres
+      MIGRATE_NEED_TO_MIGRATE: true
+      REDIS_ADDRESS: social-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
+    volumes:
+      - ./backend/configs/social-service/server:/etc/social-service
+    ports:
+      - "50053:50051"
+    networks:
+      - messenger-network
+  
   prometheus:
     image: prom/prometheus:v3.5.0
     depends_on:
       user-service:
         condition: service_healthy
       auth-service:
+        condition: service_healthy
+      social-service:
         condition: service_healthy
       user-worker:
         condition: service_healthy
@@ -454,6 +526,7 @@ volumes:
   # old-messenger-db:
   user-db-data:
   auth-db-data:
+  social-db-data:
   user-data-deletion-kafka-data:
   email-codes-kafka-data:
   grafana-data:
