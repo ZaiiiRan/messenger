@@ -8,8 +8,8 @@ import (
 )
 
 type UserRelationshipsRepository interface {
-	CreateUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error
-	UpdateUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error
-	DeleteUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error
+	CreateUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error
+	UpdateUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error
+	DeleteUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error
 	QueryUserRelationships(ctx context.Context, query *models.QueryUserRelationshipsDal, forUpdate bool) ([]*userrelationship.UserRelationship, error)
 }

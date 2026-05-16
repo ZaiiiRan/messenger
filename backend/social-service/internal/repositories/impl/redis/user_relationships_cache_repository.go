@@ -28,7 +28,7 @@ func NewUserRelationshipsCacheRepository(redis *rediscl.RedisClient) interfaces.
 	return &UserRelationshipsCacheRepository{redis: redis}
 }
 
-func (r *UserRelationshipsCacheRepository) pairKey(uid1, uid2 string) string {
+func (r *UserRelationshipsCacheRepository) userRelationshipKey(uid1, uid2 string) string {
 	if uid1 > uid2 {
 		uid1, uid2 = uid2, uid1
 	}
@@ -43,27 +43,27 @@ func (r *UserRelationshipsCacheRepository) listIndexKey(userId string) string {
 	return fmt.Sprintf("%s:%s", userRelationshiplistIndexKeyPrefix, userId)
 }
 
-func (r *UserRelationshipsCacheRepository) SetUserRelationships(ctx context.Context, ur *userrelationship.UserRelationship) error {
+func (r *UserRelationshipsCacheRepository) SetUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error {
 	cached := models.V1UserRelationshipDalFromDomain(ur)
-	return set(ctx, r.redis, r.pairKey(ur.GetUserID1(), ur.GetUserID2()), cached, userRelationshipTTL)
+	return set(ctx, r.redis, r.userRelationshipKey(ur.GetUserID1(), ur.GetUserID2()), cached, userRelationshipTTL)
 }
 
-func (r *UserRelationshipsCacheRepository) GetUserRelationships(
+func (r *UserRelationshipsCacheRepository) GetUserRelationship(
 	ctx context.Context,
 	firstUserId, secondUserId string,
 ) (*userrelationship.UserRelationship, error) {
-	cached, err := get[models.V1UserRelationshipDal](ctx, r.redis, r.pairKey(firstUserId, secondUserId))
+	cached, err := get[models.V1UserRelationshipDal](ctx, r.redis, r.userRelationshipKey(firstUserId, secondUserId))
 	if err != nil || cached == nil {
 		return nil, err
 	}
 	return cached.ToDomain(), nil
 }
 
-func (r *UserRelationshipsCacheRepository) DelUserRelationships(
+func (r *UserRelationshipsCacheRepository) DelUserRelationship(
 	ctx context.Context,
 	firstUserId, secondUserId string,
 ) error {
-	return del(ctx, r.redis, r.pairKey(firstUserId, secondUserId))
+	return del(ctx, r.redis, r.userRelationshipKey(firstUserId, secondUserId))
 }
 
 func (r *UserRelationshipsCacheRepository) SetUserRelationshipsList(

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/interfaces"
@@ -19,26 +20,62 @@ func NewUserRelationshipsRepository(conn *pgxpool.Conn) interfaces.UserRelations
 	return &UserRelationshipsRepository{conn: conn}
 }
 
-func (r *UserRelationshipsRepository) CreateUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error {
+func (r *UserRelationshipsRepository) CreateUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error {
+	if len(urs) == 0 {
+		return nil
+	}
+
+	user1Ids := make([]string, len(urs))
+	user2Ids := make([]string, len(urs))
+	statuses := make([]int16, len(urs))
+	createdAts := make([]time.Time, len(urs))
+	updatedAts := make([]time.Time, len(urs))
+	for i, ur := range urs {
+		user1Ids[i] = ur.GetUserID1()
+		user2Ids[i] = ur.GetUserID2()
+		statuses[i] = int16(ur.GetStatus())
+		createdAts[i] = ur.GetCreatedAt()
+		updatedAts[i] = ur.GetUpdatedAt()
+	}
+
 	const sql = `
 		INSERT INTO user_relationships (user_id_1, user_id_2, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		SELECT u.user_id_1, u.user_id_2, u.status, u.created_at, u.updated_at
+		FROM UNNEST($1::text[], $2::text[], $3::smallint[], $4::timestamptz[], $5::timestamptz[])
+			AS u(user_id_1, user_id_2, status, created_at, updated_at)
 		RETURNING user_id_1, user_id_2, status, created_at, updated_at
 	`
-	var res models.V1UserRelationshipDal
-	row := r.conn.QueryRow(ctx, sql,
-		ur.GetUserID1(), ur.GetUserID2(),
-		int16(ur.GetStatus()),
-		ur.GetCreatedAt(), ur.GetUpdatedAt(),
-	)
-	if err := row.Scan(&res.UserId1, &res.UserId2, &res.Status, &res.CreatedAt, &res.UpdatedAt); err != nil {
-		return fmt.Errorf("insert user relationship: %w", err)
+
+	rows, err := r.conn.Query(ctx, sql, user1Ids, user2Ids, statuses, createdAts, updatedAts)
+	if err != nil {
+		return fmt.Errorf("insert user relationships: %w", err)
 	}
-	*ur = *res.ToDomain()
+	defer rows.Close()
+
+	for i := 0; rows.Next(); i++ {
+		var res models.V1UserRelationshipDal
+		if err := rows.Scan(&res.UserId1, &res.UserId2, &res.Status, &res.CreatedAt, &res.UpdatedAt); err != nil {
+			return fmt.Errorf("scan inserted user relationship: %w", err)
+		}
+		urs[i] = res.ToDomain()
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate inserted user relationships: %w", err)
+	}
+
 	return nil
 }
 
-func (r *UserRelationshipsRepository) UpdateUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error {
+func (r *UserRelationshipsRepository) UpdateUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error {
+	if len(urs) == 0 {
+		return nil
+	}
+
+	urDals := make([]models.V1UserRelationshipDal, len(urs))
+	for i, ur := range urs {
+		urDals[i] = models.V1UserRelationshipDalFromDomain(ur)
+	}
+
 	const sql = `
 		UPDATE user_relationships AS t
 		SET
@@ -48,38 +85,53 @@ func (r *UserRelationshipsRepository) UpdateUserRelationship(ctx context.Context
 		WHERE t.user_id_1 = ur.user_id_1 AND t.user_id_2 = ur.user_id_2
 		RETURNING t.user_id_1, t.user_id_2, t.status, t.created_at, t.updated_at
 	`
-	dal := models.V1UserRelationshipDalFromDomain(ur)
 
-	rows, err := r.conn.Query(ctx, sql, []models.V1UserRelationshipDal{dal})
+	rows, err := r.conn.Query(ctx, sql, urDals)
 	if err != nil {
-		return fmt.Errorf("update user relationship: %w", err)
+		return fmt.Errorf("update user relationships: %w", err)
 	}
 	defer rows.Close()
 
-	if rows.Next() {
+	urById := make(map[string]models.V1UserRelationshipDal, len(urs))
+	for rows.Next() {
 		var res models.V1UserRelationshipDal
 		if err := rows.Scan(&res.UserId1, &res.UserId2, &res.Status, &res.CreatedAt, &res.UpdatedAt); err != nil {
 			return fmt.Errorf("scan updated user relationship: %w", err)
 		}
-		*ur = *res.ToDomain()
+		urById[res.UserId1+res.UserId2] = res
 	}
-	return rows.Err()
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate updated user relationships: %w", err)
+	}
+	for _, ur := range urs {
+		id := ur.GetUserID1() + ur.GetUserID2()
+		*ur = *urById[id].ToDomain()
+	}
+
+	return nil
 }
 
-func (r *UserRelationshipsRepository) DeleteUserRelationship(ctx context.Context, ur *userrelationship.UserRelationship) error {
-	var (
-		sb     strings.Builder
-		args   []any
-		argPos = 1
-	)
+func (r *UserRelationshipsRepository) DeleteUserRelationships(ctx context.Context, urs []*userrelationship.UserRelationship) error {
+	if len(urs) == 0 {
+		return nil
+	}
 
-	sb.WriteString(`DELETE FROM user_relationships WHERE 1=1`)
-	uid1, uid2 := ur.GetUserID1(), ur.GetUserID2()
-	appendEqual(&sb, "user_id_1::text", &uid1, &args, &argPos)
-	appendEqual(&sb, "user_id_2::text", &uid2, &args, &argPos)
+	user1Ids := make([]string, len(urs))
+	user2Ids := make([]string, len(urs))
+	for i, ur := range urs {
+		user1Ids[i] = ur.GetUserID1()
+		user2Ids[i] = ur.GetUserID2()
+	}
 
-	if _, err := r.conn.Exec(ctx, sb.String(), args...); err != nil {
-		return fmt.Errorf("delete user relationship: %w", err)
+	const sql = `
+		DELETE FROM user_relationships
+		WHERE (user_id_1::text, user_id_2::text) IN (
+			SELECT u1, u2 FROM UNNEST($1::text[], $2::text[]) AS t(u1, u2)
+		)
+	`
+
+	if _, err := r.conn.Exec(ctx, sql, user1Ids, user2Ids); err != nil {
+		return fmt.Errorf("delete user relationships: %w", err)
 	}
 	return nil
 }
