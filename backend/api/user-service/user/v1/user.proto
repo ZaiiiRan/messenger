@@ -50,9 +50,10 @@ message UserPrivacySettings {
     UserPrivacySetting photos = 2;
     UserPrivacySetting phone_number = 3;
     UserPrivacySetting email = 4;
-    UserPrivacySetting online_status = 5;
-    UserPrivacySetting first_dialogs_init = 6;
-    UserPrivacySetting group_chat_invites = 7;
+    UserPrivacySetting birthdate = 5;
+    UserPrivacySetting online_status = 6;
+    UserPrivacySetting first_dialogs_init = 7;
+    UserPrivacySetting group_chat_invites = 8;
 }
 
 message User {
@@ -146,6 +147,11 @@ message GetUsersRequest {
     optional string email_updated_to = 22;
     
     bool include_privacy_settings = 23;
+    bool sort_by_username = 24;
+    bool sort_inactive_last = 25;
+    bool preserve_ids_order = 26;
+    optional string search_filter = 27;
+    repeated string exclude_ids = 28;
 }
 
 message GetUsersResponse {
@@ -211,9 +217,10 @@ message UpdateUserPrivacySettings {
     UpdateUserPrivacySetting photos = 2;
     UpdateUserPrivacySetting phone_number = 3;
     UpdateUserPrivacySetting email = 4;
-    UpdateUserPrivacySetting online_status = 5;
-    UpdateUserPrivacySetting first_dialogs_init = 6;
-    UpdateUserPrivacySetting group_chat_invites = 7;
+    UpdateUserPrivacySetting birthdate = 5;
+    UpdateUserPrivacySetting online_status = 6;
+    UpdateUserPrivacySetting first_dialogs_init = 7;
+    UpdateUserPrivacySetting group_chat_invites = 8;
 }
 
 message UpdateMyPrivacySettingsByUserRequest {
