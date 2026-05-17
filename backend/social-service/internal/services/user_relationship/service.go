@@ -14,9 +14,13 @@ import (
 
 type UserRelationshipService interface {
 	AddUserToFriends(ctx context.Context, actor, friendCandidate *userpb.User) (*userrelationship.UserRelationship, error)
+	AddUsersToFriends(ctx context.Context, actor *userpb.User, friendCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error)
 	RemoveUserFromFriends(ctx context.Context, actor, friend *userpb.User) (*userrelationship.UserRelationship, error)
+	RemoveUsersFromFriends(ctx context.Context, actor *userpb.User, friends []*userpb.User) ([]*userrelationship.UserRelationship, error)
 	BlockUser(ctx context.Context, actor, blockCandidate *userpb.User) (*userrelationship.UserRelationship, error)
+	BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error)
 	UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User) (*userrelationship.UserRelationship, error)
+	UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error)
 }
 
 type service struct {
@@ -38,71 +42,26 @@ func New(
 func (s *service) AddUserToFriends(ctx context.Context, actor, friendCandidate *userpb.User) (*userrelationship.UserRelationship, error) {
 	l := s.log.With("op", "add_user_to_friends", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 	now := time.Now()
-	blocked := false
 
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
-	_, err := uow.BeginTransaction(ctx)
-	if err != nil {
+	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("user_relationship.add_user_to_friends_failed.begin_transaction_error", "err", err)
 		return nil, ErrAddUserToFriends
 	}
 
-	ur, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, friendCandidate.Id, uow)
+	existing, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, friendCandidate.Id, uow)
 	if err != nil {
 		l.Errorw("user_relationship.add_user_to_friends_failed.get_user_relationship_error", "err", err)
 		return nil, ErrAddUserToFriends
 	}
-	if ur == nil {
-		var friendRequest userrelationship.UserRelationshipStatus
-		if actor.Id > friendCandidate.Id {
-			friendRequest = userrelationship.FriendRequestBy2
-		} else {
-			friendRequest = userrelationship.FriendRequestBy1
-		}
-		ur = userrelationship.New(actor.Id, friendCandidate.Id, friendRequest)
-	} else {
-		actorRole := ur.RoleOf(actor.Id)
-		status := ur.GetStatus()
 
-		var newStatus userrelationship.UserRelationshipStatus
-		switch {
-		case status == userrelationship.Friends:
-			return ur, ErrAlreadyFriends
-
-		case (status == userrelationship.BlockedBy1 && actorRole == 2) ||
-			(status == userrelationship.BlockedBy2 && actorRole == 1):
-			return ur, ErrBlockedByFriendCandidate
-
-		case (status == userrelationship.FriendRequestBy1 && actorRole == 2) ||
-			(status == userrelationship.FriendRequestBy2 && actorRole == 1):
-			newStatus = userrelationship.Friends
-
-		case status == userrelationship.FriendRequestBy1 || status == userrelationship.FriendRequestBy2:
-			return ur, ErrFriendRequestAlreadySent
-
-		case (status == userrelationship.BlockedBy1 && actorRole == 1) ||
-			(status == userrelationship.BlockedBy2 && actorRole == 2):
-			if actorRole == 1 {
-				newStatus = userrelationship.FriendRequestBy1
-			} else {
-				newStatus = userrelationship.FriendRequestBy2
-			}
-
-		case status == userrelationship.BlockedByBoth:
-			blocked = true
-			if actorRole == 1 {
-				newStatus = userrelationship.BlockedBy2
-			} else {
-				newStatus = userrelationship.BlockedBy1
-			}
-		}
-
-		if err := ur.SetStatus(newStatus); err != nil {
+	ur, blocked, err := applyAddFriend(actor, friendCandidate, existing, now)
+	if err != nil {
+		if err == ErrAddUserToFriends {
 			l.Errorw("user_relationship.add_user_to_friends_failed.set_status_error", "err", err)
-			return nil, ErrAddUserToFriends
 		}
-		ur.SetUpdatedAt(&now)
+		return ur, err
 	}
 
 	if err := s.dataProvider.save(ctx, ur, actor.Id, uow); err != nil {
@@ -128,24 +87,19 @@ func (s *service) RemoveUserFromFriends(ctx context.Context, actor, friend *user
 
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
-	_, err := uow.BeginTransaction(ctx)
-	if err != nil {
+	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("user_relationship.remove_user_from_friends_failed.begin_transaction_error", "err", err)
 		return nil, ErrRemoveFromFriends
 	}
 
-	ur, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, friend.Id, uow)
+	existing, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, friend.Id, uow)
 	if err != nil {
 		l.Errorw("user_relationship.remove_user_from_friends_failed.get_user_relationship_error", "err", err)
 		return nil, ErrRemoveFromFriends
 	}
-	if ur == nil {
-		return nil, nil
-	}
 
-	status := ur.GetStatus()
-
-	if status == userrelationship.BlockedBy1 || status == userrelationship.BlockedBy2 || status == userrelationship.BlockedByBoth {
+	ur, needToDelete := applyRemoveFriend(existing)
+	if !needToDelete {
 		l.Infow("user_relationship.remove_user_from_friends.success")
 		return ur, nil
 	}
@@ -171,52 +125,20 @@ func (s *service) BlockUser(ctx context.Context, actor, blockCandidate *userpb.U
 
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
-	_, err := uow.BeginTransaction(ctx)
-	if err != nil {
+	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("user_relationship.block_user_failed.begin_transaction_error", "err", err)
 		return nil, ErrBlockUser
 	}
 
-	ur, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, blockCandidate.Id, uow)
+	existing, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, blockCandidate.Id, uow)
 	if err != nil {
 		l.Errorw("user_relationship.block_user_failed.get_user_relationship_error", "err", err)
 		return nil, ErrBlockUser
 	}
-	if ur == nil {
-		var block userrelationship.UserRelationshipStatus
-		if actor.Id > blockCandidate.Id {
-			block = userrelationship.BlockedBy2
-		} else {
-			block = userrelationship.BlockedBy1
-		}
-		ur = userrelationship.New(actor.Id, blockCandidate.Id, block)
-	} else {
-		actorRole := ur.RoleOf(actor.Id)
-		status := ur.GetStatus()
 
-		var newStatus userrelationship.UserRelationshipStatus
-		switch {
-		case (status == userrelationship.BlockedBy1 && actorRole == 1) ||
-			(status == userrelationship.BlockedBy2 && actorRole == 2) || status == userrelationship.BlockedByBoth:
-			return ur, ErrAlreadyBlocked
-
-		case (status == userrelationship.BlockedBy1 && actorRole == 2) ||
-			(status == userrelationship.BlockedBy2 && actorRole == 1):
-			newStatus = userrelationship.BlockedByBoth
-
-		default:
-			if actorRole == 1 {
-				newStatus = userrelationship.BlockedBy1
-			} else {
-				newStatus = userrelationship.BlockedBy2
-			}
-		}
-
-		if err := ur.SetStatus(newStatus); err != nil {
-			l.Errorw("user_relationship.block_user_failed.set_status_error", "err", err)
-			return nil, ErrBlockUser
-		}
-		ur.SetUpdatedAt(&now)
+	ur, err := applyBlockUser(actor, blockCandidate, existing, now)
+	if err != nil {
+		return ur, err
 	}
 
 	if err := s.dataProvider.save(ctx, ur, actor.Id, uow); err != nil {
@@ -240,50 +162,21 @@ func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *user
 
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
-	_, err := uow.BeginTransaction(ctx)
-	if err != nil {
+	if _, err := uow.BeginTransaction(ctx); err != nil {
 		l.Errorw("user_relationship.unblock_user_failed.begin_transaction_error", "err", err)
 		return nil, ErrUnblockUser
 	}
 
-	ur, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, unblockCandidate.Id, uow)
+	existing, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, unblockCandidate.Id, uow)
 	if err != nil {
 		l.Errorw("user_relationship.unblock_user_failed.get_user_relationship_error", "err", err)
 		return nil, ErrUnblockUser
 	}
-	if ur == nil {
-		return nil, nil
-	}
 
-	status := ur.GetStatus()
-	actorRole := ur.RoleOf(actor.Id)
-
-	needToDelete := false
-	switch {
-	case (status == userrelationship.BlockedBy1 && actorRole == 2) ||
-		(status == userrelationship.BlockedBy2 && actorRole == 1) ||
-		status == userrelationship.FriendRequestBy1 || status == userrelationship.FriendRequestBy2 ||
-		status == userrelationship.Friends:
+	ur, needToDelete, skip := applyUnblockUser(actor, existing, now)
+	if skip {
 		l.Infow("user_relationship.unblock_user.success")
 		return ur, nil
-
-	case (status == userrelationship.BlockedBy1 && actorRole == 1) ||
-		(status == userrelationship.BlockedBy2 && actorRole == 2):
-		needToDelete = true
-	
-	default:
-		var newStatus userrelationship.UserRelationshipStatus
-		if actorRole == 1 {
-			newStatus = userrelationship.BlockedBy2
-		} else {
-			newStatus = userrelationship.BlockedBy1
-		}
-		
-		if err := ur.SetStatus(newStatus); err != nil {
-			l.Errorw("user_relationship.unblock_user_failed.set_status_error", "err", err)
-			return nil, ErrUnblockUser
-		}
-		ur.SetUpdatedAt(&now)
 	}
 
 	if needToDelete {
