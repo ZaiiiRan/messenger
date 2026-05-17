@@ -1,0 +1,648 @@
+package socialservice
+
+import (
+	"context"
+	"errors"
+
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
+	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
+	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
+	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
+	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
+	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+)
+
+type SocialService interface {
+	GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (*pb.GetUserByIdResponse, error)
+	GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsRequest) (*pb.GetUsersByIdsResponse, error)
+	GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error)
+	GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUsernamesRequest) (*pb.GetUsersByUsernamesResponse, error)
+	AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFriendsRequest) (*pb.AddUsersToFriendsResponse, error)
+	RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUsersFromFriendsRequest) (*pb.RemoveUsersFromFriendsResponse, error)
+	BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*pb.BlockUsersResponse, error)
+	UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest) (*pb.UnblockUsersResponse, error)
+}
+
+type service struct {
+	userRelationshipService userrelationshipservice.UserRelationshipService
+	userService             userservice.UserService
+	log                     *zap.SugaredLogger
+}
+
+func New(
+	userRelationshipService userrelationshipservice.UserRelationshipService,
+	userService userservice.UserService,
+	log *zap.SugaredLogger,
+) SocialService {
+	return &service{
+		userRelationshipService: userRelationshipService,
+		userService:             userService,
+		log:                     log,
+	}
+}
+
+func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (*pb.GetUserByIdResponse, error) {
+	l := s.log.With("op", "get_user_by_id", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Id == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdIsRequired.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if a.Id == req.Id {
+		l.Infow("user.get_user_by_id.success", "user_id", a.GetId())
+		return &pb.GetUserByIdResponse{User: toSocialUserProto(a, a, nil)}, nil
+	}
+
+	u, err := s.userService.GetUserByID(ctx, req.Id, true)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil || !u.Status.IsConfirmed {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+	}
+
+	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	s.processUserWithPrivacySettings(a, u, ur)
+
+	l.Infow("user.get_user_by_id.success", "user_id", u.GetId())
+	return &pb.GetUserByIdResponse{User: toSocialUserProto(a, u, ur)}, nil
+}
+
+func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsRequest) (*pb.GetUsersByIdsResponse, error) {
+	l := s.log.With("op", "get_users_by_ids", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Ids) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdsIsRequired.Error())
+	}
+	if len(req.Ids) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUserIds.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Ids) == 1 && req.Ids[0] == a.Id {
+		l.Infow("user.get_users_by_ids.success", "count", 1)
+		return &pb.GetUsersByIdsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil)}}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		Ids:                    req.Ids,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(req.Ids)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		l.Infow("user.get_users_by_ids.success", "count", 0)
+		return &pb.GetUsersByIdsResponse{}, nil
+	}
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.get_users_by_ids.success", "count", len(result))
+	return &pb.GetUsersByIdsResponse{Users: result}, nil
+}
+
+func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error) {
+	l := s.log.With("op", "get_user_by_username", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Username == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUsernameIsRequired.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if a.Username == req.Username {
+		l.Infow("user.get_user_by_username.success", "user_id", a.GetId())
+		return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, a, nil)}, nil
+	}
+
+	u, err := s.userService.GetUserByUsername(ctx, req.Username, true)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil || !u.Status.IsConfirmed {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+	}
+
+	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	s.processUserWithPrivacySettings(a, u, ur)
+
+	l.Infow("user.get_user_by_username.success", "user_id", u.GetId())
+	return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, u, ur)}, nil
+}
+
+func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUsernamesRequest) (*pb.GetUsersByUsernamesResponse, error) {
+	l := s.log.With("op", "get_users_by_usernames", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Usernames) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUsernamesIsRequired.Error())
+	}
+	if len(req.Usernames) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUsernames.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Usernames) == 1 && req.Usernames[0] == a.Username {
+		l.Infow("user.get_users_by_usernames.success", "count", 1)
+		return &pb.GetUsersByUsernamesResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil)}}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		FullUsernames:          req.Usernames,
+		IsConfirmed:            utils.BoolPtr(true),
+		IsDeleted:              utils.BoolPtr(false),
+		IsPermanentlyDeleted:   utils.BoolPtr(false),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(req.Usernames)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		l.Infow("user.get_users_by_usernames.success", "count", 0)
+		return &pb.GetUsersByUsernamesResponse{}, nil
+	}
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.get_users_by_usernames.success", "count", len(result))
+	return &pb.GetUsersByUsernamesResponse{Users: result}, nil
+}
+
+func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFriendsRequest) (*pb.AddUsersToFriendsResponse, error) {
+	l := s.log.With("op", "add_users_to_friends", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Ids) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdsIsRequired.Error())
+	}
+	if len(req.Ids) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUserIds.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Ids) == 1 {
+		if req.Ids[0] == a.Id {
+			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotAddYourselfToFriends.Error())
+		}
+
+		u, err := s.userService.GetUserByID(ctx, req.Ids[0], true)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil || !u.Status.IsConfirmed {
+			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+		}
+		if u.Status.IsDeleted {
+			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotAddDeletedUserToFriends.Error())
+		}
+
+		ur, err := s.userRelationshipService.AddUserToFriends(ctx, a, u)
+		if err != nil {
+			if errors.Is(err, userrelationshipservice.ErrAddUserToFriends) {
+				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+			}
+			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		s.processUserWithPrivacySettings(a, u, ur)
+
+		l.Infow("user.add_users_to_friends.success")
+		return &pb.AddUsersToFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+	}
+
+	addIds := make([]string, 0, len(req.Ids))
+	for _, id := range req.Ids {
+		if id != a.Id {
+			addIds = append(addIds, id)
+		}
+	}
+	if len(addIds) == 0 {
+		l.Infow("user.add_users_to_friends.success")
+		return &pb.AddUsersToFriendsResponse{}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		Ids:                    addIds,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(addIds)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
+	}
+
+	urs, err := s.userRelationshipService.AddUsersToFriends(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.add_users_to_friends.success")
+	return &pb.AddUsersToFriendsResponse{Users: result}, nil
+}
+
+func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUsersFromFriendsRequest) (*pb.RemoveUsersFromFriendsResponse, error) {
+	l := s.log.With("op", "remove_users_from_friends", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Ids) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdsIsRequired.Error())
+	}
+	if len(req.Ids) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUserIds.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Ids) == 1 {
+		if req.Ids[0] == a.Id {
+			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotRemoveYourselfFromFriends.Error())
+		}
+
+		u, err := s.userService.GetUserByID(ctx, req.Ids[0], true)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil || !u.Status.IsConfirmed {
+			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+		}
+
+		ur, err := s.userRelationshipService.RemoveUserFromFriends(ctx, a, u)
+		if err != nil {
+			if errors.Is(err, userrelationshipservice.ErrRemoveFromFriends) {
+				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+			}
+			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		s.processUserWithPrivacySettings(a, u, ur)
+
+		l.Infow("user.remove_users_from_friends.success")
+		return &pb.RemoveUsersFromFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+	}
+
+	removeIds := make([]string, 0, len(req.Ids))
+	for _, id := range req.Ids {
+		if id != a.Id {
+			removeIds = append(removeIds, id)
+		}
+	}
+	if len(removeIds) == 0 {
+		l.Infow("user.remove_users_from_friends.success")
+		return &pb.RemoveUsersFromFriendsResponse{}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		Ids:                    removeIds,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(removeIds)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
+	}
+
+	urs, err := s.userRelationshipService.RemoveUsersFromFriends(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.remove_users_from_friends.success")
+	return &pb.RemoveUsersFromFriendsResponse{Users: result}, nil
+}
+
+func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*pb.BlockUsersResponse, error) {
+	l := s.log.With("op", "block_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Ids) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdsIsRequired.Error())
+	}
+	if len(req.Ids) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUserIds.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Ids) == 1 {
+		if req.Ids[0] == a.Id {
+			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotBlockYourself.Error())
+		}
+
+		u, err := s.userService.GetUserByID(ctx, req.Ids[0], true)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil || !u.Status.IsConfirmed {
+			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+		}
+
+		ur, err := s.userRelationshipService.BlockUser(ctx, a, u)
+		if err != nil {
+			if errors.Is(err, userrelationshipservice.ErrBlockUser) {
+				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+			}
+			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		s.processUserWithPrivacySettings(a, u, ur)
+
+		l.Infow("user.block_users.success")
+		return &pb.BlockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+	}
+
+	blockIds := make([]string, 0, len(req.Ids))
+	for _, id := range req.Ids {
+		if id != a.Id {
+			blockIds = append(blockIds, id)
+		}
+	}
+	if len(blockIds) == 0 {
+		l.Infow("user.block_users.success")
+		return &pb.BlockUsersResponse{}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		Ids:                    blockIds,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(blockIds)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
+	}
+
+	urs, err := s.userRelationshipService.BlockUsers(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.block_users.success")
+	return &pb.BlockUsersResponse{Users: result}, nil
+}
+
+func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest) (*pb.UnblockUsersResponse, error) {
+	l := s.log.With("op", "unblock_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Ids) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdsIsRequired.Error())
+	}
+	if len(req.Ids) > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyUserIds.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.Ids) == 1 {
+		if req.Ids[0] == a.Id {
+			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotUnblockYourself.Error())
+		}
+
+		u, err := s.userService.GetUserByID(ctx, req.Ids[0], true)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil || !u.Status.IsConfirmed {
+			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+		}
+
+		ur, err := s.userRelationshipService.UnblockUser(ctx, a, u)
+		if err != nil {
+			if errors.Is(err, userrelationshipservice.ErrUnblockUser) {
+				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+			}
+			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		s.processUserWithPrivacySettings(a, u, ur)
+
+		l.Infow("user.unblock_users.success")
+		return &pb.UnblockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+	}
+
+	unblockIds := make([]string, 0, len(req.Ids))
+	for _, id := range req.Ids {
+		if id != a.Id {
+			unblockIds = append(unblockIds, id)
+		}
+	}
+	if len(unblockIds) == 0 {
+		l.Infow("user.unblock_users.success")
+		return &pb.UnblockUsersResponse{}, nil
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		Ids:                    unblockIds,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: true,
+		Page:                   1,
+		PageSize:               int32(len(unblockIds)),
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
+	}
+
+	urs, err := s.userRelationshipService.UnblockUsers(ctx, a, users)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, user := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		result = append(result, shortSocialUser)
+	}
+
+	l.Infow("user.unblock_users.success")
+	return &pb.UnblockUsersResponse{Users: result}, nil
+}
+
+func (s *service) processUserWithPrivacySettings(actor, user *userpb.User, ur *userrelationship.UserRelationship) {
+	if actor.Id == user.Id {
+		return
+	}
+
+	if ur != nil && ((ur.GetStatus() == userrelationship.BlockedBy1 && ur.RoleOf(actor.Id) == 2) ||
+		(ur.GetStatus() == userrelationship.BlockedBy2 && ur.RoleOf(actor.Id) == 1) ||
+		ur.GetStatus() == userrelationship.BlockedByBoth) {
+		user.Email = ""
+		if user.Profile != nil {
+			user.Profile.Phone = nil
+			user.Profile.Birthdate = nil
+			user.Profile.Bio = nil
+		}
+		return
+	}
+
+	if user.PrivacySettings == nil {
+		return
+	}
+
+	isFriend := ur != nil && ur.GetStatus() == userrelationship.Friends
+
+	if !privacyAllows(user.PrivacySettings.Email, actor.Id, isFriend) {
+		user.Email = ""
+	}
+	if user.Profile != nil {
+		if !privacyAllows(user.PrivacySettings.PhoneNumber, actor.Id, isFriend) {
+			user.Profile.Phone = nil
+		}
+		if !privacyAllows(user.PrivacySettings.Birthdate, actor.Id, isFriend) {
+			user.Profile.Birthdate = nil
+		}
+	}
+}
+
+func privacyAllows(setting *userpb.UserPrivacySetting, actorID string, isFriend bool) bool {
+	if setting == nil {
+		return true
+	}
+	for _, id := range setting.Exceptions {
+		if id == actorID {
+			return false
+		}
+	}
+	for _, id := range setting.Favourites {
+		if id == actorID {
+			return true
+		}
+	}
+	switch setting.Value {
+	case "all":
+		return true
+	case "friends":
+		return isFriend
+	case "none":
+		return false
+	default:
+		return false
+	}
+}
+
+func (s *service) getAndCheckActor(ctx context.Context) (*userpb.User, error) {
+	claims, _ := ctxmetadata.GetUserClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+
+	a, err := s.userService.GetUserByID(ctx, claims.Id, false)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if a == nil {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if a.Status == nil || a.Status.IsDeleted {
+		return nil, grpcstatus.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
+	}
+	if a.Status.IsPermanentlyBanned || utils.IsActiveTemporaryBan(a.Status.BannedUntil) || !a.Status.IsConfirmed {
+		return nil, grpcstatus.Error(codes.PermissionDenied, commonerror.ErrPermissionDenied.Error())
+	}
+	return a, nil
+}

@@ -105,7 +105,9 @@ func (r *UserRelationshipsRepository) UpdateUserRelationships(ctx context.Contex
 	}
 	for _, ur := range urs {
 		id := ur.GetUserID1() + ur.GetUserID2()
-		*ur = *urById[id].ToDomain()
+		if res, ok := urById[id]; ok {
+			*ur = *res.ToDomain()
+		}
 	}
 
 	return nil

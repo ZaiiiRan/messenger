@@ -111,6 +111,9 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User
 	var toDelete []*userrelationship.UserRelationship
 
 	for i, f := range friends {
+		if friends[i].Status.IsDeleted {
+			continue
+		}
 		ur, needToDelete := applyRemoveFriend(existingMap[f.Id])
 		if needToDelete {
 			toDelete = append(toDelete, ur)

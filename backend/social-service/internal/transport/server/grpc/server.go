@@ -9,6 +9,7 @@ import (
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config/settings"
+	socialservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/social_service"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +27,7 @@ type Server struct {
 func New(
 	srvSettings settings.GRPCServerSettings,
 	jwtSettings settings.JWTSettings,
+	socialService socialservice.SocialService,
 	log *zap.SugaredLogger,
 	reg *prometheus.Registry,
 ) (*Server, error) {
@@ -38,7 +40,7 @@ func New(
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterSocialServiceServer(s, newSocialHandler())
+	pb.RegisterSocialServiceServer(s, newSocialHandler(socialService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {
@@ -94,11 +96,31 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/social.v1.SocialService/GetUserById",
+				"/social.v1.SocialService/GetUsersByIds",
+				"/social.v1.SocialService/GetUserByUsername",
+				"/social.v1.SocialService/GetUsersByUsernames",
+				"/social.v1.SocialService/AddUsersToFriends",
+				"/social.v1.SocialService/RemoveUsersFromFriends",
+				"/social.v1.SocialService/BlockUsers",
+				"/social.v1.SocialService/UnblockUsers",
+				"/social.v1.SocialService/UpdateMyPrivacySettings",
+			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/social.v1.SocialService/GetUserById",
+				"/social.v1.SocialService/GetUsersByIds",
+				"/social.v1.SocialService/GetUserByUsername",
+				"/social.v1.SocialService/GetUsersByUsernames",
+				"/social.v1.SocialService/AddUsersToFriends",
+				"/social.v1.SocialService/RemoveUsersFromFriends",
+				"/social.v1.SocialService/BlockUsers",
+				"/social.v1.SocialService/UnblockUsers",
+				"/social.v1.SocialService/UpdateMyPrivacySettings",
+			),
 		),
 	)
 }

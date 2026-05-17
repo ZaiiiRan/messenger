@@ -7,6 +7,9 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config"
+	socialservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/social_service"
+	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
+	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
@@ -25,6 +28,10 @@ type ServerApp struct {
 	redisClient    *redis.RedisClient
 
 	userGrpcClient *usergrpcclient.Client
+
+	userService             userservice.UserService
+	userRelationshipService userrelationshipservice.UserRelationshipService
+	socialService           socialservice.SocialService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -62,6 +69,10 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
+
+	a.initUserService()
+	a.initUserRelationshipService()
+	a.initSocialService()
 
 	a.initI18n()
 	a.initMetricsServer()
@@ -160,8 +171,20 @@ func (a *ServerApp) initUserGrpcClient(ctx context.Context) error {
 	return nil
 }
 
+func (a *ServerApp) initUserService() {
+	a.userService = userservice.New(a.userGrpcClient, a.log)
+}
+
+func (a *ServerApp) initUserRelationshipService() {
+	a.userRelationshipService = userrelationshipservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
+func (a *ServerApp) initSocialService() {
+	a.socialService = socialservice.New(a.userRelationshipService, a.userService, a.log)
+}
+
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.log, a.metricsServer.Registry())
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.socialService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
