@@ -3,11 +3,12 @@ package userrelationship
 import "time"
 
 type UserRelationship struct {
-	userId1   string
-	userId2   string
-	status    int16
-	createdAt time.Time
-	updatedAt time.Time
+	userId1     string
+	userId2     string
+	status      int16
+	createdAt   time.Time
+	updatedAt   time.Time
+	isPersisted bool
 }
 
 func New(userId1, userId2 string, status UserRelationshipStatus) *UserRelationship {
@@ -18,21 +19,23 @@ func New(userId1, userId2 string, status UserRelationshipStatus) *UserRelationsh
 	}
 
 	return &UserRelationship{
-		userId1:   userId1,
-		userId2:   userId2,
-		status:    int16(status),
-		createdAt: now,
-		updatedAt: now,
+		userId1:     userId1,
+		userId2:     userId2,
+		status:      int16(status),
+		createdAt:   now,
+		updatedAt:   now,
+		isPersisted: false,
 	}
 }
 
 func FromStorage(userId1, userId2 string, status int16, createdAt, updatedAt time.Time) *UserRelationship {
 	return &UserRelationship{
-		userId1:   userId1,
-		userId2:   userId2,
-		status:    status,
-		createdAt: createdAt,
-		updatedAt: updatedAt,
+		userId1:     userId1,
+		userId2:     userId2,
+		status:      status,
+		createdAt:   createdAt,
+		updatedAt:   updatedAt,
+		isPersisted: true,
 	}
 }
 
@@ -40,6 +43,7 @@ func (ur *UserRelationship) GetUserID1() string      { return ur.userId1 }
 func (ur *UserRelationship) GetUserID2() string      { return ur.userId2 }
 func (ur *UserRelationship) GetCreatedAt() time.Time { return ur.createdAt }
 func (ur *UserRelationship) GetUpdatedAt() time.Time { return ur.updatedAt }
+func (ur *UserRelationship) IsPersisted() bool       { return ur.isPersisted }
 
 func (ur *UserRelationship) GetStatus() UserRelationshipStatus {
 	return UserRelationshipStatus(ur.status)
@@ -50,6 +54,13 @@ func (ur *UserRelationship) RoleOf(userID string) int {
 		return 1
 	}
 	return 2
+}
+
+func (ur *UserRelationship) OtherUserID(userID string) string {
+	if ur.userId1 == userID {
+		return ur.userId2
+	}
+	return ur.userId1
 }
 
 func (ur *UserRelationship) SetStatus(status UserRelationshipStatus) error {
