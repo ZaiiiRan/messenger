@@ -4,6 +4,182 @@ package social.v1;
 
 option go_package = "social-service/gen/go/social;social";
 
-service SocialService {
+import "user/v1/user.proto";
 
+service SocialService {
+    rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+    rpc GetUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+    rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse);
+    rpc GetUsersByUsernames(GetUsersByUsernamesRequest) returns (GetUsersByUsernamesResponse);
+    rpc AddUsersToFriends(AddUsersToFriendsRequest) returns (AddUsersToFriendsResponse);
+    rpc RemoveUsersFromFriends(RemoveUsersFromFriendsRequest) returns (RemoveUsersFromFriendsResponse);
+    rpc BlockUsers(BlockUsersRequest) returns (BlockUsersResponse);
+    rpc UnblockUsers(UnblockUsersRequest) returns (UnblockUsersResponse);
+    rpc GetFriends(GetFriendsRequest) returns (GetFriendsResponse);
+    rpc GetIncomingFriendRequests(GetIncomingFriendRequestsRequest) returns (GetIncomingFriendRequestsResponse);
+    rpc GetOutgoingFriendRequests(GetOutgoingFriendRequestsRequest) returns (GetOutgoingFriendRequestsResponse);
+    rpc GetBlockedUsers(GetBlockedUsersRequest) returns (GetBlockedUsersResponse);
+    rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+    rpc UpdateMyPrivacySettings(UpdateMyPrivacySettingsRequest) returns (UpdateMyPrivacySettingsResponse);
+}
+
+message SocialUserStatus {
+    bool is_permanently_banned = 1;
+    bool is_deleted = 2;
+}
+
+message ShortSocialUserProfile {
+    string first_name = 1;
+    string last_name = 2;
+}
+
+message ShortSocialUser {
+    string id = 1;
+    string username = 2;
+    ShortSocialUserProfile profile = 3;
+    SocialUserStatus status = 4;
+    string user_relationship = 5;
+    user.v1.UserPrivacySettings privacy_settings = 6;
+}
+
+message SocialUserProfile {
+    string first_name = 1;
+    string last_name = 2;
+    optional string email = 3;
+    optional string phone = 4;
+    optional string birthdate = 5;
+    optional string bio = 6;
+}
+
+message SocialUser {
+    string id = 1;
+    string username = 2;
+    SocialUserProfile profile = 3;
+    SocialUserStatus status = 4;
+    string user_relationship = 6;
+    user.v1.UserPrivacySettings privacy_settings = 7;
+}
+
+message GetUserByIdRequest {
+    string id = 1;
+    bool include_privacy_settings = 2;
+}
+
+message GetUserByIdResponse {
+    SocialUser user = 1;
+}
+
+message GetUsersByIdsRequest {
+    repeated string ids = 1;
+    bool include_privacy_settings = 2;
+}
+
+message GetUsersByIdsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message GetUserByUsernameRequest {
+    string username = 1;
+    bool include_privacy_settings = 2;
+}
+
+message GetUserByUsernameResponse {
+    SocialUser user = 1;
+}
+
+message GetUsersByUsernamesRequest {
+    repeated string usernames = 1;
+    bool include_privacy_settings = 2;
+}
+
+message GetUsersByUsernamesResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message AddUsersToFriendsRequest {
+    repeated string ids = 1;
+}
+
+message AddUsersToFriendsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message RemoveUsersFromFriendsRequest {
+    repeated string ids = 1;
+}
+
+message RemoveUsersFromFriendsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message BlockUsersRequest {
+    repeated string ids = 1;
+}
+
+message BlockUsersResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message UnblockUsersRequest {
+    repeated string ids = 1;
+}
+
+message UnblockUsersResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message UsersRequest {
+    optional string search_filter = 1;
+    int32 page = 2;
+    int32 page_size = 3;
+    bool include_privacy_settings = 4;
+}
+
+message GetFriendsRequest {
+    UsersRequest request = 1;
+}
+
+message GetFriendsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message GetIncomingFriendRequestsRequest {
+    UsersRequest request = 1;
+}
+
+message GetIncomingFriendRequestsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message GetOutgoingFriendRequestsRequest {
+    UsersRequest request = 1;
+}
+
+message GetOutgoingFriendRequestsResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message GetBlockedUsersRequest {
+    UsersRequest request = 1;
+}
+
+message GetBlockedUsersResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message SearchUsersRequest {
+    UsersRequest request = 1;
+}
+
+message SearchUsersResponse {
+    repeated ShortSocialUser users = 1;
+}
+
+message UpdateMyPrivacySettingsRequest {
+    repeated string fields = 1;
+    user.v1.UpdateUserPrivacySettings privacy_settings = 2;
+}
+
+message UpdateMyPrivacySettingsResponse {
+    user.v1.UserPrivacySettings privacy_settings = 1;
 }
