@@ -7,6 +7,7 @@ import (
 
 type UserFilterDal struct {
 	Ids              []string `db:"ids" json:"ids"`
+	ExcludeIds       []string `db:"exclude_ids" json:"exclude_ids"`
 	Usernames        []string `db:"usernames" json:"usernames"`
 	PartialUsernames []string `db:"partial_usernames" json:"partial_usernames"`
 	Emails           []string `db:"emails" json:"emails"`
@@ -14,6 +15,8 @@ type UserFilterDal struct {
 
 	PhoneNumbers []string `db:"phone_numbers" json:"phone_numbers"`
 	PartialNames []string `db:"partial_names" json:"partial_names"`
+
+	SearchFilter *string `db:"search_filter" json:"search_filter"`
 
 	IsConfirmed          *bool `db:"is_confirmed" json:"is_confirmed"`
 	IsDeleted            *bool `db:"is_deleted" json:"is_deleted"`
@@ -33,8 +36,15 @@ type UserFilterDal struct {
 	EmailUpdatedTo   *time.Time `db:"email_updated_to" json:"email_updated_to"`
 }
 
+type UserSortDal struct {
+	SortByUsername   bool `db:"sort_by_username" json:"sort_by_username"`
+	SortInactiveLast bool `db:"sort_inactive_last" json:"sort_inactive_last"`
+	PreserveIDsOrder bool `db:"preserve_ids_order" json:"preserve_ids_order"`
+}
+
 type QueryUsersDal struct {
 	Filter UserFilterDal `db:"filter" json:"filter"`
+	Sort   UserSortDal   `db:"sort" json:"sort"`
 
 	Limit  int `db:"limit" json:"limit"`
 	Offset int `db:"offset" json:"offset"`
@@ -42,10 +52,10 @@ type QueryUsersDal struct {
 
 func NewQueryUsersDal(
 	filter UserFilterDal,
+	sort UserSortDal,
 	page, pageSize int,
 ) *QueryUsersDal {
 
-	slices.Sort(filter.Ids)
 	slices.Sort(filter.Usernames)
 	slices.Sort(filter.PartialUsernames)
 	slices.Sort(filter.Emails)
@@ -62,6 +72,7 @@ func NewQueryUsersDal(
 
 	return &QueryUsersDal{
 		Filter: filter,
+		Sort:   sort,
 		Limit:  pageSize,
 		Offset: (page - 1) * pageSize,
 	}

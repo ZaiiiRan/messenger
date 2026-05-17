@@ -192,13 +192,29 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 		WHERE 1=1
 	`)
 
-	appendAnyEqual(&sb, "u.id::text", query.Filter.Ids, &args, &argPos)
+	var idsArgPos int
+	if len(query.Filter.Ids) > 0 {
+		idsArgPos = argPos
+		appendAnyEqual(&sb, "u.id::text", query.Filter.Ids, &args, &argPos)
+	}
+	appendNoneEqual(&sb, "u.id::text", query.Filter.ExcludeIds, &args, &argPos)
 	appendAnyEqual(&sb, "u.username", query.Filter.Usernames, &args, &argPos)
 	appendIPrefix(&sb, "u.username", query.Filter.PartialUsernames, &args, &argPos)
 	appendAnyEqual(&sb, "u.email", query.Filter.Emails, &args, &argPos)
 	appendIPrefix(&sb, "u.email", query.Filter.PartialEmails, &args, &argPos)
 	appendAnyEqual(&sb, "p.phone", query.Filter.PhoneNumbers, &args, &argPos)
 	appendPartialNames(&sb, "p.first_name", "p.last_name", query.Filter.PartialNames, &args, &argPos)
+
+	if query.Filter.SearchFilter != nil && *query.Filter.SearchFilter != "" {
+		fmt.Fprintf(
+			&sb,
+			" AND (u.username ILIKE $%d OR (p.first_name || ' ' || p.last_name) ILIKE $%d OR (p.last_name || ' ' || p.first_name) ILIKE $%d)",
+			argPos, argPos, argPos,
+		)
+		args = append(args, fmt.Sprintf("%s%%", *query.Filter.SearchFilter))
+		argPos++
+	}
+
 	appendBool(&sb, "s.is_confirmed", query.Filter.IsConfirmed, &args, &argPos)
 	appendBool(&sb, "s.is_deleted", query.Filter.IsDeleted, &args, &argPos)
 	appendBool(&sb, "s.is_permanently_banned", query.Filter.IsPermanentlyBanned, &args, &argPos)
@@ -209,7 +225,25 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
 	appendRange(&sb, "s.email_updated_at", query.Filter.EmailUpdatedFrom, query.Filter.EmailUpdatedTo, &args, &argPos)
-	appendOrder(&sb, "u.id", true)
+
+	inactiveExpr := "CASE WHEN s.is_deleted OR s.is_permanently_banned THEN 1 ELSE 0 END"
+	switch {
+	case query.Sort.PreserveIDsOrder && idsArgPos > 0:
+		if query.Sort.SortInactiveLast {
+			fmt.Fprintf(&sb, " ORDER BY %s, array_position($%d::uuid[], u.id)", inactiveExpr, idsArgPos)
+		} else {
+			fmt.Fprintf(&sb, " ORDER BY array_position($%d::uuid[], u.id)", idsArgPos)
+		}
+	case query.Sort.SortByUsername:
+		if query.Sort.SortInactiveLast {
+			fmt.Fprintf(&sb, " ORDER BY %s, u.username, p.first_name, p.last_name", inactiveExpr)
+		} else {
+			fmt.Fprintf(&sb, " ORDER BY u.username, p.first_name, p.last_name")
+		}
+	default:
+		appendOrder(&sb, "u.id", true)
+	}
+	
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
 	rows, err := r.conn.Query(ctx, sb.String(), args...)
@@ -277,13 +311,29 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 		WHERE 1=1
 	`)
 
-	appendAnyEqual(&sb, "u.id::text", query.Filter.Ids, &args, &argPos)
+	var idsArgPos int
+	if len(query.Filter.Ids) > 0 {
+		idsArgPos = argPos
+		appendAnyEqual(&sb, "u.id::text", query.Filter.Ids, &args, &argPos)
+	}
+	appendNoneEqual(&sb, "u.id::text", query.Filter.ExcludeIds, &args, &argPos)
 	appendAnyEqual(&sb, "u.username", query.Filter.Usernames, &args, &argPos)
 	appendIPrefix(&sb, "u.username", query.Filter.PartialUsernames, &args, &argPos)
 	appendAnyEqual(&sb, "u.email", query.Filter.Emails, &args, &argPos)
 	appendIPrefix(&sb, "u.email", query.Filter.PartialEmails, &args, &argPos)
 	appendAnyEqual(&sb, "p.phone", query.Filter.PhoneNumbers, &args, &argPos)
 	appendPartialNames(&sb, "p.first_name", "p.last_name", query.Filter.PartialNames, &args, &argPos)
+
+	if query.Filter.SearchFilter != nil && *query.Filter.SearchFilter != "" {
+		fmt.Fprintf(
+			&sb,
+			" AND (u.username ILIKE $%d OR (p.first_name || ' ' || p.last_name) ILIKE $%d OR (p.last_name || ' ' || p.first_name) ILIKE $%d)",
+			argPos, argPos, argPos,
+		)
+		args = append(args, fmt.Sprintf("%s%%", *query.Filter.SearchFilter))
+		argPos++
+	}
+
 	appendBool(&sb, "s.is_confirmed", query.Filter.IsConfirmed, &args, &argPos)
 	appendBool(&sb, "s.is_deleted", query.Filter.IsDeleted, &args, &argPos)
 	appendBool(&sb, "s.is_permanently_banned", query.Filter.IsPermanentlyBanned, &args, &argPos)
@@ -295,6 +345,25 @@ func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUse
 	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
 	appendRange(&sb, "s.email_updated_at", query.Filter.EmailUpdatedFrom, query.Filter.EmailUpdatedTo, &args, &argPos)
 	appendOrder(&sb, "u.updated_at", true)
+
+	inactiveExpr := "CASE WHEN s.is_deleted OR s.is_permanently_banned THEN 1 ELSE 0 END"
+	switch {
+	case query.Sort.PreserveIDsOrder && idsArgPos > 0:
+		if query.Sort.SortInactiveLast {
+			fmt.Fprintf(&sb, " ORDER BY %s, array_position($%d::uuid[], u.id)", inactiveExpr, idsArgPos)
+		} else {
+			fmt.Fprintf(&sb, " ORDER BY array_position($%d::uuid[], u.id)", idsArgPos)
+		}
+	case query.Sort.SortByUsername:
+		if query.Sort.SortInactiveLast {
+			fmt.Fprintf(&sb, " ORDER BY %s, u.username, p.first_name, p.last_name", inactiveExpr)
+		} else {
+			fmt.Fprintf(&sb, " ORDER BY u.username, p.first_name, p.last_name")
+		}
+	default:
+		appendOrder(&sb, "u.id", true)
+	}
+
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
 	sb.WriteString(" FOR UPDATE OF u SKIP LOCKED")

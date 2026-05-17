@@ -340,12 +340,14 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 
 	filter := models.UserFilterDal{
 		Ids:                  req.Ids,
+		ExcludeIds:           req.ExcludeIds,
 		Usernames:            req.FullUsernames,
 		PartialUsernames:     req.PartialUsernames,
 		Emails:               req.FullEmails,
 		PartialEmails:        req.PartialEmails,
 		PhoneNumbers:         req.PhoneNumbers,
 		PartialNames:         req.PartialNames,
+		SearchFilter:         req.SearchFilter,
 		IsConfirmed:          req.IsConfirmed,
 		IsDeleted:            req.IsDeleted,
 		IsPermanentlyDeleted: req.IsPermanentlyDeleted,
@@ -361,10 +363,16 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 		EmailUpdatedTo:       emailUpdatedTo,
 	}
 
+	sort := models.UserSortDal{
+		SortByUsername:   req.SortByUsername,
+		SortInactiveLast: req.SortInactiveLast,
+		PreserveIDsOrder: req.PreserveIdsOrder,
+	}
+
 	uow := s.dataProvider.newUOW()
 	defer uow.Close()
 
-	query := models.NewQueryUsersDal(filter, int(req.Page), int(req.PageSize))
+	query := models.NewQueryUsersDal(filter, sort, int(req.Page), int(req.PageSize))
 	users, err := s.dataProvider.getUserList(ctx, query, uow)
 	if err != nil {
 		l.Errorw("user.get_users_failed.query_error", "err", err)
@@ -577,6 +585,7 @@ func (s *service) UpdateMyPrivacySettingsByUserRequest(
 					IsDeleted:            &isDeleted,
 					IsPermanentlyDeleted: &isPermanentlyDeleted,
 				},
+				models.UserSortDal{},
 				1,
 				len(ids),
 			), uow)

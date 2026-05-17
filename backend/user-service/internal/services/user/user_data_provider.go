@@ -46,6 +46,7 @@ func (udp *userDataProvider) getByID(ctx context.Context, id string, uow *uow.Un
 		models.UserFilterDal{
 			Ids: []string{id},
 		},
+		models.UserSortDal{},
 		1,
 		1,
 	)
@@ -64,7 +65,7 @@ func (udp *userDataProvider) getByID(ctx context.Context, id string, uow *uow.Un
 }
 
 func (udp *userDataProvider) getUserByFilter(ctx context.Context, filter models.UserFilterDal, uow *uow.UnitOfWork) (*user.User, error) {
-	query := models.NewQueryUsersDal(filter, 1, 1)
+	query := models.NewQueryUsersDal(filter, models.UserSortDal{}, 1, 1)
 
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	list, err := cacheRepo.GetUserList(ctx, query)
@@ -93,7 +94,7 @@ func (udp *userDataProvider) getUserByFilter(ctx context.Context, filter models.
 }
 
 func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.UserFilterDal, batch_size int, uow *uow.UnitOfWork) ([]*user.User, error) {
-	query := models.NewQueryUsersDal(filter, 1, batch_size)
+	query := models.NewQueryUsersDal(filter, models.UserSortDal{}, 1, batch_size)
 
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
@@ -200,9 +201,9 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	cacheRepo.DeleteUser(ctx, u.GetID())
 
-	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)
+	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, models.UserSortDal{}, 1, 1)
 	cacheRepo.InvalidateUserList(ctx, emailQuery)
-	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, 1, 1)
+	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, models.UserSortDal{}, 1, 1)
 	cacheRepo.InvalidateUserList(ctx, usernameQuery)
 
 	return nil
@@ -215,8 +216,8 @@ func (udp *userDataProvider) saveCache(ctx context.Context, u *user.User) {
 
 	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
 	cacheRepo.SetUser(ctx, u)
-	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, 1, 1)
+	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, models.UserSortDal{}, 1, 1)
 	cacheRepo.SetUserList(ctx, emailQuery, []*user.User{u})
-	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, 1, 1)
+	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, models.UserSortDal{}, 1, 1)
 	cacheRepo.SetUserList(ctx, usernameQuery, []*user.User{u})
 }

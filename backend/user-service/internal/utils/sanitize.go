@@ -21,12 +21,20 @@ func SanitizeGetUsersRequest(req *pb.GetUsersRequest) {
 	}
 
 	req.Ids = sanitizeStringArray(sanitizeUniqueArray(req.Ids))
+	req.ExcludeIds = sanitizeStringArray(sanitizeUniqueArray(req.ExcludeIds))
 	req.FullUsernames = sanitizeLowerStringArray(sanitizeUniqueArray(req.FullUsernames))
 	req.PartialUsernames = sanitizeLowerStringArray(sanitizeUniqueArray(req.PartialUsernames))
 	req.FullEmails = sanitizeLowerStringArray(sanitizeUniqueArray(req.FullEmails))
 	req.PartialEmails = sanitizeLowerStringArray(sanitizeUniqueArray(req.PartialEmails))
 	req.PhoneNumbers = sanitizeStringArray(sanitizeUniqueArray(req.PhoneNumbers))
 	req.PartialNames = sanitizeStringArray(sanitizeUniqueArray(req.PartialNames))
+
+	req.SearchFilter = sanitizeStringPtr(req.SearchFilter)
+	if req.SearchFilter != nil {
+		searchFilter := *req.SearchFilter
+		searchFilter = strings.Join(strings.Fields(searchFilter), " ")
+		req.SearchFilter = &searchFilter
+	}
 
 	req.DeletedFrom = sanitizeStringPtr(req.DeletedFrom)
 	req.DeletedTo = sanitizeStringPtr(req.DeletedTo)
@@ -189,6 +197,9 @@ func sanitizeStringPtr(s *string) *string {
 		return nil
 	}
 	trimmed := strings.TrimSpace(*s)
+	if trimmed == "" {
+		return nil
+	}
 	return &trimmed
 }
 

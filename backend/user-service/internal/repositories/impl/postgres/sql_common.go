@@ -75,6 +75,15 @@ func appendAnyEqual[T any](sb *strings.Builder, col string, values []T, args *[]
 	*argPos++
 }
 
+func appendNoneEqual[T any](sb *strings.Builder, col string, values []T, args *[]any, argPos *int) {
+	if len(values) == 0 {
+		return
+	}
+	fmt.Fprintf(sb, " AND %s != ALL($%d)", col, *argPos)
+	*args = append(*args, values)
+	*argPos++
+}
+
 func appendIn[T any](sb *strings.Builder, col string, values []T, args *[]any, argPos *int) {
 	if len(values) == 0 {
 		return
