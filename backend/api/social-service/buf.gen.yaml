@@ -3,18 +3,24 @@ version: v1
 plugins:
   - name: go
     out: social-service/gen/go
-    opt: [paths=source_relative]
+    opt: 
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1
   - name: go-grpc
     out: social-service/gen/go
-    opt: [paths=source_relative]
+    opt: 
+      - paths=source_relative
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1
 
   - name: go
     out: api-gateway/gen/go
     opt:
       - paths=source_relative
-      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/social/v1
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/user/v1
+      - Msocial/v1/social.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/social/v1
   - name: go-grpc
     out: api-gateway/gen/go
     opt:
       - paths=source_relative
-      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/social/v1
+      - Muser/v1/user.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/user/v1
+      - Msocial/v1/social.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/social/v1
