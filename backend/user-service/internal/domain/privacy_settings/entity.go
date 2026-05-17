@@ -42,6 +42,7 @@ type PrivacySettings struct {
 	photos           PrivacySetting
 	phoneNumber      PrivacySetting
 	email            PrivacySetting
+	birthdate        PrivacySetting
 	onlineStatus     PrivacySetting
 	firstDialogsInit PrivacySetting
 	groupChatInvites PrivacySetting
@@ -68,6 +69,11 @@ func New() *PrivacySettings {
 		favourites: make([]string, 0),
 		exceptions: make([]string, 0),
 	}
+	birthdate := PrivacySetting{
+		value:      int16(Friends),
+		favourites: make([]string, 0),
+		exceptions: make([]string, 0),
+	}
 	onlineStatus := PrivacySetting{
 		value:      int16(Friends),
 		favourites: make([]string, 0),
@@ -88,6 +94,7 @@ func New() *PrivacySettings {
 		photos:           photos,
 		phoneNumber:      phoneNumber,
 		email:            email,
+		birthdate:        birthdate,
 		onlineStatus:     onlineStatus,
 		firstDialogsInit: firstDialogsInit,
 		groupChatInvites: groupChatInvites,
@@ -99,6 +106,7 @@ func FromStorage(
 	photos PrivacySetting,
 	phoneNumber PrivacySetting,
 	email PrivacySetting,
+	birthdate PrivacySetting,
 	onlineStatus PrivacySetting,
 	firstDialogsInit PrivacySetting,
 	groupChatInvites PrivacySetting,
@@ -108,6 +116,7 @@ func FromStorage(
 		photos:           photos,
 		phoneNumber:      phoneNumber,
 		email:            email,
+		birthdate:        birthdate,
 		onlineStatus:     onlineStatus,
 		firstDialogsInit: firstDialogsInit,
 		groupChatInvites: groupChatInvites,
@@ -118,6 +127,7 @@ func (p *PrivacySettings) GetAvatar() PrivacySetting           { return p.avatar
 func (p *PrivacySettings) GetPhotos() PrivacySetting           { return p.photos }
 func (p *PrivacySettings) GetPhoneNumber() PrivacySetting      { return p.phoneNumber }
 func (p *PrivacySettings) GetEmail() PrivacySetting            { return p.email }
+func (p *PrivacySettings) GetBirthdate() PrivacySetting        { return p.birthdate }
 func (p *PrivacySettings) GetOnlineStatus() PrivacySetting     { return p.onlineStatus }
 func (p *PrivacySettings) GetFirstDialogsInit() PrivacySetting { return p.firstDialogsInit }
 func (p *PrivacySettings) GetGroupChatInvites() PrivacySetting { return p.groupChatInvites }
@@ -126,6 +136,7 @@ func (p *PrivacySettings) SetAvatar(s PrivacySetting)           { p.avatar = s }
 func (p *PrivacySettings) SetPhotos(s PrivacySetting)           { p.photos = s }
 func (p *PrivacySettings) SetPhoneNumber(s PrivacySetting)      { p.phoneNumber = s }
 func (p *PrivacySettings) SetEmail(s PrivacySetting)            { p.email = s }
+func (p *PrivacySettings) SetBirthdate(s PrivacySetting)        { p.birthdate = s }
 func (p *PrivacySettings) SetOnlineStatus(s PrivacySetting)     { p.onlineStatus = s }
 func (p *PrivacySettings) SetFirstDialogsInit(s PrivacySetting) { p.firstDialogsInit = s }
 func (p *PrivacySettings) SetGroupChatInvites(s PrivacySetting) { p.groupChatInvites = s }

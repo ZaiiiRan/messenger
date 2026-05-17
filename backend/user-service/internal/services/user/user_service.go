@@ -983,6 +983,11 @@ func (s *service) updateUserPrivacySettings(
 			getCurrent: func() privacysettings.PrivacySetting { return ps.GetEmail() },
 			set:        func(v privacysettings.PrivacySetting) { ps.SetEmail(v) },
 		},
+		"birthdate": {
+			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.Birthdate },
+			getCurrent: func() privacysettings.PrivacySetting { return ps.GetBirthdate() },
+			set:        func(v privacysettings.PrivacySetting) { ps.SetBirthdate(v) },
+		},
 		"online_status": {
 			getUpdate:  func() *pb.UpdateUserPrivacySetting { return update.OnlineStatus },
 			getCurrent: func() privacysettings.PrivacySetting { return ps.GetOnlineStatus() },

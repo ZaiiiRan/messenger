@@ -17,6 +17,7 @@ type V1PrivacySettingsAggregateDal struct {
 	Photos           V1PrivacySettingDal `json:"photos"`
 	PhoneNumber      V1PrivacySettingDal `json:"phone_number"`
 	Email            V1PrivacySettingDal `json:"email"`
+	Birthdate        V1PrivacySettingDal `json:"birthdate"`
 	OnlineStatus     V1PrivacySettingDal `json:"online_status"`
 	FirstDialogsInit V1PrivacySettingDal `json:"first_dialogs_init"`
 	GroupChatInvites V1PrivacySettingDal `json:"group_chat_invites"`
@@ -53,6 +54,11 @@ func V1PrivacySettingsDalFromDomain(userId string, s *privacysettings.PrivacySet
 			Value:      int16(s.GetEmail().GetValue()),
 			Favourites: s.GetEmail().GetFavourites(),
 			Exceptions: s.GetEmail().GetExceptions(),
+		},
+		Birthdate: V1PrivacySettingDal{
+			Value:      int16(s.GetBirthdate().GetValue()),
+			Favourites: s.GetBirthdate().GetFavourites(),
+			Exceptions: s.GetBirthdate().GetExceptions(),
 		},
 		OnlineStatus: V1PrivacySettingDal{
 			Value:      int16(s.GetOnlineStatus().GetValue()),
@@ -123,6 +129,11 @@ func (s V1PrivacySettingsDal) ToDomain() (*privacysettings.PrivacySettings, erro
 		settings.Email.Favourites,
 		settings.Email.Exceptions,
 	)
+	birthdate := privacysettings.PrivacySettingFromStorage(
+		settings.Birthdate.Value,
+		settings.Birthdate.Favourites,
+		settings.Birthdate.Exceptions,
+	)
 	onlineStatus := privacysettings.PrivacySettingFromStorage(
 		settings.OnlineStatus.Value,
 		settings.OnlineStatus.Favourites,
@@ -144,6 +155,7 @@ func (s V1PrivacySettingsDal) ToDomain() (*privacysettings.PrivacySettings, erro
 		photos,
 		phoneNumber,
 		email,
+		birthdate,
 		onlineStatus,
 		firstDialogsInit,
 		groupChatInvites,

@@ -147,6 +147,7 @@ func sanitizeUpdateUserPrivacySettings(s *pb.UpdateUserPrivacySettings) {
 	sanitizeUpdateUserPrivacySetting(s.Photos)
 	sanitizeUpdateUserPrivacySetting(s.PhoneNumber)
 	sanitizeUpdateUserPrivacySetting(s.Email)
+	sanitizeUpdateUserPrivacySetting(s.Birthdate)
 	sanitizeUpdateUserPrivacySetting(s.OnlineStatus)
 	sanitizeUpdateUserPrivacySetting(s.FirstDialogsInit)
 	sanitizeUpdateUserPrivacySetting(s.GroupChatInvites)

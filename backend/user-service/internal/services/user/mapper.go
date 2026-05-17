@@ -59,6 +59,7 @@ func privacySettingsToProto(s *privacysettings.PrivacySettings) *pb.UserPrivacyS
 		Photos:           privacySettingToProto(s.GetPhotos()),
 		PhoneNumber:      privacySettingToProto(s.GetPhoneNumber()),
 		Email:            privacySettingToProto(s.GetEmail()),
+		Birthdate:        privacySettingToProto(s.GetBirthdate()),
 		OnlineStatus:     privacySettingToProto(s.GetOnlineStatus()),
 		FirstDialogsInit: privacySettingToProto(s.GetFirstDialogsInit()),
 		GroupChatInvites: privacySettingToProto(s.GetGroupChatInvites()),
