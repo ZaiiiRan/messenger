@@ -251,7 +251,7 @@ func (udp *userRelationshipDataProvider) deleteUserRelationships(
 	return nil
 }
 
-func (udp *userRelationshipDataProvider) save(ctx context.Context, ur *userrelationship.UserRelationship, actorID string, uow *uow.UnitOfWork) error {
+func (udp *userRelationshipDataProvider) save(ctx context.Context, ur *userrelationship.UserRelationship, uow *uow.UnitOfWork) error {
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
@@ -282,7 +282,7 @@ func (udp *userRelationshipDataProvider) saveCache(ctx context.Context, ur *user
 	cacheRepo.SetUserRelationship(ctx, ur)
 }
 
-func (udp *userRelationshipDataProvider) delete(ctx context.Context, ur *userrelationship.UserRelationship, actorID string, uow *uow.UnitOfWork) error {
+func (udp *userRelationshipDataProvider) delete(ctx context.Context, ur *userrelationship.UserRelationship, uow *uow.UnitOfWork) error {
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err

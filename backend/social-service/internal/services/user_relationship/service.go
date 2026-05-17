@@ -7,6 +7,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/redis"
 	"go.uber.org/zap"
@@ -21,6 +22,9 @@ type UserRelationshipService interface {
 	BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error)
 	UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User) (*userrelationship.UserRelationship, error)
 	UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error)
+	GetUserRelationship(ctx context.Context, actor, target *userpb.User) (*userrelationship.UserRelationship, error)
+	GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User) ([]*userrelationship.UserRelationship, error)
+	GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal) ([]*userrelationship.UserRelationship, error)
 }
 
 type service struct {
@@ -64,7 +68,7 @@ func (s *service) AddUserToFriends(ctx context.Context, actor, friendCandidate *
 		return ur, err
 	}
 
-	if err := s.dataProvider.save(ctx, ur, actor.Id, uow); err != nil {
+	if err := s.dataProvider.save(ctx, ur, uow); err != nil {
 		l.Errorw("user_relationship.add_user_to_friends_failed.save_error", "err", err)
 		return nil, ErrAddUserToFriends
 	}
@@ -104,7 +108,7 @@ func (s *service) RemoveUserFromFriends(ctx context.Context, actor, friend *user
 		return ur, nil
 	}
 
-	if err := s.dataProvider.delete(ctx, ur, actor.Id, uow); err != nil {
+	if err := s.dataProvider.delete(ctx, ur, uow); err != nil {
 		l.Errorw("user_relationship.remove_user_from_friends_failed.delete_error", "err", err)
 		return nil, ErrRemoveFromFriends
 	}
@@ -141,7 +145,7 @@ func (s *service) BlockUser(ctx context.Context, actor, blockCandidate *userpb.U
 		return ur, err
 	}
 
-	if err := s.dataProvider.save(ctx, ur, actor.Id, uow); err != nil {
+	if err := s.dataProvider.save(ctx, ur, uow); err != nil {
 		l.Errorw("user_relationship.block_user_failed.save_error", "err", err)
 		return nil, ErrBlockUser
 	}
@@ -180,12 +184,12 @@ func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *user
 	}
 
 	if needToDelete {
-		if err := s.dataProvider.delete(ctx, ur, actor.Id, uow); err != nil {
+		if err := s.dataProvider.delete(ctx, ur, uow); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.delete_error", "err", err)
 			return nil, ErrUnblockUser
 		}
 	} else {
-		if err := s.dataProvider.save(ctx, ur, actor.Id, uow); err != nil {
+		if err := s.dataProvider.save(ctx, ur, uow); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.save_error", "err", err)
 			return nil, ErrUnblockUser
 		}
@@ -204,5 +208,21 @@ func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *user
 	}
 
 	l.Infow("user_relationship.unblock_user.success")
+	return ur, nil
+}
+
+func (s *service) GetUserRelationship(ctx context.Context, actor, target *userpb.User) (*userrelationship.UserRelationship, error) {
+	l := s.log.With("op", "get_user_relationship", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	ur, err := s.dataProvider.getUserRelationship(ctx, actor.Id, target.Id, uow)
+	if err != nil {
+		l.Errorw("user_relationship.get_user_relationship_failed.get_user_relationship_error", "err", err)
+		return nil, ErrGetUserRelationship
+	}
+
+	l.Infow("user_relationship.get_user_relationship.success")
 	return ur, nil
 }

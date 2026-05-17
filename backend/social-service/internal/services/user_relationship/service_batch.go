@@ -275,3 +275,60 @@ func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockC
 	l.Infow("user_relationship.unblock_users.success")
 	return results, nil
 }
+
+func (s *service) GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+	if len(targets) == 0 {
+		return []*userrelationship.UserRelationship{}, nil
+	}
+
+	l := s.log.With("op", "get_user_relationships", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	actorID := actor.Id
+	targetIDs := make([]string, len(targets))
+	for i, t := range targets {
+		if t.Id == actorID {
+			continue
+		}
+		targetIDs[i] = t.Id
+	}
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	query := models.NewQueryUserRelationshipsDal(&actorID, targetIDs, nil, 1, len(targetIDs), false)
+	existingList, err := s.dataProvider.getUserRelationships(ctx, query, uow)
+	if err != nil {
+		l.Errorw("user_relationship.get_user_relationships_failed.get_user_relationships_error", "err", err)
+		return nil, ErrGetUserRelationship
+	}
+
+	existingMap := buildRelationshipMap(existingList, actorID)
+	results := make([]*userrelationship.UserRelationship, len(targets))
+	for i, t := range targets {
+		ur := existingMap[t.Id]
+		results[i] = ur
+	}
+
+	l.Infow("user_relationship.get_user_relationships.success")
+	return results, nil
+}
+
+func (s *service) GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal) ([]*userrelationship.UserRelationship, error) {
+	if query == nil {
+		return nil, nil
+	}
+
+	l := s.log.With("op", "get_user_relationships_by_query", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	list, err := s.dataProvider.getUserRelationships(ctx, query, uow)
+	if err != nil {
+		l.Errorw("user_relationship.get_user_relationships_by_query_failed.get_user_relationships_error", "err", err)
+		return nil, ErrGetUserRelationship
+	}
+
+	l.Infow("user_relationship.get_user_relationships_by_query.success")
+	return list, nil
+}

@@ -23,4 +23,5 @@ var (
 	ErrBlockUser                = newUserRelationshipServiceError("service.user_relationship.error.block_user_error")
 	ErrAlreadyBlocked           = newUserRelationshipServiceError("service.user_relationship.error.already_blocked")
 	ErrUnblockUser              = newUserRelationshipServiceError("service.user_relationship.error.unblock_user_error")
+	ErrGetUserRelationship      = newUserRelationshipServiceError("service.user_relationship.error.get_user_relationship_error")
 )

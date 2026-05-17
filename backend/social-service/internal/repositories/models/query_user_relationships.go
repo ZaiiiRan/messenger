@@ -2,11 +2,6 @@ package models
 
 import userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 
-type FilterUserRelationshipsPairDal struct {
-	User1Id      string `json:"first_user_id"`
-	SecondUserId string `json:"second_user_id"`
-}
-
 type QueryUserRelationshipsDal struct {
 	FirstUserId   *string  `json:"first_user_id"`
 	SecondUserIds []string `json:"second_user_ids"`
