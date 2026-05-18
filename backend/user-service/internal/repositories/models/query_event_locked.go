@@ -4,21 +4,21 @@ import (
 	"time"
 )
 
-type QueryOutboxEventsLockedDal struct {
+type QueryEventsLockedDal struct {
 	RetryAfter time.Time `db:"retry_after" json:"retry_after"`
 
 	Limit int `db:"limit" json:"limit"`
 }
 
-func NewQueryOutboxEventsLockedDal(
+func NewQueryEventsLockedDal(
 	retryAfter time.Time,
 	pageSize int,
-) *QueryOutboxEventsLockedDal {
+) *QueryEventsLockedDal {
 	if pageSize <= 0 {
 		pageSize = 50
 	}
 
-	return &QueryOutboxEventsLockedDal{
+	return &QueryEventsLockedDal{
 		RetryAfter: retryAfter,
 		Limit:   pageSize,
 	}

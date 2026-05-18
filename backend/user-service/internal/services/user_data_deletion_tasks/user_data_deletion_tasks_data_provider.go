@@ -79,7 +79,7 @@ func (udp *userDataDeletionTasksDataProvider) getUserDataDeletionTasksLocked(
 	retryAfter time.Time,
 	uow *uow.UnitOfWork,
 ) ([]*event.Event, error) {
-	query := models.NewQueryOutboxEventsLockedDal(retryAfter, batch_size)
+	query := models.NewQueryEventsLockedDal(retryAfter, batch_size)
 
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
