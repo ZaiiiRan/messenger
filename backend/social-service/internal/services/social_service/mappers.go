@@ -7,9 +7,14 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
 )
 
-func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship) *pb.SocialUser {
+func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool) *pb.SocialUser {
 	if a == nil || u == nil {
 		return nil
+	}
+
+	var ps *userpb.UserPrivacySettings
+	if includePrivacySettings {
+		ps = u.PrivacySettings
 	}
 
 	return &pb.SocialUser{
@@ -18,12 +23,18 @@ func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship)
 		Profile:          toSocialUserProfileProto(u),
 		Status:           toSocialUserStatusProto(u),
 		UserRelationship: toSocialUserRelationshipProto(a, ur),
+		PrivacySettings:  ps,
 	}
 }
 
-func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship) *pb.ShortSocialUser {
+func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool) *pb.ShortSocialUser {
 	if a == nil || u == nil {
 		return nil
+	}
+
+	var ps *userpb.UserPrivacySettings
+	if includePrivacySettings {
+		ps = u.PrivacySettings
 	}
 
 	return &pb.ShortSocialUser{
@@ -32,6 +43,7 @@ func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelation
 		Profile:          toShortSocialUserProfileProto(u),
 		Status:           toSocialUserStatusProto(u),
 		UserRelationship: toSocialUserRelationshipProto(a, ur),
+		PrivacySettings:  ps,
 	}
 }
 

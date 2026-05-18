@@ -2,6 +2,15 @@ package models
 
 import userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 
+type RelationshipDirectionFilter int8
+
+const (
+	DirectionAny          RelationshipDirectionFilter = 0
+	DirectionIncoming     RelationshipDirectionFilter = 1
+	DirectionOutgoing     RelationshipDirectionFilter = 2
+	DirectionActorBlocked RelationshipDirectionFilter = 3
+)
+
 type QueryUserRelationshipsDal struct {
 	FirstUserId   *string  `json:"first_user_id"`
 	SecondUserIds []string `json:"second_user_ids"`
@@ -12,6 +21,8 @@ type QueryUserRelationshipsDal struct {
 	Offset int `json:"offset"`
 
 	OrderByUpdatedAtDesc bool `json:"order_by_updated_at_desc"`
+
+	DirectionFilter RelationshipDirectionFilter `json:"direction_filter"`
 }
 
 func NewQueryUserRelationshipsDal(
@@ -40,5 +51,6 @@ func NewQueryUserRelationshipsDal(
 		Limit:                pageSize,
 		Offset:               (page - 1) * pageSize,
 		OrderByUpdatedAtDesc: orderByUpdatedAtDesc,
+		DirectionFilter:      DirectionAny,
 	}
 }

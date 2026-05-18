@@ -160,9 +160,34 @@ func (r *UserRelationshipsRepository) QueryUserRelationships(
 	`)
 
 	if query.FirstUserId != nil {
-		fmt.Fprintf(&sb, " AND (%s = $%d OR %s = $%d)", "ur.user_id_1::text", argPos, "ur.user_id_2::text", argPos)
-		args = append(args, *query.FirstUserId)
-		argPos++
+		actor := *query.FirstUserId
+		switch query.DirectionFilter {
+		case models.DirectionIncoming:
+			fmt.Fprintf(&sb,
+				" AND ((ur.status = $%d AND ur.user_id_2::text = $%d) OR (ur.status = $%d AND ur.user_id_1::text = $%d))",
+				argPos, argPos+1, argPos+2, argPos+1,
+			)
+			args = append(args, int16(userrelationship.FriendRequestBy1), actor, int16(userrelationship.FriendRequestBy2))
+			argPos += 3
+		case models.DirectionOutgoing:
+			fmt.Fprintf(&sb,
+				" AND ((ur.status = $%d AND ur.user_id_1::text = $%d) OR (ur.status = $%d AND ur.user_id_2::text = $%d))",
+				argPos, argPos+1, argPos+2, argPos+1,
+			)
+			args = append(args, int16(userrelationship.FriendRequestBy1), actor, int16(userrelationship.FriendRequestBy2))
+			argPos += 3
+		case models.DirectionActorBlocked:
+			fmt.Fprintf(&sb,
+				" AND ((ur.status = $%d AND ur.user_id_1::text = $%d) OR (ur.status = $%d AND ur.user_id_2::text = $%d) OR (ur.status = $%d AND (ur.user_id_1::text = $%d OR ur.user_id_2::text = $%d)))",
+				argPos, argPos+1, argPos+2, argPos+1, argPos+3, argPos+1, argPos+1,
+			)
+			args = append(args, int16(userrelationship.BlockedBy1), actor, int16(userrelationship.BlockedBy2), int16(userrelationship.BlockedByBoth))
+			argPos += 4
+		default:
+			fmt.Fprintf(&sb, " AND (%s = $%d OR %s = $%d)", "ur.user_id_1::text", argPos, "ur.user_id_2::text", argPos)
+			args = append(args, actor)
+			argPos++
+		}
 	}
 	if len(query.SecondUserIds) > 0 {
 		fmt.Fprintf(&sb, " AND (%s = ANY($%d) OR %s = ANY($%d))", "ur.user_id_1::text", argPos, "ur.user_id_2::text", argPos)
@@ -170,7 +195,9 @@ func (r *UserRelationshipsRepository) QueryUserRelationships(
 		argPos++
 	}
 
-	appendAnyEqual(&sb, "ur.status", query.Statuses, &args, &argPos)
+	if query.DirectionFilter == models.DirectionAny {
+		appendAnyEqual(&sb, "ur.status", query.Statuses, &args, &argPos)
+	}
 	if query.OrderByUpdatedAtDesc {
 		appendOrder(&sb, "ur.updated_at", false)
 	}

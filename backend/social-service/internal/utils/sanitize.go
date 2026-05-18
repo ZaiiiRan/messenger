@@ -62,6 +62,53 @@ func SanitizeUnblockUsersRequest(req *pb.UnblockUsersRequest) {
 	req.Ids = sanitizeUniqueArray(sanitizeStringArray(req.Ids))
 }
 
+func SanitizeGetFriendsRequest(req *pb.GetFriendsRequest) {
+	if req == nil {
+		return
+	}
+	sanitizeUsersRequest(req.Request)
+}
+
+func SanitizeGetIncomingFriendRequestsRequest(req *pb.GetIncomingFriendRequestsRequest) {
+	if req == nil {
+		return
+	}
+	sanitizeUsersRequest(req.Request)
+}
+
+func SanitizeGetOutgoingFriendRequestsRequest(req *pb.GetOutgoingFriendRequestsRequest) {
+	if req == nil {
+		return
+	}
+	sanitizeUsersRequest(req.Request)
+}
+
+func SanitizeGetBlockedUsersRequest(req *pb.GetBlockedUsersRequest) {
+	if req == nil {
+		return
+	}
+	sanitizeUsersRequest(req.Request)
+}
+
+func SanitizeSearchUsersRequest(req *pb.SearchUsersRequest) {
+	if req == nil {
+		return
+	}
+	sanitizeUsersRequest(req.Request)
+}
+
+func sanitizeUsersRequest(req *pb.UsersRequest) {
+	if req == nil {
+		return
+	}
+	req.SearchFilter = sanitizeLowerStringPtr(req.SearchFilter)
+	if req.SearchFilter != nil {
+		searchFilter := *req.SearchFilter
+		searchFilter = strings.Join(strings.Fields(searchFilter), " ")
+		req.SearchFilter = &searchFilter
+	}
+}
+
 func sanitizeStringArray(arr []string) []string {
 	var sanitized []string
 	for _, str := range arr {
@@ -97,6 +144,9 @@ func sanitizeLowerStringPtr(s *string) *string {
 		return nil
 	}
 	trimmed := strings.ToLower(strings.TrimSpace(*s))
+	if trimmed == "" {
+		return nil
+	}
 	return &trimmed
 }
 

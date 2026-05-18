@@ -9,6 +9,7 @@ import (
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
 	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
 	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
@@ -16,6 +17,8 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 )
+
+const maxRelationshipsPerList = 5000
 
 type SocialService interface {
 	GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (*pb.GetUserByIdResponse, error)
@@ -26,6 +29,11 @@ type SocialService interface {
 	RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUsersFromFriendsRequest) (*pb.RemoveUsersFromFriendsResponse, error)
 	BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*pb.BlockUsersResponse, error)
 	UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest) (*pb.UnblockUsersResponse, error)
+	SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error)
+	GetFriends(ctx context.Context, req *pb.GetFriendsRequest) (*pb.GetFriendsResponse, error)
+	GetIncomingFriendRequests(ctx context.Context, req *pb.GetIncomingFriendRequestsRequest) (*pb.GetIncomingFriendRequestsResponse, error)
+	GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutgoingFriendRequestsRequest) (*pb.GetOutgoingFriendRequestsResponse, error)
+	GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRequest) (*pb.GetBlockedUsersResponse, error)
 }
 
 type service struct {
@@ -60,7 +68,7 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (
 
 	if a.Id == req.Id {
 		l.Infow("user.get_user_by_id.success", "user_id", a.GetId())
-		return &pb.GetUserByIdResponse{User: toSocialUserProto(a, a, nil)}, nil
+		return &pb.GetUserByIdResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings)}, nil
 	}
 
 	u, err := s.userService.GetUserByID(ctx, req.Id, true)
@@ -79,7 +87,7 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (
 	s.processUserWithPrivacySettings(a, u, ur)
 
 	l.Infow("user.get_user_by_id.success", "user_id", u.GetId())
-	return &pb.GetUserByIdResponse{User: toSocialUserProto(a, u, ur)}, nil
+	return &pb.GetUserByIdResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsRequest) (*pb.GetUsersByIdsResponse, error) {
@@ -99,7 +107,7 @@ func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsReques
 
 	if len(req.Ids) == 1 && req.Ids[0] == a.Id {
 		l.Infow("user.get_users_by_ids.success", "count", 1)
-		return &pb.GetUsersByIdsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil)}}, nil
+		return &pb.GetUsersByIdsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings)}}, nil
 	}
 
 	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
@@ -126,7 +134,7 @@ func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsReques
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, req.IncludePrivacySettings)
 		result = append(result, shortSocialUser)
 	}
 
@@ -148,7 +156,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 
 	if a.Username == req.Username {
 		l.Infow("user.get_user_by_username.success", "user_id", a.GetId())
-		return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, a, nil)}, nil
+		return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings)}, nil
 	}
 
 	u, err := s.userService.GetUserByUsername(ctx, req.Username, true)
@@ -167,7 +175,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	s.processUserWithPrivacySettings(a, u, ur)
 
 	l.Infow("user.get_user_by_username.success", "user_id", u.GetId())
-	return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, u, ur)}, nil
+	return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings)}, nil
 }
 
 func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUsernamesRequest) (*pb.GetUsersByUsernamesResponse, error) {
@@ -187,7 +195,7 @@ func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUse
 
 	if len(req.Usernames) == 1 && req.Usernames[0] == a.Username {
 		l.Infow("user.get_users_by_usernames.success", "count", 1)
-		return &pb.GetUsersByUsernamesResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil)}}, nil
+		return &pb.GetUsersByUsernamesResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings)}}, nil
 	}
 
 	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
@@ -216,7 +224,7 @@ func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUse
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, req.IncludePrivacySettings)
 		result = append(result, shortSocialUser)
 	}
 
@@ -266,7 +274,7 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.add_users_to_friends.success")
-		return &pb.AddUsersToFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+		return &pb.AddUsersToFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
 	}
 
 	addIds := make([]string, 0, len(req.Ids))
@@ -303,7 +311,7 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
 		result = append(result, shortSocialUser)
 	}
 
@@ -350,7 +358,7 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.remove_users_from_friends.success")
-		return &pb.RemoveUsersFromFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+		return &pb.RemoveUsersFromFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
 	}
 
 	removeIds := make([]string, 0, len(req.Ids))
@@ -387,7 +395,7 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
 		result = append(result, shortSocialUser)
 	}
 
@@ -434,7 +442,7 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.block_users.success")
-		return &pb.BlockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+		return &pb.BlockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
 	}
 
 	blockIds := make([]string, 0, len(req.Ids))
@@ -471,7 +479,7 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
 		result = append(result, shortSocialUser)
 	}
 
@@ -518,7 +526,7 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.unblock_users.success")
-		return &pb.UnblockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur)}}, nil
+		return &pb.UnblockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
 	}
 
 	unblockIds := make([]string, 0, len(req.Ids))
@@ -555,12 +563,381 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
 		result = append(result, shortSocialUser)
 	}
 
 	l.Infow("user.unblock_users.success")
 	return &pb.UnblockUsersResponse{Users: result}, nil
+}
+
+func (s *service) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
+	l := s.log.With("op", "search_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Request == nil {
+		req.Request = &pb.UsersRequest{}
+	}
+	if req.Request.SearchFilter == nil {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrSearchFilterIsRequired.Error())
+	}
+	if len(*req.Request.SearchFilter) < 3 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrSearchFilterTooShort.Error())
+	}
+	if len(*req.Request.SearchFilter) > 120 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrSearchFilterTooLong.Error())
+	}
+	if req.Request.PageSize <= 0 {
+		req.Request.PageSize = 50
+	}
+	if req.Request.Page <= 0 {
+		req.Request.Page = 1
+	}
+	if req.Request.PageSize > 100 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrPagesizeTooLarge.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+		ExcludeIds:             []string{a.Id},
+		SearchFilter:           req.Request.SearchFilter,
+		SortByUsername:         true,
+		Page:                   req.Request.Page,
+		PageSize:               req.Request.PageSize,
+		IsConfirmed:            utils.BoolPtr(true),
+		IsDeleted:              utils.BoolPtr(false),
+		IsPermanentlyDeleted:   utils.BoolPtr(false),
+		IsPermanentlyBanned:    utils.BoolPtr(false),
+		IncludePrivacySettings: req.Request.IncludePrivacySettings,
+	})
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+	if len(users) == 0 {
+		l.Infow("user.search_users.success", "count", 0)
+		return &pb.SearchUsersResponse{}, nil
+	}
+
+	result, err := s.buildShortSocialUsers(ctx, a, users, req.Request.IncludePrivacySettings)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.search_users.success", "count", len(result))
+	return &pb.SearchUsersResponse{Users: result}, nil
+}
+
+func (s *service) GetFriends(ctx context.Context, req *pb.GetFriendsRequest) (*pb.GetFriendsResponse, error) {
+	l := s.log.With("op", "get_friends", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Request == nil {
+		req.Request = &pb.UsersRequest{}
+	}
+	if err := s.validateUsersRequest(req.Request); err != nil {
+		return nil, err
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortByUpdatedAt := req.Request.SortByUpdatedAt
+	users, err := s.fetchUsersFromRelationshipIDs(
+		ctx,
+		req.Request.Page, req.Request.PageSize,
+		req.Request.IncludePrivacySettings,
+		req.Request.SearchFilter,
+		!sortByUpdatedAt,
+		sortByUpdatedAt,
+		func(ctx context.Context) ([]string, error) {
+			query := models.NewQueryUserRelationshipsDal(
+				&a.Id, nil,
+				[]userrelationship.UserRelationshipStatus{userrelationship.Friends},
+				1, maxRelationshipsPerList, sortByUpdatedAt,
+			)
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			if err != nil {
+				return nil, err
+			}
+
+			ids := make([]string, 0, len(list))
+			for _, ur := range list {
+				ids = append(ids, ur.OtherUserID(a.Id))
+			}
+
+			return ids, nil
+		},
+	)
+	if err != nil {
+		l.Errorw("user.get_friends_failed", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result, err := s.buildShortSocialUsers(ctx, a, users, req.Request.IncludePrivacySettings)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.get_friends.success", "count", len(result))
+	return &pb.GetFriendsResponse{Users: result}, nil
+}
+
+func (s *service) GetIncomingFriendRequests(ctx context.Context, req *pb.GetIncomingFriendRequestsRequest) (*pb.GetIncomingFriendRequestsResponse, error) {
+	l := s.log.With("op", "get_incoming_friend_requests", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Request == nil {
+		req.Request = &pb.UsersRequest{}
+	}
+	if err := s.validateUsersRequest(req.Request); err != nil {
+		return nil, err
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortByUpdatedAt := req.Request.SortByUpdatedAt
+	users, err := s.fetchUsersFromRelationshipIDs(
+		ctx,
+		req.Request.Page, req.Request.PageSize,
+		req.Request.IncludePrivacySettings,
+		req.Request.SearchFilter,
+		!sortByUpdatedAt,
+		sortByUpdatedAt,
+		func(ctx context.Context) ([]string, error) {
+			query := models.NewQueryUserRelationshipsDal(
+				&a.Id, nil,
+				[]userrelationship.UserRelationshipStatus{userrelationship.FriendRequestBy1, userrelationship.FriendRequestBy2},
+				1, maxRelationshipsPerList, sortByUpdatedAt,
+			)
+			query.DirectionFilter = models.DirectionIncoming
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			if err != nil {
+				return nil, err
+			}
+
+			ids := make([]string, 0, len(list))
+			for _, ur := range list {
+				ids = append(ids, ur.OtherUserID(a.Id))
+			}
+
+			return ids, nil
+		},
+	)
+	if err != nil {
+		l.Errorw("user.get_incoming_friend_requests_failed", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result, err := s.buildShortSocialUsers(ctx, a, users, req.Request.IncludePrivacySettings)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.get_incoming_friend_requests.success", "count", len(result))
+	return &pb.GetIncomingFriendRequestsResponse{Users: result}, nil
+}
+
+func (s *service) GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutgoingFriendRequestsRequest) (*pb.GetOutgoingFriendRequestsResponse, error) {
+	l := s.log.With("op", "get_outgoing_friend_requests", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Request == nil {
+		req.Request = &pb.UsersRequest{}
+	}
+	if err := s.validateUsersRequest(req.Request); err != nil {
+		return nil, err
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortByUpdatedAt := req.Request.SortByUpdatedAt
+	users, err := s.fetchUsersFromRelationshipIDs(
+		ctx,
+		req.Request.Page, req.Request.PageSize,
+		req.Request.IncludePrivacySettings,
+		req.Request.SearchFilter,
+		!sortByUpdatedAt,
+		sortByUpdatedAt,
+		func(ctx context.Context) ([]string, error) {
+			query := models.NewQueryUserRelationshipsDal(
+				&a.Id, nil,
+				[]userrelationship.UserRelationshipStatus{userrelationship.FriendRequestBy1, userrelationship.FriendRequestBy2},
+				1, maxRelationshipsPerList, sortByUpdatedAt,
+			)
+			query.DirectionFilter = models.DirectionOutgoing
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			if err != nil {
+				return nil, err
+			}
+
+			ids := make([]string, 0, len(list))
+			for _, ur := range list {
+				ids = append(ids, ur.OtherUserID(a.Id))
+			}
+
+			return ids, nil
+		},
+	)
+	if err != nil {
+		l.Errorw("user.get_outgoing_friend_requests_failed", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result, err := s.buildShortSocialUsers(ctx, a, users, req.Request.IncludePrivacySettings)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.get_outgoing_friend_requests.success", "count", len(result))
+	return &pb.GetOutgoingFriendRequestsResponse{Users: result}, nil
+}
+
+func (s *service) GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRequest) (*pb.GetBlockedUsersResponse, error) {
+	l := s.log.With("op", "get_blocked_users", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.Request == nil {
+		req.Request = &pb.UsersRequest{}
+	}
+	if err := s.validateUsersRequest(req.Request); err != nil {
+		return nil, err
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortByUpdatedAt := req.Request.SortByUpdatedAt
+	users, err := s.fetchUsersFromRelationshipIDs(
+		ctx,
+		req.Request.Page, req.Request.PageSize,
+		req.Request.IncludePrivacySettings,
+		req.Request.SearchFilter,
+		!sortByUpdatedAt,
+		sortByUpdatedAt,
+		func(ctx context.Context) ([]string, error) {
+			query := models.NewQueryUserRelationshipsDal(
+				&a.Id, nil,
+				[]userrelationship.UserRelationshipStatus{userrelationship.BlockedBy1, userrelationship.BlockedBy2, userrelationship.BlockedByBoth},
+				1, maxRelationshipsPerList, sortByUpdatedAt,
+			)
+			query.DirectionFilter = models.DirectionActorBlocked
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			if err != nil {
+				return nil, err
+			}
+
+			ids := make([]string, 0, len(list))
+			for _, ur := range list {
+				ids = append(ids, ur.OtherUserID(a.Id))
+			}
+
+			return ids, nil
+		},
+	)
+	if err != nil {
+		l.Errorw("user.get_blocked_users_failed", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	result, err := s.buildShortSocialUsers(ctx, a, users, req.Request.IncludePrivacySettings)
+	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.get_blocked_users.success", "count", len(result))
+	return &pb.GetBlockedUsersResponse{Users: result}, nil
+}
+
+func (s *service) fetchUsersFromRelationshipIDs(
+	ctx context.Context,
+	page, pageSize int32,
+	includePrivacySettings bool,
+	searchFilter *string,
+	sortByUsername bool,
+	preserveOrder bool,
+	getIDs func(ctx context.Context) ([]string, error),
+) ([]*userpb.User, error) {
+	allIDs, err := getIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(allIDs) == 0 {
+		return nil, nil
+	}
+
+	req := &userpb.GetUsersRequest{
+		Ids:                    allIDs,
+		IsConfirmed:            utils.BoolPtr(true),
+		IncludePrivacySettings: includePrivacySettings,
+		SortByUsername:         sortByUsername,
+		SortInactiveLast:       true,
+		PreserveIdsOrder:       preserveOrder,
+		Page:                   page,
+		PageSize:               pageSize,
+	}
+	if searchFilter != nil {
+		req.SearchFilter = searchFilter
+	}
+
+	return s.userService.GetUsers(ctx, req)
+}
+
+func (s *service) buildShortSocialUsers(
+	ctx context.Context,
+	actor *userpb.User,
+	users []*userpb.User,
+	includePrivacySettings bool,
+) ([]*pb.ShortSocialUser, error) {
+	if len(users) == 0 {
+		return []*pb.ShortSocialUser{}, nil
+	}
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, actor, users)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*pb.ShortSocialUser, 0, len(users))
+	for i, u := range users {
+		ur := urs[i]
+		s.processUserWithPrivacySettings(actor, u, ur)
+		result = append(result, toShortSocialUserProto(actor, u, ur, includePrivacySettings))
+	}
+	return result, nil
+}
+
+func (s *service) validateUsersRequest(req *pb.UsersRequest) error {
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize > 100 {
+		return grpcstatus.Error(codes.InvalidArgument, ErrPagesizeTooLarge.Error())
+	}
+	if req.SearchFilter != nil && *req.SearchFilter != "" {
+		if len(*req.SearchFilter) < 3 {
+			return grpcstatus.Error(codes.InvalidArgument, ErrSearchFilterTooShort.Error())
+		}
+		if len(*req.SearchFilter) > 120 {
+			return grpcstatus.Error(codes.InvalidArgument, ErrSearchFilterTooLong.Error())
+		}
+	}
+	return nil
 }
 
 func (s *service) processUserWithPrivacySettings(actor, user *userpb.User, ur *userrelationship.UserRelationship) {

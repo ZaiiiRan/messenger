@@ -28,4 +28,8 @@ var (
 	ErrCannotBlockYourself             = newSocialServiceError("service.social.error.cannot_block_yourself")
 	ErrCannotUnblockYourself           = newSocialServiceError("service.social.error.cannot_unblock_yourself")
 	ErrUsersNotFound                   = newSocialServiceError("service.social.error.users_not_found")
+	ErrPagesizeTooLarge                = newSocialServiceError("service.social.error.pagesize_too_large")
+	ErrSearchFilterIsRequired          = newSocialServiceError("service.social.error.search_filter_is_required")
+	ErrSearchFilterTooShort            = newSocialServiceError("service.social.error.search_filter_too_short")
+	ErrSearchFilterTooLong             = newSocialServiceError("service.social.error.search_filter_too_long")
 )

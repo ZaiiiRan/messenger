@@ -58,3 +58,28 @@ func (h *socialHandler) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRe
 	utils.SanitizeUnblockUsersRequest(req)
 	return h.socialService.UnblockUsers(ctx, req)
 }
+
+func (h *socialHandler) GetFriends(ctx context.Context, req *pb.GetFriendsRequest) (*pb.GetFriendsResponse, error) {
+	utils.SanitizeGetFriendsRequest(req)
+	return h.socialService.GetFriends(ctx, req)
+}
+
+func (h *socialHandler) GetIncomingFriendRequests(ctx context.Context, req *pb.GetIncomingFriendRequestsRequest) (*pb.GetIncomingFriendRequestsResponse, error) {
+	utils.SanitizeGetIncomingFriendRequestsRequest(req)
+	return h.socialService.GetIncomingFriendRequests(ctx, req)
+}
+
+func (h *socialHandler) GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutgoingFriendRequestsRequest) (*pb.GetOutgoingFriendRequestsResponse, error) {
+	utils.SanitizeGetOutgoingFriendRequestsRequest(req)
+	return h.socialService.GetOutgoingFriendRequests(ctx, req)
+}
+
+func (h *socialHandler) GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRequest) (*pb.GetBlockedUsersResponse, error) {
+	utils.SanitizeGetBlockedUsersRequest(req)
+	return h.socialService.GetBlockedUsers(ctx, req)
+}
+
+func (h *socialHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
+	utils.SanitizeSearchUsersRequest(req)
+	return h.socialService.SearchUsers(ctx, req)
+}

@@ -19,15 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SocialService_GetUserById_FullMethodName             = "/social.v1.SocialService/GetUserById"
-	SocialService_GetUsersByIds_FullMethodName           = "/social.v1.SocialService/GetUsersByIds"
-	SocialService_GetUserByUsername_FullMethodName       = "/social.v1.SocialService/GetUserByUsername"
-	SocialService_GetUsersByUsernames_FullMethodName     = "/social.v1.SocialService/GetUsersByUsernames"
-	SocialService_AddUsersToFriends_FullMethodName       = "/social.v1.SocialService/AddUsersToFriends"
-	SocialService_RemoveUsersFromFriends_FullMethodName  = "/social.v1.SocialService/RemoveUsersFromFriends"
-	SocialService_BlockUsers_FullMethodName              = "/social.v1.SocialService/BlockUsers"
-	SocialService_UnblockUsers_FullMethodName            = "/social.v1.SocialService/UnblockUsers"
-	SocialService_UpdateMyPrivacySettings_FullMethodName = "/social.v1.SocialService/UpdateMyPrivacySettings"
+	SocialService_GetUserById_FullMethodName               = "/social.v1.SocialService/GetUserById"
+	SocialService_GetUsersByIds_FullMethodName             = "/social.v1.SocialService/GetUsersByIds"
+	SocialService_GetUserByUsername_FullMethodName         = "/social.v1.SocialService/GetUserByUsername"
+	SocialService_GetUsersByUsernames_FullMethodName       = "/social.v1.SocialService/GetUsersByUsernames"
+	SocialService_AddUsersToFriends_FullMethodName         = "/social.v1.SocialService/AddUsersToFriends"
+	SocialService_RemoveUsersFromFriends_FullMethodName    = "/social.v1.SocialService/RemoveUsersFromFriends"
+	SocialService_BlockUsers_FullMethodName                = "/social.v1.SocialService/BlockUsers"
+	SocialService_UnblockUsers_FullMethodName              = "/social.v1.SocialService/UnblockUsers"
+	SocialService_GetFriends_FullMethodName                = "/social.v1.SocialService/GetFriends"
+	SocialService_GetIncomingFriendRequests_FullMethodName = "/social.v1.SocialService/GetIncomingFriendRequests"
+	SocialService_GetOutgoingFriendRequests_FullMethodName = "/social.v1.SocialService/GetOutgoingFriendRequests"
+	SocialService_GetBlockedUsers_FullMethodName           = "/social.v1.SocialService/GetBlockedUsers"
+	SocialService_SearchUsers_FullMethodName               = "/social.v1.SocialService/SearchUsers"
+	SocialService_UpdateMyPrivacySettings_FullMethodName   = "/social.v1.SocialService/UpdateMyPrivacySettings"
 )
 
 // SocialServiceClient is the client API for SocialService service.
@@ -42,6 +47,11 @@ type SocialServiceClient interface {
 	RemoveUsersFromFriends(ctx context.Context, in *RemoveUsersFromFriendsRequest, opts ...grpc.CallOption) (*RemoveUsersFromFriendsResponse, error)
 	BlockUsers(ctx context.Context, in *BlockUsersRequest, opts ...grpc.CallOption) (*BlockUsersResponse, error)
 	UnblockUsers(ctx context.Context, in *UnblockUsersRequest, opts ...grpc.CallOption) (*UnblockUsersResponse, error)
+	GetFriends(ctx context.Context, in *GetFriendsRequest, opts ...grpc.CallOption) (*GetFriendsResponse, error)
+	GetIncomingFriendRequests(ctx context.Context, in *GetIncomingFriendRequestsRequest, opts ...grpc.CallOption) (*GetIncomingFriendRequestsResponse, error)
+	GetOutgoingFriendRequests(ctx context.Context, in *GetOutgoingFriendRequestsRequest, opts ...grpc.CallOption) (*GetOutgoingFriendRequestsResponse, error)
+	GetBlockedUsers(ctx context.Context, in *GetBlockedUsersRequest, opts ...grpc.CallOption) (*GetBlockedUsersResponse, error)
+	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	UpdateMyPrivacySettings(ctx context.Context, in *UpdateMyPrivacySettingsRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsResponse, error)
 }
 
@@ -133,6 +143,56 @@ func (c *socialServiceClient) UnblockUsers(ctx context.Context, in *UnblockUsers
 	return out, nil
 }
 
+func (c *socialServiceClient) GetFriends(ctx context.Context, in *GetFriendsRequest, opts ...grpc.CallOption) (*GetFriendsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFriendsResponse)
+	err := c.cc.Invoke(ctx, SocialService_GetFriends_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *socialServiceClient) GetIncomingFriendRequests(ctx context.Context, in *GetIncomingFriendRequestsRequest, opts ...grpc.CallOption) (*GetIncomingFriendRequestsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetIncomingFriendRequestsResponse)
+	err := c.cc.Invoke(ctx, SocialService_GetIncomingFriendRequests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *socialServiceClient) GetOutgoingFriendRequests(ctx context.Context, in *GetOutgoingFriendRequestsRequest, opts ...grpc.CallOption) (*GetOutgoingFriendRequestsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOutgoingFriendRequestsResponse)
+	err := c.cc.Invoke(ctx, SocialService_GetOutgoingFriendRequests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *socialServiceClient) GetBlockedUsers(ctx context.Context, in *GetBlockedUsersRequest, opts ...grpc.CallOption) (*GetBlockedUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBlockedUsersResponse)
+	err := c.cc.Invoke(ctx, SocialService_GetBlockedUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *socialServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchUsersResponse)
+	err := c.cc.Invoke(ctx, SocialService_SearchUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *socialServiceClient) UpdateMyPrivacySettings(ctx context.Context, in *UpdateMyPrivacySettingsRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateMyPrivacySettingsResponse)
@@ -155,6 +215,11 @@ type SocialServiceServer interface {
 	RemoveUsersFromFriends(context.Context, *RemoveUsersFromFriendsRequest) (*RemoveUsersFromFriendsResponse, error)
 	BlockUsers(context.Context, *BlockUsersRequest) (*BlockUsersResponse, error)
 	UnblockUsers(context.Context, *UnblockUsersRequest) (*UnblockUsersResponse, error)
+	GetFriends(context.Context, *GetFriendsRequest) (*GetFriendsResponse, error)
+	GetIncomingFriendRequests(context.Context, *GetIncomingFriendRequestsRequest) (*GetIncomingFriendRequestsResponse, error)
+	GetOutgoingFriendRequests(context.Context, *GetOutgoingFriendRequestsRequest) (*GetOutgoingFriendRequestsResponse, error)
+	GetBlockedUsers(context.Context, *GetBlockedUsersRequest) (*GetBlockedUsersResponse, error)
+	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	UpdateMyPrivacySettings(context.Context, *UpdateMyPrivacySettingsRequest) (*UpdateMyPrivacySettingsResponse, error)
 	mustEmbedUnimplementedSocialServiceServer()
 }
@@ -189,6 +254,21 @@ func (UnimplementedSocialServiceServer) BlockUsers(context.Context, *BlockUsersR
 }
 func (UnimplementedSocialServiceServer) UnblockUsers(context.Context, *UnblockUsersRequest) (*UnblockUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnblockUsers not implemented")
+}
+func (UnimplementedSocialServiceServer) GetFriends(context.Context, *GetFriendsRequest) (*GetFriendsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFriends not implemented")
+}
+func (UnimplementedSocialServiceServer) GetIncomingFriendRequests(context.Context, *GetIncomingFriendRequestsRequest) (*GetIncomingFriendRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIncomingFriendRequests not implemented")
+}
+func (UnimplementedSocialServiceServer) GetOutgoingFriendRequests(context.Context, *GetOutgoingFriendRequestsRequest) (*GetOutgoingFriendRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOutgoingFriendRequests not implemented")
+}
+func (UnimplementedSocialServiceServer) GetBlockedUsers(context.Context, *GetBlockedUsersRequest) (*GetBlockedUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockedUsers not implemented")
+}
+func (UnimplementedSocialServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
 }
 func (UnimplementedSocialServiceServer) UpdateMyPrivacySettings(context.Context, *UpdateMyPrivacySettingsRequest) (*UpdateMyPrivacySettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMyPrivacySettings not implemented")
@@ -358,6 +438,96 @@ func _SocialService_UnblockUsers_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SocialService_GetFriends_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFriendsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).GetFriends(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_GetFriends_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).GetFriends(ctx, req.(*GetFriendsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SocialService_GetIncomingFriendRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIncomingFriendRequestsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).GetIncomingFriendRequests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_GetIncomingFriendRequests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).GetIncomingFriendRequests(ctx, req.(*GetIncomingFriendRequestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SocialService_GetOutgoingFriendRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOutgoingFriendRequestsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).GetOutgoingFriendRequests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_GetOutgoingFriendRequests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).GetOutgoingFriendRequests(ctx, req.(*GetOutgoingFriendRequestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SocialService_GetBlockedUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockedUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).GetBlockedUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_GetBlockedUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).GetBlockedUsers(ctx, req.(*GetBlockedUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SocialService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).SearchUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_SearchUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).SearchUsers(ctx, req.(*SearchUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SocialService_UpdateMyPrivacySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateMyPrivacySettingsRequest)
 	if err := dec(in); err != nil {
@@ -414,6 +584,26 @@ var SocialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnblockUsers",
 			Handler:    _SocialService_UnblockUsers_Handler,
+		},
+		{
+			MethodName: "GetFriends",
+			Handler:    _SocialService_GetFriends_Handler,
+		},
+		{
+			MethodName: "GetIncomingFriendRequests",
+			Handler:    _SocialService_GetIncomingFriendRequests_Handler,
+		},
+		{
+			MethodName: "GetOutgoingFriendRequests",
+			Handler:    _SocialService_GetOutgoingFriendRequests_Handler,
+		},
+		{
+			MethodName: "GetBlockedUsers",
+			Handler:    _SocialService_GetBlockedUsers_Handler,
+		},
+		{
+			MethodName: "SearchUsers",
+			Handler:    _SocialService_SearchUsers_Handler,
 		},
 		{
 			MethodName: "UpdateMyPrivacySettings",

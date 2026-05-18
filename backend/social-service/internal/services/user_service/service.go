@@ -84,7 +84,7 @@ func (s *service) GetUsers(ctx context.Context, req *userpb.GetUsersRequest) ([]
 		if status.Code(err) == codes.InvalidArgument {
 			l.Warnw("user.get_users_failed.invalid_argument", "err", err)
 		} else {
-			l.Errorw("user.get_users_failed.get_user_by_email_error", "err", err)
+			l.Errorw("user.get_users_failed", "err", err)
 		}
 		return nil, err
 	}
