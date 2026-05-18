@@ -7,7 +7,7 @@ import (
 
 	consumersmodels "github.com/ZaiiiRan/messenger/backend/auth-service/internal/consumers/models"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/code"
-	inboxevent "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/inbox_event"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/event"
 	uow "github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/unitofwork/postgres"
 	codeservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/code"
 	passwordservice "github.com/ZaiiiRan/messenger/backend/auth-service/internal/services/password"
@@ -48,10 +48,10 @@ func New(
 func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID string, taskMessages []*consumersmodels.UserDataDeletionTask) error {
 	l := s.log.With("op", "create_user_data_deletion_tasks", "worker_id", workerID)
 
-	inboxEvents := make([]*inboxevent.InboxEvent, 0, len(taskMessages))
-	inboxEventsByID := make(map[string]*inboxevent.InboxEvent)
+	inboxEvents := make([]*event.Event, 0, len(taskMessages))
+	inboxEventsByID := make(map[string]*event.Event)
 	for _, taskMessage := range taskMessages {
-		event, err := s.createUserDataDeletionTask(taskMessage)
+		evt, err := s.createUserDataDeletionTask(taskMessage)
 		if err != nil {
 			l.Warnw(
 				"user_data_deletion_tasks.create_user_data_deletion_tasks_warning.json_marshal_error",
@@ -60,7 +60,7 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 			)
 			continue
 		}
-		if value, ok := inboxEventsByID[event.GetID()]; ok {
+		if value, ok := inboxEventsByID[evt.GetID()]; ok {
 			l.Warnw(
 				"user_data_deletion_tasks.create_user_data_deletion_tasks_warning.duplicate_task",
 				"task_mesage", value.GetPayload(),
@@ -68,7 +68,7 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 				"action", "using_last_duplicate",
 			)
 		}
-		inboxEventsByID[event.GetID()] = event
+		inboxEventsByID[evt.GetID()] = evt
 	}
 
 	for _, value := range inboxEventsByID {
@@ -122,25 +122,25 @@ func (s *service) ProcessUserDataDeletionTasks(ctx context.Context, workerID str
 		return nil
 	}
 
-	inboxEventsSuccess := make([]*inboxevent.InboxEvent, 0, len(inboxEvents))
-	inboxEventsFailed := make([]*inboxevent.InboxEvent, 0, len(inboxEvents))
+	inboxEventsSuccess := make([]*event.Event, 0, len(inboxEvents))
+	inboxEventsFailed := make([]*event.Event, 0, len(inboxEvents))
 
-	for _, event := range inboxEvents {
+	for _, evt := range inboxEvents {
 		var taskMessage *consumersmodels.UserDataDeletionTask
-		if err := json.Unmarshal(event.GetPayload(), &taskMessage); err != nil {
+		if err := json.Unmarshal(evt.GetPayload(), &taskMessage); err != nil {
 			l.Errorw(
 				"user_data_deletion_tasks.process_user_data_deletion_tasks_failed.unmarshal_payload_error",
 				"err", err,
-				"event", event.GetID(),
-				"payload", event.GetPayload(),
-				"attempts", event.GetAttempts(),
-				"status", event.GetStatus(),
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
 			)
-			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			inboxEventsFailed = append(inboxEventsFailed, event)
+			inboxEventsFailed = append(inboxEventsFailed, evt)
 			continue
 		}
 
@@ -148,20 +148,20 @@ func (s *service) ProcessUserDataDeletionTasks(ctx context.Context, workerID str
 			l.Errorw(
 				"user_data_deletion_tasks.process_user_data_deletion_tasks_failed.process_task_error",
 				"err", err,
-				"event", event.GetID(),
-				"payload", event.GetPayload(),
-				"attempts", event.GetAttempts(),
-				"status", event.GetStatus(),
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
 			)
-			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			inboxEventsFailed = append(inboxEventsFailed, event)
+			inboxEventsFailed = append(inboxEventsFailed, evt)
 			continue
 		}
 
-		inboxEventsSuccess = append(inboxEventsSuccess, event)
+		inboxEventsSuccess = append(inboxEventsSuccess, evt)
 	}
 
 	if len(inboxEventsSuccess) > 0 {
@@ -213,42 +213,41 @@ func (s *service) processUserDataDeletionTask(
 }
 
 func (s *service) markUserDataDeletionTaskFailed(
-	event *inboxevent.InboxEvent,
+	evt *event.Event,
 	now time.Time,
 	log *zap.SugaredLogger,
 	logPrefix string,
 ) error {
-	err := event.IncrementAttempts()
+	err := evt.IncrementAttempts()
 	if err != nil {
 		log.Errorw(
 			logPrefix+".mark_task_as_failed_error",
 			"err", err,
-			"event", event.GetID(),
-			"attempts", event.GetAttempts(),
-			"status", event.GetStatus(),
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
 		)
 		return err
 	}
-	event.SetUpdatedAt(&now)
-	if err := event.SetStatus(inboxevent.InboxEventStatusFailed); err != nil {
+	evt.SetUpdatedAt(&now)
+	if err := evt.SetStatus(event.EventStatusFailed); err != nil {
 		log.Errorw(
 			logPrefix+".mark_task_as_failed_error",
 			"err", err,
-			"event", event.GetID(),
-			"attempts", event.GetAttempts(),
-			"status", event.GetStatus(),
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
 		)
 		return err
 	}
 	return nil
 }
 
-func (s *service) createUserDataDeletionTask(taskMessage *consumersmodels.UserDataDeletionTask) (*inboxevent.InboxEvent, error) {
+func (s *service) createUserDataDeletionTask(taskMessage *consumersmodels.UserDataDeletionTask) (*event.Event, error) {
 	jsonPayload, err := json.Marshal(taskMessage)
 	if err != nil {
 		return nil, err
 	}
 
-	event := inboxevent.New(taskMessage.Id, jsonPayload)
-	return event, nil
+	return event.New(taskMessage.Id, jsonPayload), nil
 }

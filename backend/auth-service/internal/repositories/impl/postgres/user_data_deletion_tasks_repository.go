@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	inboxevent "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/inbox_event"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/event"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/interfaces"
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/repositories/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,7 +22,7 @@ func NewUserDataDeletionTasksRepository(conn *pgxpool.Conn) interfaces.InboxEven
 	}
 }
 
-func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context, events []*inboxevent.InboxEvent) error {
+func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -76,7 +76,7 @@ func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context, events []*inboxevent.InboxEvent) error {
+func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context,
 			status = u.status,
 			attempts = u.attempts,
 			updated_at = u.updated_at
-		FROM UNNEST($1::v1_inbox_event[]) AS u
+		FROM UNNEST($1::v1_inbox_outbox_event[]) AS u
 		WHERE t.id = u.id
 		RETURNING t.id, t.payload, t.status, t.attempts, t.created_at, t.updated_at
 	`
@@ -123,7 +123,7 @@ func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context, events []*inboxevent.InboxEvent) error {
+func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -145,7 +145,7 @@ func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, query *models.QueryInboxEventsDal) ([]*inboxevent.InboxEvent, error) {
+func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, query *models.QueryInboxEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -176,7 +176,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, 
 	}
 	defer rows.Close()
 
-	var result []*inboxevent.InboxEvent
+	var result []*event.Event
 	for rows.Next() {
 		var res models.V1InboxEventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
@@ -191,7 +191,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, 
 	return result, nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Context, query *models.QueryInboxEventsLockedDal) ([]*inboxevent.InboxEvent, error) {
+func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Context, query *models.QueryInboxEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -211,10 +211,10 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Con
 	`
 
 	rows, err := r.conn.Query(ctx, sql,
-		int16(inboxevent.InboxEventStatusPending),
-		int16(inboxevent.InboxEventStatusFailed),
+		int16(event.EventStatusPending),
+		int16(event.EventStatusFailed),
 		query.RetryAfter,
-		int16(inboxevent.MaxAttempts-1),
+		int16(event.MaxAttempts-1),
 		query.CreatedAfter,
 		query.Limit,
 	)
@@ -223,7 +223,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Con
 	}
 	defer rows.Close()
 
-	var result []*inboxevent.InboxEvent
+	var result []*event.Event
 	for rows.Next() {
 		var res models.V1InboxEventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {

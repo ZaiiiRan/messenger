@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	inboxevent "github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/inbox_event"
+	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/event"
 )
 
 type V1InboxEventDal struct {
@@ -16,7 +16,7 @@ type V1InboxEventDal struct {
 	UpdatedAt time.Time       `db:"updated_at" json:"updated_at"`
 }
 
-func V1InboxEventFromDomain(event *inboxevent.InboxEvent) V1InboxEventDal {
+func V1InboxEventFromDomain(event *event.Event) V1InboxEventDal {
 	if event == nil {
 		return V1InboxEventDal{}
 	}
@@ -50,8 +50,8 @@ func (e V1InboxEventDal) Index(i int) any {
 	}
 }
 
-func (e V1InboxEventDal) ToDomain() *inboxevent.InboxEvent {
-	return inboxevent.FromStorage(
+func (e V1InboxEventDal) ToDomain() *event.Event {
+	return event.FromStorage(
 		e.Id,
 		e.Payload,
 		e.Status,
