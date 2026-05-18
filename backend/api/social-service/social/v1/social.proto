@@ -133,6 +133,7 @@ message UsersRequest {
     int32 page = 2;
     int32 page_size = 3;
     bool include_privacy_settings = 4;
+    bool sort_by_updated_at = 5;
 }
 
 message GetFriendsRequest {
