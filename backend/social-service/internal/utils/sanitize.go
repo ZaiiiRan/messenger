@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
+	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 )
 
 func SanitizeGetUserByIdRequest(req *pb.GetUserByIdRequest) {
@@ -148,6 +149,36 @@ func sanitizeLowerStringPtr(s *string) *string {
 		return nil
 	}
 	return &trimmed
+}
+
+func SanitizeUpdateMyPrivacySettingsRequest(req *pb.UpdateMyPrivacySettingsRequest) {
+	if req == nil {
+		return
+	}
+	req.Fields = sanitizeUniqueArray(sanitizeStringArray(req.Fields))
+	sanitizeUpdateUserPrivacySettings(req.PrivacySettings)
+}
+
+func sanitizeUpdateUserPrivacySettings(ps *userpb.UpdateUserPrivacySettings) {
+	if ps == nil {
+		return
+	}
+	sanitizeUpdateUserPrivacySetting(ps.Avatar)
+	sanitizeUpdateUserPrivacySetting(ps.Photos)
+	sanitizeUpdateUserPrivacySetting(ps.PhoneNumber)
+	sanitizeUpdateUserPrivacySetting(ps.Email)
+	sanitizeUpdateUserPrivacySetting(ps.Birthdate)
+	sanitizeUpdateUserPrivacySetting(ps.OnlineStatus)
+	sanitizeUpdateUserPrivacySetting(ps.FirstDialogsInit)
+	sanitizeUpdateUserPrivacySetting(ps.GroupChatInvites)
+}
+
+func sanitizeUpdateUserPrivacySetting(ps *userpb.UpdateUserPrivacySetting) {
+	if ps == nil {
+		return
+	}
+	ps.Favourites = sanitizeUniqueArray(sanitizeStringArray(ps.Favourites))
+	ps.Exceptions = sanitizeUniqueArray(sanitizeStringArray(ps.Exceptions))
 }
 
 func sanitizeUniqueArray[T comparable](s []T) []T {

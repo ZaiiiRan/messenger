@@ -83,3 +83,8 @@ func (h *socialHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequ
 	utils.SanitizeSearchUsersRequest(req)
 	return h.socialService.SearchUsers(ctx, req)
 }
+
+func (h *socialHandler) UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyPrivacySettingsRequest) (*pb.UpdateMyPrivacySettingsResponse, error) {
+	utils.SanitizeUpdateMyPrivacySettingsRequest(req)
+	return h.socialService.UpdateMyPrivacySettings(ctx, req)
+}

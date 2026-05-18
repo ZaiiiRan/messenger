@@ -3,9 +3,12 @@ package socialservice
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
+	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
@@ -19,6 +22,7 @@ import (
 )
 
 const maxRelationshipsPerList = 5000
+const maxPrivacySettingListSize = 1000
 
 type SocialService interface {
 	GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (*pb.GetUserByIdResponse, error)
@@ -34,6 +38,7 @@ type SocialService interface {
 	GetIncomingFriendRequests(ctx context.Context, req *pb.GetIncomingFriendRequestsRequest) (*pb.GetIncomingFriendRequestsResponse, error)
 	GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutgoingFriendRequestsRequest) (*pb.GetOutgoingFriendRequestsResponse, error)
 	GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRequest) (*pb.GetBlockedUsersResponse, error)
+	UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyPrivacySettingsRequest) (*pb.UpdateMyPrivacySettingsResponse, error)
 }
 
 type service struct {
@@ -895,6 +900,245 @@ func (s *service) fetchUsersFromRelationshipIDs(
 	return s.userService.GetUsers(ctx, req)
 }
 
+type privSettingState struct {
+	newValue      *string
+	exceptions    []string
+	hasExceptions bool
+	favourites    []string
+	hasFavourites bool
+}
+
+func buildPrivacySettingsUpdate(perSetting map[string]*privSettingState) (*userpb.UpdateUserPrivacySettings, []string) {
+	out := &userpb.UpdateUserPrivacySettings{}
+	fields := make([]string, 0)
+
+	setSetting := func(name string, s *userpb.UpdateUserPrivacySetting) {
+		switch name {
+		case "avatar":
+			out.Avatar = s
+		case "photos":
+			out.Photos = s
+		case "phone_number":
+			out.PhoneNumber = s
+		case "email":
+			out.Email = s
+		case "birthdate":
+			out.Birthdate = s
+		case "online_status":
+			out.OnlineStatus = s
+		case "first_dialogs_init":
+			out.FirstDialogsInit = s
+		case "group_chat_invites":
+			out.GroupChatInvites = s
+		}
+	}
+
+	for settingName, st := range perSetting {
+		s := &userpb.UpdateUserPrivacySetting{}
+		setSetting(settingName, s)
+
+		if st.newValue != nil {
+			v := *st.newValue
+			s.Value = &v
+			fields = append(fields, settingName+".value")
+		}
+
+		willClearFavourites := st.newValue != nil && (*st.newValue == "all" || *st.newValue == "friends")
+		willClearExceptions := st.newValue != nil && *st.newValue == "none"
+
+		if st.hasFavourites || willClearFavourites {
+			if !willClearFavourites {
+				s.Favourites = st.favourites
+			}
+			fields = append(fields, settingName+".favourites")
+		}
+
+		if st.hasExceptions || willClearExceptions {
+			if !willClearExceptions {
+				s.Exceptions = st.exceptions
+			}
+			fields = append(fields, settingName+".exceptions")
+		}
+	}
+
+	return out, fields
+}
+
+func (s *service) UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyPrivacySettingsRequest) (*pb.UpdateMyPrivacySettingsResponse, error) {
+	l := s.log.With("op", "update_my_privacy_settings", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if len(req.Fields) == 0 {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrFieldsAreRequired.Error())
+	}
+	if req.PrivacySettings == nil {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrPrivacySettingsAreRequired.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	getUpdateSetting := func(name string) *userpb.UpdateUserPrivacySetting {
+		switch name {
+		case "avatar":
+			return req.PrivacySettings.GetAvatar()
+		case "photos":
+			return req.PrivacySettings.GetPhotos()
+		case "phone_number":
+			return req.PrivacySettings.GetPhoneNumber()
+		case "email":
+			return req.PrivacySettings.GetEmail()
+		case "birthdate":
+			return req.PrivacySettings.GetBirthdate()
+		case "online_status":
+			return req.PrivacySettings.GetOnlineStatus()
+		case "first_dialogs_init":
+			return req.PrivacySettings.GetFirstDialogsInit()
+		case "group_chat_invites":
+			return req.PrivacySettings.GetGroupChatInvites()
+		}
+		return nil
+	}
+
+	validValues := map[string]bool{"all": true, "friends": true, "none": true}
+	validSettingNames := map[string]bool{
+		"avatar": true, "photos": true, "phone_number": true, "email": true,
+		"birthdate": true, "online_status": true, "first_dialogs_init": true, "group_chat_invites": true,
+	}
+
+	perSetting := make(map[string]*privSettingState)
+	verr := make(validationerror.ValidationError)
+
+	for _, field := range req.Fields {
+		settingName, subField, ok := strings.Cut(field, ".")
+		if !ok || !validSettingNames[settingName] {
+			continue
+		}
+		upd := getUpdateSetting(settingName)
+		if upd == nil {
+			continue
+		}
+		st, exists := perSetting[settingName]
+		if !exists {
+			st = &privSettingState{}
+			perSetting[settingName] = st
+		}
+		switch subField {
+		case "value":
+			v := strings.TrimSpace(upd.GetValue())
+			if !validValues[v] {
+				verr["privacy_settings."+field] = ErrInvalidPrivacySettingValue.Error()
+				continue
+			}
+			st.newValue = &v
+		case "favourites":
+			st.hasFavourites = true
+			st.favourites = upd.Favourites
+		case "exceptions":
+			st.hasExceptions = true
+			st.exceptions = upd.Exceptions
+		}
+	}
+
+	if len(verr) > 0 {
+		return nil, verr.ToStatus()
+	}
+
+	type listEntry struct {
+		fieldKey string
+		ids      []string
+	}
+	toValidate := make([]listEntry, 0)
+	allUniqueIDs := make(map[string]struct{})
+
+	for settingName, st := range perSetting {
+		willClearFavourites := st.newValue != nil && (*st.newValue == "all" || *st.newValue == "friends")
+		willClearExceptions := st.newValue != nil && *st.newValue == "none"
+
+		if st.hasFavourites && !willClearFavourites {
+			fKey := "privacy_settings." + settingName + ".favourites"
+			if len(st.favourites) > maxPrivacySettingListSize {
+				verr[fKey] = ErrPrivacyListTooLong.Error()
+			} else {
+				toValidate = append(toValidate, listEntry{fKey, st.favourites})
+				for _, id := range st.favourites {
+					allUniqueIDs[id] = struct{}{}
+				}
+			}
+		}
+
+		if st.hasExceptions && !willClearExceptions {
+			eKey := "privacy_settings." + settingName + ".exceptions"
+			if len(st.exceptions) > maxPrivacySettingListSize {
+				verr[eKey] = ErrPrivacyListTooLong.Error()
+			} else {
+				toValidate = append(toValidate, listEntry{eKey, st.exceptions})
+				for _, id := range st.exceptions {
+					allUniqueIDs[id] = struct{}{}
+				}
+			}
+		}
+	}
+
+	if len(verr) > 0 {
+		return nil, verr.ToStatus()
+	}
+
+	friendSet := make(map[string]struct{})
+	if len(allUniqueIDs) > 0 {
+		ids := make([]string, 0, len(allUniqueIDs))
+		for id := range allUniqueIDs {
+			ids = append(ids, id)
+		}
+		query := models.NewQueryUserRelationshipsDal(
+			&a.Id, ids,
+			[]userrelationship.UserRelationshipStatus{userrelationship.Friends},
+			1, len(ids), false,
+		)
+		urs, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+		if err != nil {
+			l.Errorw("user.update_my_privacy_settings_failed.get_relationships_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+		for _, ur := range urs {
+			friendSet[ur.OtherUserID(a.Id)] = struct{}{}
+		}
+	}
+
+	for _, entry := range toValidate {
+		for i, id := range entry.ids {
+			if _, ok := friendSet[id]; !ok {
+				verr[fmt.Sprintf("%s.%d", entry.fieldKey, i)] = ErrUserNotFriend.Error()
+			}
+		}
+	}
+
+	if len(verr) > 0 {
+		return nil, verr.ToStatus()
+	}
+
+	outSettings, outFields := buildPrivacySettingsUpdate(perSetting)
+	if len(outFields) == 0 {
+		return nil, grpcstatus.Error(codes.FailedPrecondition, ErrNothingToUpdate.Error())
+	}
+
+	resp, err := s.userService.UpdateMyPrivacySettingByUser(ctx, &userpb.UpdateMyPrivacySettingsByUserRequest{
+		Fields:          outFields,
+		PrivacySettings: outSettings,
+	})
+	if err != nil {
+		if grpcstatus.Code(err) == codes.FailedPrecondition {
+			return nil, grpcstatus.Error(codes.FailedPrecondition, ErrNothingToUpdate.Error())
+		}
+		l.Errorw("user.update_my_privacy_settings_failed.user_service_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	l.Infow("user.update_my_privacy_settings.success")
+	return &pb.UpdateMyPrivacySettingsResponse{PrivacySettings: resp.PrivacySettings}, nil
+}
+
 func (s *service) buildShortSocialUsers(
 	ctx context.Context,
 	actor *userpb.User,
@@ -981,12 +1225,12 @@ func privacyAllows(setting *userpb.UserPrivacySetting, actorID string, isFriend 
 		return true
 	}
 	for _, id := range setting.Exceptions {
-		if id == actorID {
+		if id == actorID && isFriend {
 			return false
 		}
 	}
 	for _, id := range setting.Favourites {
-		if id == actorID {
+		if id == actorID && isFriend {
 			return true
 		}
 	}
