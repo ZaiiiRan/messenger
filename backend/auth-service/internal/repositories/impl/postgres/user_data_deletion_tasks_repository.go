@@ -63,7 +63,7 @@ func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context,
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
-		var res models.V1InboxEventDal
+		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
 			return fmt.Errorf("scan inserted inbox event: %w", err)
 		}
@@ -81,9 +81,9 @@ func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context,
 		return nil
 	}
 
-	eventDals := make([]models.V1InboxEventDal, len(events))
+	eventDals := make([]models.V1EventDal, len(events))
 	for i, e := range events {
-		eventDals[i] = models.V1InboxEventFromDomain(e)
+		eventDals[i] = models.V1EventFromDomain(e)
 	}
 
 	const sql = `
@@ -104,9 +104,9 @@ func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context,
 	}
 	defer rows.Close()
 
-	eventById := make(map[string]models.V1InboxEventDal)
+	eventById := make(map[string]models.V1EventDal)
 	for rows.Next() {
-		var res models.V1InboxEventDal
+		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
 			return fmt.Errorf("scan updated inbox event: %w", err)
 		}
@@ -145,7 +145,7 @@ func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, query *models.QueryInboxEventsDal) ([]*event.Event, error) {
+func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -178,7 +178,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, 
 
 	var result []*event.Event
 	for rows.Next() {
-		var res models.V1InboxEventDal
+		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan inbox event: %w", err)
 		}
@@ -191,7 +191,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, 
 	return result, nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Context, query *models.QueryInboxEventsLockedDal) ([]*event.Event, error) {
+func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -225,7 +225,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Con
 
 	var result []*event.Event
 	for rows.Next() {
-		var res models.V1InboxEventDal
+		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan inbox event: %w", err)
 		}

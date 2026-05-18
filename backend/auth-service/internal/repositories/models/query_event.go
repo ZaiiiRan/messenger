@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type InboxEventFilterDal struct {
+type EventFilterDal struct {
 	Ids      []string `db:"ids" json:"ids"`
 	Statuses []int16  `db:"statuses" json:"statuses"`
 
@@ -17,17 +17,17 @@ type InboxEventFilterDal struct {
 	UpdatedTo    *time.Time `db:"updated_to" json:"updated_to"`
 }
 
-type QueryInboxEventsDal struct {
-	Filter InboxEventFilterDal `db:"filter" json:"filter"`
+type QueryEventsDal struct {
+	Filter EventFilterDal `db:"filter" json:"filter"`
 
 	Limit  int `db:"limit" json:"limit"`
 	Offset int `db:"offset" json:"offset"`
 }
 
-func NewQueryInboxEventsDal(
-	filter InboxEventFilterDal,
+func NewQueryEventsDal(
+	filter EventFilterDal,
 	page, pageSize int,
-) *QueryInboxEventsDal {
+) *QueryEventsDal {
 	slices.Sort(filter.Ids)
 	slices.Sort(filter.Statuses)
 
@@ -38,7 +38,7 @@ func NewQueryInboxEventsDal(
 		page = 1
 	}
 
-	return &QueryInboxEventsDal{
+	return &QueryEventsDal{
 		Filter: filter,
 		Limit:  pageSize,
 		Offset: (page - 1) * pageSize,

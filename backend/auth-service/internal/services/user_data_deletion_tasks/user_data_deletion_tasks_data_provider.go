@@ -80,7 +80,7 @@ func (udp *userDataDeletionTasksDataProvider) getUserDataDeletionTasksLocked(
 	createdAfter *time.Time,
 	uow *uow.UnitOfWork,
 ) ([]*event.Event, error) {
-	query := models.NewQueryInboxEventsLockedDal(retryAfter, createdAfter, batch_size)
+	query := models.NewQueryEventsLockedDal(retryAfter, createdAfter, batch_size)
 
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/domain/event"
 )
 
-type V1InboxEventDal struct {
+type V1EventDal struct {
 	Id        string          `db:"id" json:"id"`
 	Payload   json.RawMessage `db:"payload" json:"payload"`
 	Status    int16           `db:"status" json:"status"`
@@ -16,11 +16,11 @@ type V1InboxEventDal struct {
 	UpdatedAt time.Time       `db:"updated_at" json:"updated_at"`
 }
 
-func V1InboxEventFromDomain(event *event.Event) V1InboxEventDal {
+func V1EventFromDomain(event *event.Event) V1EventDal {
 	if event == nil {
-		return V1InboxEventDal{}
+		return V1EventDal{}
 	}
-	return V1InboxEventDal{
+	return V1EventDal{
 		Id:        event.GetID(),
 		Payload:   event.GetPayload(),
 		Status:    int16(event.GetStatus()),
@@ -30,8 +30,8 @@ func V1InboxEventFromDomain(event *event.Event) V1InboxEventDal {
 	}
 }
 
-func (e V1InboxEventDal) IsNull() bool { return false }
-func (e V1InboxEventDal) Index(i int) any {
+func (e V1EventDal) IsNull() bool { return false }
+func (e V1EventDal) Index(i int) any {
 	switch i {
 	case 0:
 		return e.Id
@@ -50,7 +50,7 @@ func (e V1InboxEventDal) Index(i int) any {
 	}
 }
 
-func (e V1InboxEventDal) ToDomain() *event.Event {
+func (e V1EventDal) ToDomain() *event.Event {
 	return event.FromStorage(
 		e.Id,
 		e.Payload,
