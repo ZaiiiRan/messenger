@@ -1189,6 +1189,16 @@ func (s *service) processUserWithPrivacySettings(actor, user *userpb.User, ur *u
 		return
 	}
 
+	if user.Status != nil && user.Status.IsDeleted {
+		user.Email = ""
+		if user.Profile != nil {
+			user.Profile.Phone = nil
+			user.Profile.Birthdate = nil
+			user.Profile.Bio = nil
+		}
+		return
+	}
+
 	if ur != nil && ((ur.GetStatus() == userrelationship.BlockedBy1 && ur.RoleOf(actor.Id) == 2) ||
 		(ur.GetStatus() == userrelationship.BlockedBy2 && ur.RoleOf(actor.Id) == 1) ||
 		ur.GetStatus() == userrelationship.BlockedByBoth) {
