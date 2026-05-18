@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/event"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
 	producersinterfaces "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/interfaces"
 	producersmodels "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/models"
@@ -41,18 +41,18 @@ func New(
 func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID string, users []*user.User, uow *uow.UnitOfWork) error {
 	l := s.log.With("op", "create_user_data_deletion_tasks", "worker_id", workerID)
 
-	outboxEvents := make([]*outboxevent.OutboxEvent, 0, len(users))
-	for _, user := range users {
-		event, err := s.createUserDataDeletionTask(user)
+	outboxEvents := make([]*event.Event, 0, len(users))
+	for _, u := range users {
+		evt, err := s.createUserDataDeletionTask(u)
 		if err != nil {
 			l.Errorw(
 				"user_data_deletion_tasks.create_user_data_deletion_tasks_failed.json_marshal_error",
 				"err", err,
-				"user", user,
+				"user", u,
 			)
 			return ErrMarshalPayload
 		}
-		outboxEvents = append(outboxEvents, event)
+		outboxEvents = append(outboxEvents, evt)
 	}
 
 	if err := s.dataProvider.createUserDataDeletionTasks(ctx, outboxEvents, uow); err != nil {
@@ -89,47 +89,47 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 		return nil
 	}
 
-	outboxEventsFailed := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
-	outboxEventsSuccess := make([]*outboxevent.OutboxEvent, 0, len(outboxEvents))
+	outboxEventsFailed := make([]*event.Event, 0, len(outboxEvents))
+	outboxEventsSuccess := make([]*event.Event, 0, len(outboxEvents))
 
-	for _, event := range outboxEvents {
+	for _, evt := range outboxEvents {
 		var payload producersmodels.UserDataDeletionTask
-		if err := json.Unmarshal(event.GetPayload(), &payload); err != nil {
+		if err := json.Unmarshal(evt.GetPayload(), &payload); err != nil {
 			l.Errorw(
 				"user_data_deletion_tasks.send_user_data_deletion_tasks_failed.unmarshal_payload_error",
 				"err", err,
-				"event", event.GetID(),
-				"payload", event.GetPayload(),
-				"attempts", event.GetAttempts(),
-				"status", event.GetStatus(),
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
 			)
-			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			outboxEventsFailed = append(outboxEventsFailed, event)
+			outboxEventsFailed = append(outboxEventsFailed, evt)
 			continue
 		}
-		payload.Id = event.GetID()
+		payload.Id = evt.GetID()
 
 		if err := s.userDataDeletionTasksProducer.ProduceUserDataDeletionTask(ctx, &payload); err != nil {
 			l.Errorw(
 				"user_data_deletion_tasks.send_user_data_deletion_tasks_failed.produce_error",
 				"err", err,
-				"event", event.GetID(),
-				"payload", event.GetPayload(),
-				"attempts", event.GetAttempts(),
-				"status", event.GetStatus(),
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
 			)
-			err = s.markUserDataDeletionTaskFailed(event, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.send_user_data_deletion_tasks_failed")
 			if err != nil {
 				continue
 			}
-			outboxEventsFailed = append(outboxEventsFailed, event)
+			outboxEventsFailed = append(outboxEventsFailed, evt)
 			continue
 		}
 
-		outboxEventsSuccess = append(outboxEventsSuccess, event)
+		outboxEventsSuccess = append(outboxEventsSuccess, evt)
 	}
 
 	if len(outboxEventsSuccess) > 0 {
@@ -160,45 +160,45 @@ func (s *service) SendUserDataDeletionTasks(ctx context.Context, workerID string
 }
 
 func (s *service) markUserDataDeletionTaskFailed(
-	event *outboxevent.OutboxEvent,
+	evt *event.Event,
 	now time.Time,
 	log *zap.SugaredLogger,
 	logPrefix string,
 ) error {
-	err := event.IncrementAttempts()
+	err := evt.IncrementAttempts()
 	if err != nil {
 		log.Errorw(
 			fmt.Sprintf("%s.mark_task_as_failed_error", logPrefix),
 			"err", err,
-			"event", event.GetID(),
-			"attempts", event.GetAttempts(),
-			"status", event.GetStatus(),
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
 		)
 		return err
 	}
-	event.SetUpdatedAt(&now)
-	if err := event.SetStatus(outboxevent.OutboxEventStatusFailed); err != nil {
+	evt.SetUpdatedAt(&now)
+	if err := evt.SetStatus(event.EventStatusFailed); err != nil {
 		log.Errorw(
 			fmt.Sprintf("%s.mark_task_as_failed_error", logPrefix),
 			"err", err,
-			"event", event.GetID(),
-			"attempts", event.GetAttempts(),
-			"status", event.GetStatus(),
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
 		)
 		return err
 	}
 	return nil
 }
 
-func (s *service) createUserDataDeletionTask(user *user.User) (*outboxevent.OutboxEvent, error) {
+func (s *service) createUserDataDeletionTask(u *user.User) (*event.Event, error) {
 	payload := producersmodels.UserDataDeletionTask{
-		UserId:      user.GetID(),
-		Username:    user.GetUsername(),
-		Email:       user.GetEmail(),
-		IsConfirmed: user.GetStatus().IsConfirmed(),
-		IsDeleted:   user.GetStatus().IsDeleted(),
-		CreatedAt:   user.GetCreatedAt(),
-		UpdatedAt:   user.GetUpdatedAt(),
+		UserId:      u.GetID(),
+		Username:    u.GetUsername(),
+		Email:       u.GetEmail(),
+		IsConfirmed: u.GetStatus().IsConfirmed(),
+		IsDeleted:   u.GetStatus().IsDeleted(),
+		CreatedAt:   u.GetCreatedAt(),
+		UpdatedAt:   u.GetUpdatedAt(),
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -206,6 +206,5 @@ func (s *service) createUserDataDeletionTask(user *user.User) (*outboxevent.Outb
 		return nil, err
 	}
 
-	event := outboxevent.New(jsonPayload)
-	return event, nil
+	return event.New("", jsonPayload), nil
 }

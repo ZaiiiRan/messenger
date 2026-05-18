@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/event"
 	postgresimpl "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/impl/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/models"
 	uow "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/unitofwork/postgres"
@@ -27,7 +27,7 @@ func (udp *userDataDeletionTasksDataProvider) newUOW() *uow.UnitOfWork {
 
 func (udp *userDataDeletionTasksDataProvider) createUserDataDeletionTasks(
 	ctx context.Context,
-	events []*outboxevent.OutboxEvent,
+	events []*event.Event,
 	uow *uow.UnitOfWork,
 ) error {
 	pgConn, err := uow.GetConn(ctx)
@@ -43,7 +43,7 @@ func (udp *userDataDeletionTasksDataProvider) createUserDataDeletionTasks(
 
 func (udp *userDataDeletionTasksDataProvider) updateUserDataDeletionTasks(
 	ctx context.Context,
-	events []*outboxevent.OutboxEvent,
+	events []*event.Event,
 	uow *uow.UnitOfWork,
 ) error {
 	pgConn, err := uow.GetConn(ctx)
@@ -59,7 +59,7 @@ func (udp *userDataDeletionTasksDataProvider) updateUserDataDeletionTasks(
 
 func (udp *userDataDeletionTasksDataProvider) deleteUserDataDeletionTasks(
 	ctx context.Context,
-	events []*outboxevent.OutboxEvent,
+	events []*event.Event,
 	uow *uow.UnitOfWork,
 ) error {
 	pgConn, err := uow.GetConn(ctx)
@@ -78,7 +78,7 @@ func (udp *userDataDeletionTasksDataProvider) getUserDataDeletionTasksLocked(
 	batch_size int,
 	retryAfter time.Time,
 	uow *uow.UnitOfWork,
-) ([]*outboxevent.OutboxEvent, error) {
+) ([]*event.Event, error) {
 	query := models.NewQueryOutboxEventsLockedDal(retryAfter, batch_size)
 
 	pgConn, err := uow.GetConn(ctx)

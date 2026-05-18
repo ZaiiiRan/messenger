@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/event"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/interfaces"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,7 +22,7 @@ func NewUserDataDeletionTasksRepository(conn *pgxpool.Conn) interfaces.OutboxEve
 	}
 }
 
-func (r *UserDataDeletionTasksRepository) Create(ctx context.Context, events []*outboxevent.OutboxEvent) error {
+func (r *UserDataDeletionTasksRepository) Create(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (r *UserDataDeletionTasksRepository) Create(ctx context.Context, events []*
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) Update(ctx context.Context, events []*outboxevent.OutboxEvent) error {
+func (r *UserDataDeletionTasksRepository) Update(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (r *UserDataDeletionTasksRepository) Update(ctx context.Context, events []*
 			status = e.status,
 			attempts = e.attempts,
 			updated_at = e.updated_at
-		FROM UNNEST($1::v1_outbox_event[]) AS e
+		FROM UNNEST($1::v1_inbox_outbox_event[]) AS e
 		WHERE t.id = e.id
 		RETURNING t.id, t.payload, t.status, t.attempts, t.created_at, t.updated_at
 	`
@@ -115,7 +115,7 @@ func (r *UserDataDeletionTasksRepository) Update(ctx context.Context, events []*
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) Delete(ctx context.Context, events []*outboxevent.OutboxEvent) error {
+func (r *UserDataDeletionTasksRepository) Delete(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -137,7 +137,7 @@ func (r *UserDataDeletionTasksRepository) Delete(ctx context.Context, events []*
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) Query(ctx context.Context, query *models.QueryOutboxEventsDal) ([]*outboxevent.OutboxEvent, error) {
+func (r *UserDataDeletionTasksRepository) Query(ctx context.Context, query *models.QueryOutboxEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -168,7 +168,7 @@ func (r *UserDataDeletionTasksRepository) Query(ctx context.Context, query *mode
 	}
 	defer rows.Close()
 
-	var result []*outboxevent.OutboxEvent
+	var result []*event.Event
 	for rows.Next() {
 		var res models.V1OutboxEventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
@@ -183,7 +183,7 @@ func (r *UserDataDeletionTasksRepository) Query(ctx context.Context, query *mode
 	return result, nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryLocked(ctx context.Context, query *models.QueryOutboxEventsLockedDal) ([]*outboxevent.OutboxEvent, error) {
+func (r *UserDataDeletionTasksRepository) QueryLocked(ctx context.Context, query *models.QueryOutboxEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -199,10 +199,10 @@ func (r *UserDataDeletionTasksRepository) QueryLocked(ctx context.Context, query
 	`
 
 	rows, err := r.conn.Query(ctx, sql,
-		int16(outboxevent.OutboxEventStatusPending),
-		int16(outboxevent.OutboxEventStatusFailed),
+		int16(event.EventStatusPending),
+		int16(event.EventStatusFailed),
 		query.RetryAfter,
-		int16(outboxevent.MaxAttempts-1),
+		int16(event.MaxAttempts-1),
 		query.Limit,
 	)
 	if err != nil {
@@ -210,7 +210,7 @@ func (r *UserDataDeletionTasksRepository) QueryLocked(ctx context.Context, query
 	}
 	defer rows.Close()
 
-	var result []*outboxevent.OutboxEvent
+	var result []*event.Event
 	for rows.Next() {
 		var res models.V1OutboxEventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {

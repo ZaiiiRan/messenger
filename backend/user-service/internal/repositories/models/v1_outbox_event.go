@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	outboxevent "github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/outbox_event"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/event"
 )
 
 type V1OutboxEventDal struct {
@@ -16,7 +16,7 @@ type V1OutboxEventDal struct {
 	UpdatedAt time.Time       `db:"updated_at" json:"updated_at"`
 }
 
-func V1OutboxEventFromDomain(event *outboxevent.OutboxEvent) V1OutboxEventDal {
+func V1OutboxEventFromDomain(event *event.Event) V1OutboxEventDal {
 	if event == nil {
 		return V1OutboxEventDal{}
 	}
@@ -50,8 +50,8 @@ func (e V1OutboxEventDal) Index(i int) any {
 	}
 }
 
-func (e V1OutboxEventDal) ToDomain() *outboxevent.OutboxEvent {
-	return outboxevent.FromStorage(
+func (e V1OutboxEventDal) ToDomain() *event.Event {
+	return event.FromStorage(
 		e.Id,
 		e.Payload,
 		e.Status,
