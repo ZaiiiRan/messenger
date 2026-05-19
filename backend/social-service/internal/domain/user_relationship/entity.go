@@ -77,6 +77,10 @@ func (ur *UserRelationship) SetStatus(status UserRelationshipStatus) error {
 	return nil
 }
 
+func (ur *UserRelationship) MarkDeleted() {
+	ur.status = int16(None)
+}
+
 func (ur *UserRelationship) SetUpdatedAt(now *time.Time) {
 	if now == nil {
 		t := time.Now()

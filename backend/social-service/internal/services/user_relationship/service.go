@@ -128,8 +128,9 @@ func (s *service) RemoveUserFromFriends(ctx context.Context, actor, friend *user
 		}
 	}
 
+	ur.MarkDeleted()
 	l.Infow("user_relationship.remove_user_from_friends.success")
-	return nil, nil
+	return ur, nil
 }
 
 func (s *service) BlockUser(ctx context.Context, actor, blockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error) {
@@ -205,6 +206,7 @@ func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *user
 			l.Errorw("user_relationship.unblock_user_failed.delete_error", "err", err)
 			return nil, ErrUnblockUser
 		}
+		ur.MarkDeleted()
 	} else {
 		if err := s.dataProvider.save(ctx, ur, uow); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.save_error", "err", err)

@@ -126,10 +126,9 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User
 			continue
 		}
 		ur, needToDelete := applyRemoveFriend(existingMap[f.Id])
+		results[i] = ur
 		if needToDelete {
 			toDelete = append(toDelete, ur)
-		} else {
-			results[i] = ur
 		}
 	}
 
@@ -137,6 +136,9 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User
 		if err := s.dataProvider.deleteUserRelationships(ctx, toDelete, uow); err != nil {
 			l.Errorw("user_relationship.remove_users_from_friends_failed.delete_error", "err", err)
 			return nil, ErrRemoveFromFriends
+		}
+		for _, ur := range toDelete {
+			ur.MarkDeleted()
 		}
 	}
 
@@ -286,6 +288,9 @@ func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockC
 		if err := s.dataProvider.deleteUserRelationships(ctx, toDelete, uow); err != nil {
 			l.Errorw("user_relationship.unblock_users_failed.delete_error", "err", err)
 			return nil, ErrUnblockUser
+		}
+		for _, ur := range toDelete {
+			ur.MarkDeleted()
 		}
 	}
 

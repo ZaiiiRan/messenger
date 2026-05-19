@@ -17,7 +17,7 @@ import (
 )
 
 type UserRelationshipChangesTasksService interface {
-	CreateUserRelationshipChangesTasks(ctx context.Context, userRelationships []*userrelationship.UserRelationship, uow *uow.UnitOfWork) error
+	CreateUserRelationshipChangesTasks(ctx context.Context, userRelationships []*userrelationship.UserRelationship, action ActionType, uow *uow.UnitOfWork) error
 	SendUserRelationshipChangesTasks(ctx context.Context, workerID string, retryIntervalMS uint, batchSize int, uow *uow.UnitOfWork) error
 }
 
@@ -39,7 +39,7 @@ func New(
 	}
 }
 
-func (s *service) CreateUserRelationshipChangesTasks(ctx context.Context, userRelationships []*userrelationship.UserRelationship, uow *uow.UnitOfWork) error {
+func (s *service) CreateUserRelationshipChangesTasks(ctx context.Context, userRelationships []*userrelationship.UserRelationship, action ActionType, uow *uow.UnitOfWork) error {
 	l := s.log.With("op", "create_user_relationship_changes_tasks", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
 	needToCommit := false
@@ -55,7 +55,7 @@ func (s *service) CreateUserRelationshipChangesTasks(ctx context.Context, userRe
 
 	outboxEvents := make([]*event.Event, 0, len(userRelationships))
 	for _, ur := range userRelationships {
-		evt, err := s.createUserRelationshipChangeTask(ur)
+		evt, err := s.createUserRelationshipChangeTask(ur, action)
 		if err != nil {
 			l.Errorw(
 				"user_relationship_changes_tasks.create_user_relationship_changes_tasks_failed.json_marshal_error",
@@ -211,11 +211,12 @@ func (s *service) markUserRelationshipChangeTaskFailed(
 	return nil
 }
 
-func (s *service) createUserRelationshipChangeTask(ur *userrelationship.UserRelationship) (*event.Event, error) {
+func (s *service) createUserRelationshipChangeTask(ur *userrelationship.UserRelationship, action ActionType) (*event.Event, error) {
 	payload := producersmodels.UserRelationshipChangeTask{
 		User1Id:                ur.GetUserID1(),
 		User2Id:                ur.GetUserID2(),
 		UserRelationshipStatus: ur.GetStatus().String(),
+		Action:                 string(action),
 		CreatedAt:              ur.GetCreatedAt(),
 		UpdatedAt:              ur.GetUpdatedAt(),
 	}

@@ -3,6 +3,7 @@ package userrelationship
 type UserRelationshipStatus int16
 
 var (
+	None             UserRelationshipStatus = 0
 	FriendRequestBy1 UserRelationshipStatus = 1
 	FriendRequestBy2 UserRelationshipStatus = 2
 	Friends          UserRelationshipStatus = 3
@@ -13,6 +14,8 @@ var (
 
 func (s UserRelationshipStatus) String() string {
 	switch s {
+	case None:
+		return "none"
 	case FriendRequestBy1:
 		return "friend_request_by_1"
 	case FriendRequestBy2:
@@ -32,6 +35,8 @@ func (s UserRelationshipStatus) String() string {
 
 func ToUserRelationshipStatus(value string) (UserRelationshipStatus, error) {
 	switch value {
+	case "none":
+		return None, nil
 	case "friend_request_by_1":
 		return FriendRequestBy1, nil
 	case "friend_request_by_2":
