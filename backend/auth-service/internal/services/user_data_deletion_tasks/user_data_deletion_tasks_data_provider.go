@@ -35,8 +35,8 @@ func (udp *userDataDeletionTasksDataProvider) createUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
-	err = dbRepo.CreateInboxEvents(ctx, events)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksInboxRepository(pgConn)
+	err = dbRepo.CreateEvents(ctx, events)
 
 	return err
 }
@@ -51,8 +51,8 @@ func (udp *userDataDeletionTasksDataProvider) updateUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
-	err = dbRepo.UpdateInboxEvents(ctx, events)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksInboxRepository(pgConn)
+	err = dbRepo.UpdateEvents(ctx, events)
 
 	return err
 }
@@ -67,8 +67,8 @@ func (udp *userDataDeletionTasksDataProvider) deleteUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
-	err = dbRepo.DeleteInboxEvents(ctx, events)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksInboxRepository(pgConn)
+	err = dbRepo.DeleteEvents(ctx, events)
 
 	return err
 }
@@ -87,8 +87,8 @@ func (udp *userDataDeletionTasksDataProvider) getUserDataDeletionTasksLocked(
 		return nil, err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
-	events, err := dbRepo.QueryInboxEventsLocked(ctx, query)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksInboxRepository(pgConn)
+	events, err := dbRepo.QueryEventsLocked(ctx, query)
 	if err != nil {
 		return nil, err
 	}

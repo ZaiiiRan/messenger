@@ -12,17 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserDataDeletionTasksRepository struct {
+type UserDataDeletionTasksInboxRepository struct {
 	conn *pgxpool.Conn
 }
 
-func NewUserDataDeletionTasksRepository(conn *pgxpool.Conn) interfaces.InboxEventRepository {
-	return &UserDataDeletionTasksRepository{
+func NewUserDataDeletionTasksInboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
+	return &UserDataDeletionTasksInboxRepository{
 		conn: conn,
 	}
 }
 
-func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context, events []*event.Event) error {
+func (r *UserDataDeletionTasksInboxRepository) CreateEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -76,7 +76,7 @@ func (r *UserDataDeletionTasksRepository) CreateInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context, events []*event.Event) error {
+func (r *UserDataDeletionTasksInboxRepository) UpdateEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (r *UserDataDeletionTasksRepository) UpdateInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context, events []*event.Event) error {
+func (r *UserDataDeletionTasksInboxRepository) DeleteEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -145,7 +145,7 @@ func (r *UserDataDeletionTasksRepository) DeleteInboxEvents(ctx context.Context,
 	return nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
+func (r *UserDataDeletionTasksInboxRepository) QueryEvents(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -191,7 +191,7 @@ func (r *UserDataDeletionTasksRepository) QueryInboxEvents(ctx context.Context, 
 	return result, nil
 }
 
-func (r *UserDataDeletionTasksRepository) QueryInboxEventsLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
+func (r *UserDataDeletionTasksInboxRepository) QueryEventsLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
