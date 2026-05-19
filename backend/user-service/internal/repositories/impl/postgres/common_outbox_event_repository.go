@@ -17,9 +17,10 @@ type commonOutboxEventRepository struct {
 	conn      *pgxpool.Conn
 }
 
-func newCommonOutboxEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.OutboxEventRepository {
+func newCommonOutboxEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
 	return &commonOutboxEventRepository{
-		conn: conn,
+		tableName: tableName,
+		conn:      conn,
 	}
 }
 

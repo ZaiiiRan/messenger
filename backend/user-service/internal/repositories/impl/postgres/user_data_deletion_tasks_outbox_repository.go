@@ -5,7 +5,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewUserDataDeletionTasksRepository(conn *pgxpool.Conn) interfaces.OutboxEventRepository {
+func NewUserDataDeletionTasksOutboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
 	return &commonOutboxEventRepository{
 		conn:      conn,
 		tableName: "user_data_deletion_tasks_outbox",

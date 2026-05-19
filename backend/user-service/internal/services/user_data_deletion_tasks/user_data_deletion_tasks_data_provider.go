@@ -35,7 +35,7 @@ func (udp *userDataDeletionTasksDataProvider) createUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksOutboxRepository(pgConn)
 	err = dbRepo.Create(ctx, events)
 
 	return err
@@ -51,7 +51,7 @@ func (udp *userDataDeletionTasksDataProvider) updateUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksOutboxRepository(pgConn)
 	err = dbRepo.Update(ctx, events)
 
 	return err
@@ -67,7 +67,7 @@ func (udp *userDataDeletionTasksDataProvider) deleteUserDataDeletionTasks(
 		return err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksOutboxRepository(pgConn)
 	err = dbRepo.Delete(ctx, events)
 
 	return err
@@ -86,7 +86,7 @@ func (udp *userDataDeletionTasksDataProvider) getUserDataDeletionTasksLocked(
 		return nil, err
 	}
 
-	dbRepo := postgresimpl.NewUserDataDeletionTasksRepository(pgConn)
+	dbRepo := postgresimpl.NewUserDataDeletionTasksOutboxRepository(pgConn)
 	events, err := dbRepo.QueryLocked(ctx, query)
 	if err != nil {
 		return nil, err
