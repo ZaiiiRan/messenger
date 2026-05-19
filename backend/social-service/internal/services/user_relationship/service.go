@@ -16,13 +16,13 @@ import (
 
 type UserRelationshipService interface {
 	AddUserToFriends(ctx context.Context, actor, friendCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
-	AddUsersToFriends(ctx context.Context, actor *userpb.User, friendCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
+	AddUsersToFriends(ctx context.Context, actor *userpb.User, friendCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, []*userrelationship.UserRelationship, error)
 	RemoveUserFromFriends(ctx context.Context, actor, friend *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
 	RemoveUsersFromFriends(ctx context.Context, actor *userpb.User, friends []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
 	BlockUser(ctx context.Context, actor, blockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
-	BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
-	UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
-	UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
+	BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, []*userrelationship.UserRelationship, error)
+	UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, bool, error)
+	UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, []*userrelationship.UserRelationship, error)
 	GetUserRelationship(ctx context.Context, actor, target *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
 	GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
 	GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
@@ -174,7 +174,7 @@ func (s *service) BlockUser(ctx context.Context, actor, blockCandidate *userpb.U
 	return ur, nil
 }
 
-func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error) {
+func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, bool, error) {
 	l := s.log.With("op", "unblock_user", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 	now := time.Now()
 
@@ -185,43 +185,43 @@ func (s *service) UnblockUser(ctx context.Context, actor, unblockCandidate *user
 		needToCommit = true
 		if _, err := uow.BeginTransaction(ctx); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.begin_transaction_error", "err", err)
-			return nil, ErrUnblockUser
+			return nil, false, ErrUnblockUser
 		}
 	}
 
 	existing, err := s.dataProvider.getUserRelationshipLocked(ctx, actor.Id, unblockCandidate.Id, uow)
 	if err != nil {
 		l.Errorw("user_relationship.unblock_user_failed.get_user_relationship_error", "err", err)
-		return nil, ErrUnblockUser
+		return nil, false, ErrUnblockUser
 	}
 
 	ur, needToDelete, skip := applyUnblockUser(actor, existing, now)
 	if skip {
 		l.Infow("user_relationship.unblock_user.success")
-		return ur, nil
+		return ur, false, nil
 	}
 
 	if needToDelete {
 		if err := s.dataProvider.delete(ctx, ur, uow); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.delete_error", "err", err)
-			return nil, ErrUnblockUser
+			return nil, false, ErrUnblockUser
 		}
 		ur.MarkDeleted()
 	} else {
 		if err := s.dataProvider.save(ctx, ur, uow); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.save_error", "err", err)
-			return nil, ErrUnblockUser
+			return nil, false, ErrUnblockUser
 		}
 	}
 	if needToCommit {
 		if err := uow.Commit(ctx); err != nil {
 			l.Errorw("user_relationship.unblock_user_failed.commit_error", "err", err)
-			return nil, ErrUnblockUser
+			return nil, false, ErrUnblockUser
 		}
 	}
 
 	l.Infow("user_relationship.unblock_user.success")
-	return ur, nil
+	return ur, true, nil
 }
 
 func (s *service) GetUserRelationship(ctx context.Context, actor, target *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error) {

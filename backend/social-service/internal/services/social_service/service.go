@@ -352,13 +352,15 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	urs, err := s.userRelationshipService.AddUsersToFriends(ctx, a, users, uow)
+	urs, changedUrs, err := s.userRelationshipService.AddUsersToFriends(ctx, a, users, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, userrelationshipchangestasks.AddToFriends, uow); err != nil {
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	if len(changedUrs) > 0 {
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, changedUrs, userrelationshipchangestasks.AddToFriends, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
 	}
 
 	if err := uow.Commit(ctx); err != nil {
@@ -421,7 +423,7 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if ur != nil {
+		if ur != nil && ur.GetStatus() == userrelationship.None {
 			if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(
 				ctx, []*userrelationship.UserRelationship{ur}, userrelationshipchangestasks.RemoveFromFriends, uow,
 			); err != nil {
@@ -477,14 +479,14 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	nonNilUrs := make([]*userrelationship.UserRelationship, 0, len(urs))
+	deletedUrs := make([]*userrelationship.UserRelationship, 0, len(urs))
 	for _, ur := range urs {
-		if ur != nil {
-			nonNilUrs = append(nonNilUrs, ur)
+		if ur != nil && ur.GetStatus() == userrelationship.None {
+			deletedUrs = append(deletedUrs, ur)
 		}
 	}
-	if len(nonNilUrs) > 0 {
-		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, nonNilUrs, userrelationshipchangestasks.RemoveFromFriends, uow); err != nil {
+	if len(deletedUrs) > 0 {
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, deletedUrs, userrelationshipchangestasks.RemoveFromFriends, uow); err != nil {
 			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 	}
@@ -598,13 +600,15 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	urs, err := s.userRelationshipService.BlockUsers(ctx, a, users, uow)
+	urs, changedUrs, err := s.userRelationshipService.BlockUsers(ctx, a, users, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, userrelationshipchangestasks.Block, uow); err != nil {
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	if len(changedUrs) > 0 {
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, changedUrs, userrelationshipchangestasks.Block, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
 	}
 
 	if err := uow.Commit(ctx); err != nil {
@@ -659,7 +663,7 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
-		ur, err := s.userRelationshipService.UnblockUser(ctx, a, u, uow)
+		ur, changed, err := s.userRelationshipService.UnblockUser(ctx, a, u, uow)
 		if err != nil {
 			if errors.Is(err, userrelationshipservice.ErrUnblockUser) {
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
@@ -667,7 +671,7 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if ur != nil {
+		if changed {
 			if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(
 				ctx, []*userrelationship.UserRelationship{ur}, userrelationshipchangestasks.Unblock, uow,
 			); err != nil {
@@ -718,19 +722,13 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	urs, err := s.userRelationshipService.UnblockUsers(ctx, a, users, uow)
+	urs, changedUrs, err := s.userRelationshipService.UnblockUsers(ctx, a, users, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	nonNilUrs := make([]*userrelationship.UserRelationship, 0, len(urs))
-	for _, ur := range urs {
-		if ur != nil {
-			nonNilUrs = append(nonNilUrs, ur)
-		}
-	}
-	if len(nonNilUrs) > 0 {
-		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, nonNilUrs, userrelationshipchangestasks.Unblock, uow); err != nil {
+	if len(changedUrs) > 0 {
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, changedUrs, userrelationshipchangestasks.Unblock, uow); err != nil {
 			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 	}
