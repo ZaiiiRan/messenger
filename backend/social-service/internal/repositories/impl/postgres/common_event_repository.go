@@ -12,18 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type commonOutboxEventRepository struct {
+type commonEventRepository struct {
 	tableName string
 	conn      *pgxpool.Conn
 }
 
-func newCommonOutboxEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.OutboxEventRepository {
-	return &commonOutboxEventRepository{
-		conn: conn,
+func newCommonEventRepository(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
+	return &commonEventRepository{
+		conn:      conn,
+		tableName: tableName,
 	}
 }
 
-func (r *commonOutboxEventRepository) CreateEvents(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) CreateEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -69,7 +70,7 @@ func (r *commonOutboxEventRepository) CreateEvents(ctx context.Context, events [
 	return nil
 }
 
-func (r *commonOutboxEventRepository) UpdateEvents(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) UpdateEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -116,7 +117,7 @@ func (r *commonOutboxEventRepository) UpdateEvents(ctx context.Context, events [
 	return nil
 }
 
-func (r *commonOutboxEventRepository) DeleteEvents(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) DeleteEvents(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -138,7 +139,7 @@ func (r *commonOutboxEventRepository) DeleteEvents(ctx context.Context, events [
 	return nil
 }
 
-func (r *commonOutboxEventRepository) QueryEvents(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
+func (r *commonEventRepository) QueryEvents(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -184,7 +185,7 @@ func (r *commonOutboxEventRepository) QueryEvents(ctx context.Context, query *mo
 	return result, nil
 }
 
-func (r *commonOutboxEventRepository) QueryEventsLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
+func (r *commonEventRepository) QueryEventsLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}

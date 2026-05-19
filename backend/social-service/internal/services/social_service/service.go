@@ -14,7 +14,9 @@ import (
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
 	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
+	userrelationshipchangestasks "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship_changes_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -42,20 +44,26 @@ type SocialService interface {
 }
 
 type service struct {
-	userRelationshipService userrelationshipservice.UserRelationshipService
-	userService             userservice.UserService
-	log                     *zap.SugaredLogger
+	dataProvider                        *socialDataProvider
+	userRelationshipService             userrelationshipservice.UserRelationshipService
+	userService                         userservice.UserService
+	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService
+	log                                 *zap.SugaredLogger
 }
 
 func New(
+	pgClient *postgres.PostgresClient,
 	userRelationshipService userrelationshipservice.UserRelationshipService,
 	userService userservice.UserService,
+	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService,
 	log *zap.SugaredLogger,
 ) SocialService {
 	return &service{
-		userRelationshipService: userRelationshipService,
-		userService:             userService,
-		log:                     log,
+		dataProvider:                        newSocialDataProvider(pgClient),
+		userRelationshipService:             userRelationshipService,
+		userService:                         userService,
+		userRelationshipChangesTasksService: userRelationshipChangesTasksService,
+		log:                                 log,
 	}
 }
 
@@ -84,7 +92,10 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (
 		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
-	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -130,7 +141,10 @@ func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsReques
 		return &pb.GetUsersByIdsResponse{}, nil
 	}
 
-	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -172,7 +186,10 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 	}
 
-	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, u, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -220,7 +237,10 @@ func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUse
 		return &pb.GetUsersByUsernamesResponse{}, nil
 	}
 
-	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, a, users, uow)
 	if err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
@@ -268,12 +288,28 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 			return nil, grpcstatus.Error(codes.InvalidArgument, ErrCannotAddDeletedUserToFriends.Error())
 		}
 
-		ur, err := s.userRelationshipService.AddUserToFriends(ctx, a, u)
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("social.add_users_to_friends_failed.begin_transaction_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		ur, err := s.userRelationshipService.AddUserToFriends(ctx, a, u, uow)
 		if err != nil {
 			if errors.Is(err, userrelationshipservice.ErrAddUserToFriends) {
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, []*userrelationship.UserRelationship{ur}, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("social.add_users_to_friends_failed.commit_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
 		s.processUserWithPrivacySettings(a, u, ur)
@@ -307,8 +343,24 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
 	}
 
-	urs, err := s.userRelationshipService.AddUsersToFriends(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("social.add_users_to_friends_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	urs, err := s.userRelationshipService.AddUsersToFriends(ctx, a, users, uow)
 	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, uow); err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("social.add_users_to_friends_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -352,12 +404,28 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 		}
 
-		ur, err := s.userRelationshipService.RemoveUserFromFriends(ctx, a, u)
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("social.remove_users_from_friends_failed.begin_transaction_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		ur, err := s.userRelationshipService.RemoveUserFromFriends(ctx, a, u, uow)
 		if err != nil {
 			if errors.Is(err, userrelationshipservice.ErrRemoveFromFriends) {
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, []*userrelationship.UserRelationship{ur}, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("social.remove_users_from_friends_failed.commit_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
 		s.processUserWithPrivacySettings(a, u, ur)
@@ -391,8 +459,24 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
 	}
 
-	urs, err := s.userRelationshipService.RemoveUsersFromFriends(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("social.remove_users_from_friends_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	urs, err := s.userRelationshipService.RemoveUsersFromFriends(ctx, a, users, uow)
 	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, uow); err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("social.remove_users_from_friends_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -436,12 +520,28 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 		}
 
-		ur, err := s.userRelationshipService.BlockUser(ctx, a, u)
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("social.block_users_failed.begin_transaction_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		ur, err := s.userRelationshipService.BlockUser(ctx, a, u, uow)
 		if err != nil {
 			if errors.Is(err, userrelationshipservice.ErrBlockUser) {
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, []*userrelationship.UserRelationship{ur}, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("social.block_users_failed.commit_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
 		s.processUserWithPrivacySettings(a, u, ur)
@@ -475,8 +575,24 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
 	}
 
-	urs, err := s.userRelationshipService.BlockUsers(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("social.block_users_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	urs, err := s.userRelationshipService.BlockUsers(ctx, a, users, uow)
 	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, uow); err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("social.block_users_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -520,12 +636,28 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 			return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
 		}
 
-		ur, err := s.userRelationshipService.UnblockUser(ctx, a, u)
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("social.unblock_users_failed.begin_transaction_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		ur, err := s.userRelationshipService.UnblockUser(ctx, a, u, uow)
 		if err != nil {
 			if errors.Is(err, userrelationshipservice.ErrUnblockUser) {
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			return nil, grpcstatus.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, []*userrelationship.UserRelationship{ur}, uow); err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("social.unblock_users_failed.commit_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 		}
 
 		s.processUserWithPrivacySettings(a, u, ur)
@@ -559,8 +691,24 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 		return nil, grpcstatus.Error(codes.NotFound, ErrUsersNotFound.Error())
 	}
 
-	urs, err := s.userRelationshipService.UnblockUsers(ctx, a, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("social.unblock_users_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	urs, err := s.userRelationshipService.UnblockUsers(ctx, a, users, uow)
 	if err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := s.userRelationshipChangesTasksService.CreateUserRelationshipChangesTasks(ctx, urs, uow); err != nil {
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("social.unblock_users_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -665,7 +813,10 @@ func (s *service) GetFriends(ctx context.Context, req *pb.GetFriendsRequest) (*p
 				1, maxRelationshipsPerList, sortByUpdatedAt,
 			)
 
-			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			uow := s.dataProvider.newUOW()
+			defer uow.Close()
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query, uow)
 			if err != nil {
 				return nil, err
 			}
@@ -723,7 +874,10 @@ func (s *service) GetIncomingFriendRequests(ctx context.Context, req *pb.GetInco
 			)
 			query.DirectionFilter = models.DirectionIncoming
 
-			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			uow := s.dataProvider.newUOW()
+			defer uow.Close()
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query, uow)
 			if err != nil {
 				return nil, err
 			}
@@ -781,7 +935,10 @@ func (s *service) GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutg
 			)
 			query.DirectionFilter = models.DirectionOutgoing
 
-			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			uow := s.dataProvider.newUOW()
+			defer uow.Close()
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query, uow)
 			if err != nil {
 				return nil, err
 			}
@@ -839,7 +996,10 @@ func (s *service) GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRe
 			)
 			query.DirectionFilter = models.DirectionActorBlocked
 
-			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+			uow := s.dataProvider.newUOW()
+			defer uow.Close()
+
+			list, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query, uow)
 			if err != nil {
 				return nil, err
 			}
@@ -1096,7 +1256,10 @@ func (s *service) UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyP
 			[]userrelationship.UserRelationshipStatus{userrelationship.Friends},
 			1, len(ids), false,
 		)
-		urs, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query)
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+
+		urs, err := s.userRelationshipService.GetUserRelationshipsByQuery(ctx, query, uow)
 		if err != nil {
 			l.Errorw("user.update_my_privacy_settings_failed.get_relationships_error", "err", err)
 			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
@@ -1149,7 +1312,10 @@ func (s *service) buildShortSocialUsers(
 		return []*pb.ShortSocialUser{}, nil
 	}
 
-	urs, err := s.userRelationshipService.GetUserRelationships(ctx, actor, users)
+	uow := s.dataProvider.newUOW()
+	defer uow.Close()
+
+	urs, err := s.userRelationshipService.GetUserRelationships(ctx, actor, users, uow)
 	if err != nil {
 		return nil, err
 	}

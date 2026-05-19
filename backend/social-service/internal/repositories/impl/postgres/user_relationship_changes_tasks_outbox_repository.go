@@ -5,8 +5,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewUserRelationshipChangesTasksOutboxRepository(conn *pgxpool.Conn) interfaces.OutboxEventRepository {
-	return &commonOutboxEventRepository{
+func NewUserRelationshipChangesTasksOutboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
+	return &commonEventRepository{
 		tableName: "user_relationship_changes_tasks_outbox",
 		conn:      conn,
 	}

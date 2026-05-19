@@ -9,6 +9,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config"
 	socialservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/social_service"
 	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
+	userrelationshipchangestasks "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship_changes_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/i18n"
@@ -29,9 +30,10 @@ type ServerApp struct {
 
 	userGrpcClient *usergrpcclient.Client
 
-	userService             userservice.UserService
-	userRelationshipService userrelationshipservice.UserRelationshipService
-	socialService           socialservice.SocialService
+	userService                         userservice.UserService
+	userRelationshipService             userrelationshipservice.UserRelationshipService
+	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService
+	socialService                       socialservice.SocialService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -72,6 +74,7 @@ func (a *ServerApp) Run(ctx context.Context) error {
 
 	a.initUserService()
 	a.initUserRelationshipService()
+	a.initUserRelationshipChangesTasksService()
 	a.initSocialService()
 
 	a.initI18n()
@@ -179,8 +182,12 @@ func (a *ServerApp) initUserRelationshipService() {
 	a.userRelationshipService = userrelationshipservice.New(a.postgresClient, a.redisClient, a.log)
 }
 
+func (a *ServerApp) initUserRelationshipChangesTasksService() {
+	a.userRelationshipChangesTasksService = userrelationshipchangestasks.New(a.postgresClient, nil, a.log)
+}
+
 func (a *ServerApp) initSocialService() {
-	a.socialService = socialservice.New(a.userRelationshipService, a.userService, a.log)
+	a.socialService = socialservice.New(a.postgresClient, a.userRelationshipService, a.userService, a.userRelationshipChangesTasksService, a.log)
 }
 
 func (a *ServerApp) initGrpcServer() error {

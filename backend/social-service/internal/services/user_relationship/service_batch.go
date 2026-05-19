@@ -8,9 +8,10 @@ import (
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
+	uow "github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/unitofwork/postgres"
 )
 
-func (s *service) AddUsersToFriends(ctx context.Context, actor *userpb.User, friendCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+func (s *service) AddUsersToFriends(ctx context.Context, actor *userpb.User, friendCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if len(friendCandidates) == 0 {
 		return []*userrelationship.UserRelationship{}, nil
 	}
@@ -23,11 +24,15 @@ func (s *service) AddUsersToFriends(ctx context.Context, actor *userpb.User, fri
 		candidateIDs[i] = fc.Id
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("user_relationship.add_users_to_friends_failed.begin_transaction_error", "err", err)
-		return nil, ErrAddUserToFriends
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user_relationship.add_users_to_friends_failed.begin_transaction_error", "err", err)
+			return nil, ErrAddUserToFriends
+		}
 	}
 
 	actorID := actor.Id
@@ -57,28 +62,30 @@ func (s *service) AddUsersToFriends(ctx context.Context, actor *userpb.User, fri
 	}
 
 	if len(toCreate) > 0 {
-		if err := s.dataProvider.createUserRelationships(ctx, toCreate, actorID, uow); err != nil {
+		if err := s.dataProvider.createUserRelationships(ctx, toCreate, uow); err != nil {
 			l.Errorw("user_relationship.add_users_to_friends_failed.create_error", "err", err)
 			return nil, ErrAddUserToFriends
 		}
 	}
 	if len(toUpdate) > 0 {
-		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, actorID, uow); err != nil {
+		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, uow); err != nil {
 			l.Errorw("user_relationship.add_users_to_friends_failed.update_error", "err", err)
 			return nil, ErrAddUserToFriends
 		}
 	}
 
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user_relationship.add_users_to_friends_failed.commit_error", "err", err)
-		return nil, ErrAddUserToFriends
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_relationship.add_users_to_friends_failed.commit_error", "err", err)
+			return nil, ErrAddUserToFriends
+		}
 	}
 
 	l.Infow("user_relationship.add_users_to_friends.success")
 	return results, nil
 }
 
-func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User, friends []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User, friends []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if len(friends) == 0 {
 		return []*userrelationship.UserRelationship{}, nil
 	}
@@ -90,11 +97,15 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User
 		friendIDs[i] = f.Id
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("user_relationship.remove_users_from_friends_failed.begin_transaction_error", "err", err)
-		return nil, ErrRemoveFromFriends
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user_relationship.remove_users_from_friends_failed.begin_transaction_error", "err", err)
+			return nil, ErrRemoveFromFriends
+		}
 	}
 
 	actorID := actor.Id
@@ -129,16 +140,18 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, actor *userpb.User
 		}
 	}
 
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user_relationship.remove_users_from_friends_failed.commit_error", "err", err)
-		return nil, ErrRemoveFromFriends
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_relationship.remove_users_from_friends_failed.commit_error", "err", err)
+			return nil, ErrRemoveFromFriends
+		}
 	}
 
 	l.Infow("user_relationship.remove_users_from_friends.success")
 	return results, nil
 }
 
-func (s *service) BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+func (s *service) BlockUsers(ctx context.Context, actor *userpb.User, blockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if len(blockCandidates) == 0 {
 		return []*userrelationship.UserRelationship{}, nil
 	}
@@ -151,11 +164,15 @@ func (s *service) BlockUsers(ctx context.Context, actor *userpb.User, blockCandi
 		candidateIDs[i] = bc.Id
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("user_relationship.block_users_failed.begin_transaction_error", "err", err)
-		return nil, ErrBlockUser
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user_relationship.block_users_failed.begin_transaction_error", "err", err)
+			return nil, ErrBlockUser
+		}
 	}
 
 	actorID := actor.Id
@@ -185,28 +202,30 @@ func (s *service) BlockUsers(ctx context.Context, actor *userpb.User, blockCandi
 	}
 
 	if len(toCreate) > 0 {
-		if err := s.dataProvider.createUserRelationships(ctx, toCreate, actorID, uow); err != nil {
+		if err := s.dataProvider.createUserRelationships(ctx, toCreate, uow); err != nil {
 			l.Errorw("user_relationship.block_users_failed.create_error", "err", err)
 			return nil, ErrBlockUser
 		}
 	}
 	if len(toUpdate) > 0 {
-		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, actorID, uow); err != nil {
+		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, uow); err != nil {
 			l.Errorw("user_relationship.block_users_failed.update_error", "err", err)
 			return nil, ErrBlockUser
 		}
 	}
 
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user_relationship.block_users_failed.commit_error", "err", err)
-		return nil, ErrBlockUser
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_relationship.block_users_failed.commit_error", "err", err)
+			return nil, ErrBlockUser
+		}
 	}
 
 	l.Infow("user_relationship.block_users.success")
 	return results, nil
 }
 
-func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockCandidates []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if len(unblockCandidates) == 0 {
 		return []*userrelationship.UserRelationship{}, nil
 	}
@@ -219,11 +238,15 @@ func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockC
 		candidateIDs[i] = uc.Id
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("user_relationship.unblock_users_failed.begin_transaction_error", "err", err)
-		return nil, ErrUnblockUser
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user_relationship.unblock_users_failed.begin_transaction_error", "err", err)
+			return nil, ErrUnblockUser
+		}
 	}
 
 	actorID := actor.Id
@@ -254,7 +277,7 @@ func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockC
 	}
 
 	if len(toUpdate) > 0 {
-		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, actorID, uow); err != nil {
+		if err := s.dataProvider.updateUserRelationships(ctx, toUpdate, uow); err != nil {
 			l.Errorw("user_relationship.unblock_users_failed.update_error", "err", err)
 			return nil, ErrUnblockUser
 		}
@@ -266,20 +289,18 @@ func (s *service) UnblockUsers(ctx context.Context, actor *userpb.User, unblockC
 		}
 	}
 
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user_relationship.unblock_users_failed.commit_error", "err", err)
-		return nil, ErrUnblockUser
-	}
-
-	if len(toUpdate) > 0 {
-		s.dataProvider.invalidateUserLists(ctx, actorID)
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_relationship.unblock_users_failed.commit_error", "err", err)
+			return nil, ErrUnblockUser
+		}
 	}
 
 	l.Infow("user_relationship.unblock_users.success")
 	return results, nil
 }
 
-func (s *service) GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User) ([]*userrelationship.UserRelationship, error) {
+func (s *service) GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if len(targets) == 0 {
 		return []*userrelationship.UserRelationship{}, nil
 	}
@@ -295,8 +316,10 @@ func (s *service) GetUserRelationships(ctx context.Context, actor *userpb.User, 
 		targetIDs[i] = t.Id
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+	}
 
 	query := models.NewQueryUserRelationshipsDal(&actorID, targetIDs, nil, 1, len(targetIDs), false)
 	existingList, err := s.dataProvider.getUserRelationships(ctx, query, uow)
@@ -316,15 +339,17 @@ func (s *service) GetUserRelationships(ctx context.Context, actor *userpb.User, 
 	return results, nil
 }
 
-func (s *service) GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal) ([]*userrelationship.UserRelationship, error) {
+func (s *service) GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error) {
 	if query == nil {
 		return nil, nil
 	}
 
 	l := s.log.With("op", "get_user_relationships_by_query", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+	}
 
 	list, err := s.dataProvider.getUserRelationships(ctx, query, uow)
 	if err != nil {

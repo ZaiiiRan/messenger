@@ -7,7 +7,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
 )
 
-type OutboxEventRepository interface {
+type EventRepository interface {
 	CreateEvents(ctx context.Context, events []*event.Event) error
 	UpdateEvents(ctx context.Context, events []*event.Event) error
 	DeleteEvents(ctx context.Context, events []*event.Event) error

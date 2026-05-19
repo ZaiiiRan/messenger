@@ -145,7 +145,6 @@ func (udp *userRelationshipDataProvider) getUserRelationshipsLocked(
 func (udp *userRelationshipDataProvider) createUserRelationships(
 	ctx context.Context,
 	urs []*userrelationship.UserRelationship,
-	actorID string,
 	uow *uow.UnitOfWork,
 ) error {
 	if len(urs) == 0 {
@@ -162,27 +161,24 @@ func (udp *userRelationshipDataProvider) createUserRelationships(
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	toInvalidate := make(map[string]struct{})
-	for _, ur := range urs {
-		if err := cacheRepo.SetUserRelationship(ctx, ur); err != nil {
-			return err
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
+		toInvalidate := make(map[string]struct{})
+		for _, ur := range urs {
+			cacheRepo.SetUserRelationship(ctx, ur)
+			toInvalidate[ur.GetUserID1()] = struct{}{}
+			toInvalidate[ur.GetUserID2()] = struct{}{}
 		}
-		for _, uid := range udp.listInvalidationIDs(ur, actorID) {
-			toInvalidate[uid] = struct{}{}
+		for uid := range toInvalidate {
+			cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
 		}
-	}
-	for uid := range toInvalidate {
-		cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
-	}
-
+	})
 	return nil
 }
 
 func (udp *userRelationshipDataProvider) updateUserRelationships(
 	ctx context.Context,
 	urs []*userrelationship.UserRelationship,
-	actorID string,
 	uow *uow.UnitOfWork,
 ) error {
 	if len(urs) == 0 {
@@ -199,20 +195,18 @@ func (udp *userRelationshipDataProvider) updateUserRelationships(
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	toInvalidate := make(map[string]struct{})
-	for _, ur := range urs {
-		if err := cacheRepo.SetUserRelationship(ctx, ur); err != nil {
-			return err
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
+		toInvalidate := make(map[string]struct{})
+		for _, ur := range urs {
+			cacheRepo.SetUserRelationship(ctx, ur)
+			toInvalidate[ur.GetUserID1()] = struct{}{}
+			toInvalidate[ur.GetUserID2()] = struct{}{}
 		}
-		for _, uid := range udp.listInvalidationIDs(ur, actorID) {
-			toInvalidate[uid] = struct{}{}
+		for uid := range toInvalidate {
+			cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
 		}
-	}
-	for uid := range toInvalidate {
-		cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
-	}
-
+	})
 	return nil
 }
 
@@ -235,19 +229,18 @@ func (udp *userRelationshipDataProvider) deleteUserRelationships(
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	toInvalidate := make(map[string]struct{})
-	for _, ur := range urs {
-		if err := cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2()); err != nil {
-			return err
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
+		toInvalidate := make(map[string]struct{})
+		for _, ur := range urs {
+			cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2())
+			toInvalidate[ur.GetUserID1()] = struct{}{}
+			toInvalidate[ur.GetUserID2()] = struct{}{}
 		}
-		toInvalidate[ur.GetUserID1()] = struct{}{}
-		toInvalidate[ur.GetUserID2()] = struct{}{}
-	}
-	for uid := range toInvalidate {
-		cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
-	}
-
+		for uid := range toInvalidate {
+			cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
+		}
+	})
 	return nil
 }
 
@@ -269,17 +262,13 @@ func (udp *userRelationshipDataProvider) save(ctx context.Context, ur *userrelat
 		}
 	}
 
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	if err := cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2()); err != nil {
-		return err
-	}
-
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
+		cacheRepo.SetUserRelationship(ctx, ur)
+		cacheRepo.InvalidateUserRelationshipsLists(ctx, ur.GetUserID1())
+		cacheRepo.InvalidateUserRelationshipsLists(ctx, ur.GetUserID2())
+	})
 	return nil
-}
-
-func (udp *userRelationshipDataProvider) saveCache(ctx context.Context, ur *userrelationship.UserRelationship) {
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	cacheRepo.SetUserRelationship(ctx, ur)
 }
 
 func (udp *userRelationshipDataProvider) delete(ctx context.Context, ur *userrelationship.UserRelationship, uow *uow.UnitOfWork) error {
@@ -293,47 +282,12 @@ func (udp *userRelationshipDataProvider) delete(ctx context.Context, ur *userrel
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	if err := cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2()); err != nil {
-		return err
-	}
-
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
+		cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2())
+		cacheRepo.InvalidateUserRelationshipsLists(ctx, ur.GetUserID1())
+		cacheRepo.InvalidateUserRelationshipsLists(ctx, ur.GetUserID2())
+	})
 	return nil
 }
 
-func (udp *userRelationshipDataProvider) delPairCache(ctx context.Context, ur *userrelationship.UserRelationship) {
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	cacheRepo.DelUserRelationship(ctx, ur.GetUserID1(), ur.GetUserID2())
-}
-
-func (udp *userRelationshipDataProvider) invalidateUserLists(ctx context.Context, userID string) {
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	cacheRepo.InvalidateUserRelationshipsLists(ctx, userID)
-}
-
-func (udp *userRelationshipDataProvider) invalidateLists(
-	ctx context.Context,
-	ur *userrelationship.UserRelationship,
-	actorID string,
-) {
-	cacheRepo := redisimpl.NewUserRelationshipsCacheRepository(udp.redis)
-	for _, uid := range udp.listInvalidationIDs(ur, actorID) {
-		cacheRepo.InvalidateUserRelationshipsLists(ctx, uid)
-	}
-}
-
-func (udp *userRelationshipDataProvider) listInvalidationIDs(
-	ur *userrelationship.UserRelationship,
-	actorID string,
-) []string {
-	switch ur.GetStatus() {
-	case userrelationship.BlockedBy1:
-		return []string{ur.GetUserID1()}
-	case userrelationship.BlockedBy2:
-		return []string{ur.GetUserID2()}
-	case userrelationship.BlockedByBoth:
-		return []string{actorID}
-	default:
-		return []string{ur.GetUserID1(), ur.GetUserID2()}
-	}
-}
