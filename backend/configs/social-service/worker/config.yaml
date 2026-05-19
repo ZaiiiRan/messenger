@@ -1,0 +1,16 @@
+metrics_server:
+  port: ":8080"
+shutdown:
+  shutdown_timeout: 15
+vault:
+  path: "secret/data/social-service"
+user_relationship_changes_tasks_producer:
+  topic: "user-relationship-changes-tasks"
+  client_id: "social-service"
+  write_timeout: 30
+  name: "user_relationship_changes_tasks_producer"
+user_relationship_changes_tasks_sending_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 1000
