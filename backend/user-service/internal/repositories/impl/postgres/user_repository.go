@@ -168,7 +168,7 @@ func (r *UserRepository) Update(ctx context.Context, users []*user.User) error {
 	return nil
 }
 
-func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error) {
+func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal, locked bool, skipLocked bool) ([]*user.User, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -243,130 +243,15 @@ func (r *UserRepository) Query(ctx context.Context, query *models.QueryUsersDal)
 	default:
 		appendOrder(&sb, "u.id", true)
 	}
-	
-	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
-
-	rows, err := r.conn.Query(ctx, sb.String(), args...)
-	if err != nil {
-		return nil, fmt.Errorf("query users: %w", err)
-	}
-	defer rows.Close()
-
-	var result []*user.User
-	for rows.Next() {
-		var (
-			userDal            models.V1UserDal
-			profileDal         models.V1ProfileDal
-			statusDal          models.V1StatusDal
-			privacySettingsDal models.V1PrivacySettingsDal
-		)
-		if err := rows.Scan(
-			&userDal.Id, &userDal.Username, &userDal.Email, &userDal.CreatedAt, &userDal.UpdatedAt,
-			&profileDal.FirstName, &profileDal.LastName, &profileDal.Phone, &profileDal.Birthdate, &profileDal.Bio,
-			&statusDal.IsConfirmed, &statusDal.IsPermanentlyBanned, &statusDal.BannedUntil, &statusDal.IsDeleted, &statusDal.DeletedAt,
-			&statusDal.IsPermanentlyDeleted, &statusDal.OldEmail, &statusDal.EmailUpdatedAt,
-			&privacySettingsDal.Settings,
-		); err != nil {
-			return nil, fmt.Errorf("scan user: %w", err)
-		}
-		profileDal.UserId = userDal.Id
-		statusDal.UserId = userDal.Id
-		privacySettingsDal.UserId = userDal.Id
-
-		domainPs, err := privacySettingsDal.ToDomain()
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, userDal.ToDomain(profileDal.ToDomain(), domainPs, statusDal))
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate users: %w", err)
-	}
-
-	return result, nil
-}
-
-func (r *UserRepository) QueryLocked(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error) {
-	if query == nil {
-		return nil, nil
-	}
-
-	var (
-		sb     strings.Builder
-		args   []any
-		argPos = 1
-	)
-
-	sb.WriteString(`
-		SELECT
-			u.id, u.username, u.email, u.created_at, u.updated_at,
-			p.first_name, p.last_name, p.phone, p.birthdate, p.bio,
-			s.is_confirmed, s.is_permanently_banned, s.banned_until, s.is_deleted, s.deleted_at, s.is_permanently_deleted, s.old_email, s.email_updated_at,
-			ps.settings
-		FROM users u
-		JOIN profile p ON p.user_id = u.id
-		JOIN status  s ON s.user_id = u.id
-		JOIN privacy_settings ps ON ps.user_id = u.id
-		WHERE 1=1
-	`)
-
-	var idsArgPos int
-	if len(query.Filter.Ids) > 0 {
-		idsArgPos = argPos
-		appendAnyEqual(&sb, "u.id::text", query.Filter.Ids, &args, &argPos)
-	}
-	appendNoneEqual(&sb, "u.id::text", query.Filter.ExcludeIds, &args, &argPos)
-	appendAnyEqual(&sb, "u.username", query.Filter.Usernames, &args, &argPos)
-	appendIPrefix(&sb, "u.username", query.Filter.PartialUsernames, &args, &argPos)
-	appendAnyEqual(&sb, "u.email", query.Filter.Emails, &args, &argPos)
-	appendIPrefix(&sb, "u.email", query.Filter.PartialEmails, &args, &argPos)
-	appendAnyEqual(&sb, "p.phone", query.Filter.PhoneNumbers, &args, &argPos)
-	appendPartialNames(&sb, "p.first_name", "p.last_name", query.Filter.PartialNames, &args, &argPos)
-
-	if query.Filter.SearchFilter != nil && *query.Filter.SearchFilter != "" {
-		fmt.Fprintf(
-			&sb,
-			" AND (u.username ILIKE $%d OR (p.first_name || ' ' || p.last_name) ILIKE $%d OR (p.last_name || ' ' || p.first_name) ILIKE $%d)",
-			argPos, argPos, argPos,
-		)
-		args = append(args, fmt.Sprintf("%s%%", *query.Filter.SearchFilter))
-		argPos++
-	}
-
-	appendBool(&sb, "s.is_confirmed", query.Filter.IsConfirmed, &args, &argPos)
-	appendBool(&sb, "s.is_deleted", query.Filter.IsDeleted, &args, &argPos)
-	appendBool(&sb, "s.is_permanently_banned", query.Filter.IsPermanentlyBanned, &args, &argPos)
-	appendIsNotNull(&sb, "s.banned_until", query.Filter.IsTemporarilyBanned)
-	appendRange(&sb, "s.deleted_at", query.Filter.DeletedFrom, query.Filter.DeletedTo, &args, &argPos)
-	appendBool(&sb, "s.is_permanently_deleted", query.Filter.IsPermanentlyDeleted, &args, &argPos)
-	appendRange(&sb, "s.banned_until", query.Filter.BannedUntilFrom, query.Filter.BannedUntilTo, &args, &argPos)
-	appendRange(&sb, "u.created_at", query.Filter.CreatedFrom, query.Filter.CreatedTo, &args, &argPos)
-	appendRange(&sb, "u.updated_at", query.Filter.UpdatedFrom, query.Filter.UpdatedTo, &args, &argPos)
-	appendRange(&sb, "s.email_updated_at", query.Filter.EmailUpdatedFrom, query.Filter.EmailUpdatedTo, &args, &argPos)
-	appendOrder(&sb, "u.updated_at", true)
-
-	inactiveExpr := "CASE WHEN s.is_deleted OR s.is_permanently_banned THEN 1 ELSE 0 END"
-	switch {
-	case query.Sort.PreserveIDsOrder && idsArgPos > 0:
-		if query.Sort.SortInactiveLast {
-			fmt.Fprintf(&sb, " ORDER BY %s, array_position($%d::uuid[], u.id)", inactiveExpr, idsArgPos)
-		} else {
-			fmt.Fprintf(&sb, " ORDER BY array_position($%d::uuid[], u.id)", idsArgPos)
-		}
-	case query.Sort.SortByUsername:
-		if query.Sort.SortInactiveLast {
-			fmt.Fprintf(&sb, " ORDER BY %s, u.username, p.first_name, p.last_name", inactiveExpr)
-		} else {
-			fmt.Fprintf(&sb, " ORDER BY u.username, p.first_name, p.last_name")
-		}
-	default:
-		appendOrder(&sb, "u.id", true)
-	}
 
 	appendLimitOffset(&sb, query.Limit, query.Offset, &args, &argPos)
 
-	sb.WriteString(" FOR UPDATE OF u SKIP LOCKED")
+	if locked {
+		fmt.Fprintf(&sb, " FOR UPDATE")
+	}
+	if skipLocked {
+		fmt.Fprintf(&sb, " SKIP LOCKED")
+	}
 
 	rows, err := r.conn.Query(ctx, sb.String(), args...)
 	if err != nil {

@@ -71,7 +71,7 @@ func (w *UnbanTemporarilyBannedUserWorker) Run(ctx context.Context) {
 
 func (w *UnbanTemporarilyBannedUserWorker) runOnce(ctx context.Context) (int, error) {
 	start := time.Now()
-	unbannedCount, err := w.userService.UnbanTemporarilyBannedUsers(ctx, int(w.cfg.BatchSize), w.workerID)
+	unbannedCount, err := w.userService.UnbanTemporarilyBannedUsers(ctx, int(w.cfg.BatchSize), w.workerID, nil)
 	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
 	if err != nil {
 		if ctx.Err() != nil {

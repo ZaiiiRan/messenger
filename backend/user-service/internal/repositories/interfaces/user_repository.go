@@ -10,7 +10,6 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, user []*user.User) error
 	Update(ctx context.Context, user []*user.User) error
-	Query(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error)
-	QueryLocked(ctx context.Context, query *models.QueryUsersDal) ([]*user.User, error)
+	Query(ctx context.Context, query *models.QueryUsersDal, locked bool, skipLocked bool) ([]*user.User, error)
 	Delete(ctx context.Context, users []*user.User) error
 }

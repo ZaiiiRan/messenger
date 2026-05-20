@@ -10,16 +10,18 @@ import (
 )
 
 type WorkerConfig struct {
-	MetricsServer                      settings.MetricsServerSettings                      `mapstructure:"metrics_server"`
-	DB                                 settings.PostgresSettings                           `mapstructure:"db"`
-	Redis                              settings.RedisSettings                              `mapstructure:"redis"`
-	UserDataDeletionTasksProducer      settings.KafkaProducerSettings                      `mapstructure:"user_data_deletion_tasks_producer"`
-	Shutdown                           settings.ShutdownSettings                           `mapstructure:"shutdown"`
-	Vault                              settings.VaultSettings                              `mapstructure:"vault"`
-	UnconfirmedUsersDataClearingWorker settings.UnconfirmedUsersDataClearingWorkerSettings `mapstructure:"unconfirmed_users_data_clearing_worker"`
-	DeletedUsersDataClearingWorker     settings.DeletedUsersDataClearingWorkerSettings     `mapstructure:"deleted_users_data_clearing_worker"`
-	UnbanTemporarilyBannedUsersWorker  settings.UnbanTemporarilyBannedUsersWorkerSettings  `mapstructure:"unban_temporarily_banned_users_worker"`
-	UserDataDeletionTasksSendingWorker settings.KafkaSendingWorkerSettings                 `mapstructure:"user_data_deletion_tasks_sending_worker"`
+	MetricsServer                        settings.MetricsServerSettings                        `mapstructure:"metrics_server"`
+	DB                                   settings.PostgresSettings                             `mapstructure:"db"`
+	Redis                                settings.RedisSettings                                `mapstructure:"redis"`
+	UserDataDeletionTasksProducer        settings.KafkaProducerSettings                        `mapstructure:"user_data_deletion_tasks_producer"`
+	Shutdown                             settings.ShutdownSettings                             `mapstructure:"shutdown"`
+	Vault                                settings.VaultSettings                                `mapstructure:"vault"`
+	UnconfirmedUsersDataClearingWorker   settings.UnconfirmedUsersDataClearingWorkerSettings   `mapstructure:"unconfirmed_users_data_clearing_worker"`
+	DeletedUsersDataClearingWorker       settings.DeletedUsersDataClearingWorkerSettings       `mapstructure:"deleted_users_data_clearing_worker"`
+	UnbanTemporarilyBannedUsersWorker    settings.UnbanTemporarilyBannedUsersWorkerSettings    `mapstructure:"unban_temporarily_banned_users_worker"`
+	UserDataDeletionTasksSendingWorker   settings.KafkaSendingWorkerSettings                   `mapstructure:"user_data_deletion_tasks_sending_worker"`
+	UserRelationshipChangesTasksConsumer settings.UserRelationshipChangesTasksConsumerSettings `mapstructure:"user_relationship_changes_tasks_consumer"`
+	UpdateFriendsInPrivacySettingsWorker settings.UpdateFriendsInPrivacySettingsWorker         `mapstructure:"update_friends_in_privacy_settings_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -65,4 +67,6 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetDeletedUsersDataClearingWorkerDefaults(v, "deleted_users_data_clearing_worker")
 	settings.SetUnbanTemporarilyBannedUsersWorkerDefaults(v, "unban_temporarily_banned_users_worker")
 	settings.SetKafkaSendingWorkerDefaults(v, "user_data_deletion_tasks_sending_worker")
+	settings.SetUserRelationshipChangesTasksConsumerSettings(v, "user_relationship_changes_tasks_consumer")
+	settings.SetUpdateFriendsInPrivacySettingsWorkerDefaults(v, "update_friends_in_privacy_settings_worker")
 }

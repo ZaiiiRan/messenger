@@ -71,7 +71,7 @@ func (w *UnconfirmedUserDataClearingWorker) Run(ctx context.Context) {
 
 func (w *UnconfirmedUserDataClearingWorker) runOnce(ctx context.Context) (int, error) {
 	start := time.Now()
-	deletedCount, err := w.userService.DeleteUnconfirmedUsers(ctx, int(w.cfg.BatchSize), w.workerID)
+	deletedCount, err := w.userService.DeleteUnconfirmedUsers(ctx, int(w.cfg.BatchSize), w.workerID, nil)
 	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
 	if err != nil {
 		if ctx.Err() != nil {

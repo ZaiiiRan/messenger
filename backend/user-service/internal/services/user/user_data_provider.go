@@ -50,7 +50,7 @@ func (udp *userDataProvider) getByID(ctx context.Context, id string, uow *uow.Un
 		1,
 		1,
 	)
-	list, err := dbRepo.Query(ctx, query)
+	list, err := dbRepo.Query(ctx, query, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (udp *userDataProvider) getUserByFilter(ctx context.Context, filter models.
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	list, err = dbRepo.Query(ctx, query)
+	list, err = dbRepo.Query(ctx, query, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (udp *userDataProvider) getUserByFilter(ctx context.Context, filter models.
 	return list[0], nil
 }
 
-func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.UserFilterDal, batch_size int, uow *uow.UnitOfWork) ([]*user.User, error) {
+func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.UserFilterDal, batch_size int, skipLocked bool, uow *uow.UnitOfWork) ([]*user.User, error) {
 	query := models.NewQueryUsersDal(filter, models.UserSortDal{}, 1, batch_size)
 
 	pgConn, err := uow.GetConn(ctx)
@@ -102,7 +102,7 @@ func (udp *userDataProvider) getUsersLocked(ctx context.Context, filter models.U
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	list, err := dbRepo.QueryLocked(ctx, query)
+	list, err := dbRepo.Query(ctx, query, true, skipLocked)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (udp *userDataProvider) getUserList(ctx context.Context, query *models.Quer
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	list, err = dbRepo.Query(ctx, query)
+	list, err = dbRepo.Query(ctx, query, false, false)
 	if err != nil {
 		return nil, err
 	}

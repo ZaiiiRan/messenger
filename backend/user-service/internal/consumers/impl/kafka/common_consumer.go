@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ZaiiiRan/messenger/backend/auth-service/internal/config/settings"
-	kafkatransport "github.com/ZaiiiRan/messenger/backend/auth-service/internal/transport/kafka"
+	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
+	kafkatransport "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 )

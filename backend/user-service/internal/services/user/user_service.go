@@ -15,6 +15,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/models"
+	uow "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/unitofwork/postgres"
 	userdatadeletiontasks "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
@@ -36,9 +37,10 @@ type UserService interface {
 	UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error)
 	UpdateMyPrivacySettingsByUserRequest(ctx context.Context, req *pb.UpdateMyPrivacySettingsByUserRequest) (*pb.UpdateMyPrivacySettingsByUserResponse, error)
 	DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequest) (*pb.DeleteMeByUserResponse, error)
-	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
-	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
-	UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string) (int, error)
+	DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error)
+	ClearDeletedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error)
+	UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error)
+	DeleteUserFromPrivacySettingsLists(ctx context.Context, userID string, deleteID string, workerID string, uow *uow.UnitOfWork) error
 }
 
 type service struct {
@@ -673,7 +675,7 @@ func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequ
 	return &pb.DeleteMeByUserResponse{User: userToProto(u, false)}, nil
 }
 
-func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
+func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error) {
 	l := s.log.With("op", "delete_unconfirmed_users", "worker_id", workerID)
 
 	if batchSize <= 0 {
@@ -681,8 +683,12 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, wor
 		return 0, nil
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+	}
 	_, err := uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("user.delete_unconfirmed_users_failed.begin_transaction_error", "err", err)
@@ -696,7 +702,7 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, wor
 		UpdatedTo:   &confirmTimeout,
 	}
 
-	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, uow)
+	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, true, uow)
 	if err != nil {
 		l.Errorw("user.delete_unconfirmed_users_failed.query_error", "err", err)
 		return 0, ErrDeleteUnconfirmedUsersFailed
@@ -713,9 +719,11 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, wor
 		l.Errorw("user.delete_unconfirmed_users_failed.delete_error", "err", err)
 		return 0, ErrDeleteUnconfirmedUsersFailed
 	}
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user.delete_unconfirmed_users_failed.commit_error", "err", err)
-		return 0, ErrDeleteUnconfirmedUsersFailed
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user.delete_unconfirmed_users_failed.commit_error", "err", err)
+			return 0, ErrDeleteUnconfirmedUsersFailed
+		}
 	}
 
 	if len(users) > 0 {
@@ -725,7 +733,7 @@ func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, wor
 	return len(users), nil
 }
 
-func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
+func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error) {
 	l := s.log.With("op", "clear_deleted_users", "worker_id", workerID)
 
 	if batchSize <= 0 {
@@ -733,8 +741,12 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 		return 0, nil
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+	}
 	_, err := uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("user.clear_deleted_users_failed.begin_transaction_error", "err", err)
@@ -749,7 +761,7 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 		IsPermanentlyDeleted: utils.BoolPtr(false),
 	}
 
-	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, uow)
+	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, true, uow)
 	if err != nil {
 		l.Errorw("user.clear_deleted_users_failed.query_error", "err", err)
 		return 0, ErrClearDeletedUsersFailed
@@ -776,9 +788,11 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 		l.Errorw("user.clear_deleted_users_failed.update_error", "err", err)
 		return 0, ErrClearDeletedUsersFailed
 	}
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user.clear_deleted_users_failed.commit_error", "err", err)
-		return 0, ErrClearDeletedUsersFailed
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user.clear_deleted_users_failed.commit_error", "err", err)
+			return 0, ErrClearDeletedUsersFailed
+		}
 	}
 
 	if len(users) > 0 {
@@ -788,7 +802,7 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 	return len(users), nil
 }
 
-func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string) (int, error) {
+func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error) {
 	l := s.log.With("op", "unban_temporarily_banned_users", "worker_id", workerID)
 
 	if batchSize <= 0 {
@@ -796,8 +810,12 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 		return 0, nil
 	}
 
-	uow := s.dataProvider.newUOW()
-	defer uow.Close()
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+	}
 	_, err := uow.BeginTransaction(ctx)
 	if err != nil {
 		l.Errorw("user.unban_temporarily_banned_users_failed.begin_transaction_error", "err", err)
@@ -810,7 +828,7 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 		BannedUntilTo:       &now,
 	}
 
-	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, uow)
+	users, err := s.dataProvider.getUsersLocked(ctx, filter, batchSize, true, uow)
 	if err != nil {
 		l.Errorw("user.unban_temporarily_banned_users_failed.query_error", "err", err)
 		return 0, ErrUnbanTemporarilyBannedUsersFailed
@@ -828,9 +846,11 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 		l.Errorw("user.unban_temporarily_banned_users_failed.update_error", "err", err)
 		return 0, ErrUnbanTemporarilyBannedUsersFailed
 	}
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("user.unban_temporarily_banned_users_failed.commit_error", "err", err)
-		return 0, ErrUnbanTemporarilyBannedUsersFailed
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user.unban_temporarily_banned_users_failed.commit_error", "err", err)
+			return 0, ErrUnbanTemporarilyBannedUsersFailed
+		}
 	}
 
 	if len(users) > 0 {
@@ -839,6 +859,92 @@ func (s *service) UnbanTemporarilyBannedUsers(ctx context.Context, batchSize int
 
 	return len(users), nil
 }
+
+func (s *service) DeleteUserFromPrivacySettingsLists(ctx context.Context, userID string, deleteID string, workerID string, uow *uow.UnitOfWork) error {
+	l := s.log.With("op", "delete_user_from_privacy_settings_lists", "worker_id", workerID, "user_id", userID, "delete_id", deleteID)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+	}
+
+	u, err := s.dataProvider.getByID(ctx, userID, uow)
+	if err != nil {
+		l.Errorw("user.delete_user_from_privacy_settings_lists_failed.get_user_error", "err", err)
+		return ErrDeleteUserFromPrivacySettingsLists
+	}
+	if u == nil {
+		return nil
+	}
+
+	ps := u.GetPrivacySettings()
+	type psAccessor struct {
+		get func() privacysettings.PrivacySetting
+		set func(privacysettings.PrivacySetting)
+	}
+	accessors := []psAccessor{
+		{ps.GetAvatar, ps.SetAvatar},
+		{ps.GetPhotos, ps.SetPhotos},
+		{ps.GetPhoneNumber, ps.SetPhoneNumber},
+		{ps.GetEmail, ps.SetEmail},
+		{ps.GetBirthdate, ps.SetBirthdate},
+		{ps.GetOnlineStatus, ps.SetOnlineStatus},
+		{ps.GetFirstDialogsInit, ps.SetFirstDialogsInit},
+		{ps.GetGroupChatInvites, ps.SetGroupChatInvites},
+	}
+
+	isUpdated := false
+	for _, acc := range accessors {
+		cur := acc.get()
+		newFavs := utils.RemoveFromSlice(cur.GetFavourites(), deleteID)
+		newExcs := utils.RemoveFromSlice(cur.GetExceptions(), deleteID)
+		favsChanged := len(newFavs) < len(cur.GetFavourites())
+		excsChanged := len(newExcs) < len(cur.GetExceptions())
+		if favsChanged || excsChanged {
+			updated := cur
+			if favsChanged {
+				updated = updated.WithFavourites(newFavs)
+			}
+			if excsChanged {
+				updated = updated.WithExceptions(newExcs)
+			}
+			acc.set(updated)
+			isUpdated = true
+		}
+	}
+
+	if !isUpdated {
+		return nil
+	}
+
+	now := time.Now()
+	u.SetUpdatedAt(&now)
+
+	if needToCommit {
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user.delete_user_from_privacy_settings_lists_failed.begin_transaction_error", "err", err)
+			return ErrDeleteUserFromPrivacySettingsLists
+		}
+	}
+
+	if err := s.dataProvider.save(ctx, u, uow); err != nil {
+		l.Errorw("user.delete_user_from_privacy_settings_lists_failed.save_error", "err", err)
+		return ErrDeleteUserFromPrivacySettingsLists
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user.delete_user_from_privacy_settings_lists_failed.commit_error", "err", err)
+			return ErrDeleteUserFromPrivacySettingsLists
+		}
+	}
+
+	l.Infow("user.delete_user_from_privacy_settings_lists_success")
+	return nil
+}
+
 
 func (s *service) updateUserFields(u *user.User, fields []string, update *pb.UpdateUser, now time.Time) (bool, validationerror.ValidationError) {
 	if update == nil {

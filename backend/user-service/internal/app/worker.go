@@ -8,6 +8,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
 	implkafkaproducer "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/impl/kafka"
+	updatefriendsinprivacysettingstasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/update_friends_in_privacy_settings_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
@@ -17,7 +18,9 @@ import (
 	deleteduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/deleted_user_data_clearing"
 	unbantemporarilybanneduserworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unban_temporarily_banned_user"
 	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing"
+	updatingfriendsinprivacysettingsworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/updating_friends_in_privacy_settings"
 	usersdatadeletiontaskssendingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_data_deletion_tasks_sending"
+	userrelationshipchangestasksconsumerworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/user_relationship_changes_tasks_consumer"
 	"go.uber.org/zap"
 )
 
@@ -31,8 +34,11 @@ type WorkerApp struct {
 	userDataDeletionTasksKafkaClient   *kafka.KafkaClient
 	userDataDeletionTasksKafkaProducer *implkafkaproducer.Producer
 
-	userService                  userservice.UserService
-	userDataDeletionTasksService userdatadeletiontasksservice.UserDataDeletionTasksService
+	userRelationshipChangesTasksKafkaClient *kafka.KafkaClient
+
+	userService                           userservice.UserService
+	userDataDeletionTasksService          userdatadeletiontasksservice.UserDataDeletionTasksService
+	updateFriendsInPrivacySettingsService updatefriendsinprivacysettingstasksservice.UpdateFriendsInPrivacySettingsTasksService
 
 	metricsServer    *prommetrics.Server
 	workerMetrics    *prommetrics.WorkerMetrics
@@ -71,12 +77,16 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.initUserDataDeletionTasksKafkaClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initUserRelationshipChangesTasksKafkaClient(ctx); err != nil {
+		return err
+	}
 	if err := a.initUserDataDeletionTasksKafkaProducer(); err != nil {
 		return err
 	}
 
 	a.initUserDataDeletionTasksService()
 	a.initUserService()
+	a.initUpdateFriendsInPrivacySettingsService()
 
 	a.initMetricsServer()
 	a.startMetricsServer()
@@ -87,6 +97,8 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.startDeletedUsersDataClearingWorkers()
 	a.startUnbanTemporarilyBannedUserWorkers()
 	a.startUserDataDeletionTasksSendingWorkers()
+	a.startUserRelationshipChangesTasksConsumerWorkers()
+	a.startUpdatingFriendsInPrivacySettingsWorkers()
 
 	<-a.isMetricsStarted
 	a.log.Infow("app.started")
@@ -120,6 +132,7 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	}
 
 	a.userDataDeletionTasksKafkaProducer.Close()
+	a.userRelationshipChangesTasksKafkaClient.Close()
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
@@ -163,6 +176,18 @@ func (a *WorkerApp) initUserDataDeletionTasksKafkaClient(ctx context.Context) er
 	return nil
 }
 
+func (a *WorkerApp) initUserRelationshipChangesTasksKafkaClient(ctx context.Context) error {
+	kafkaClient, err := kafka.New(a.cfg.UserRelationshipChangesTasksConsumer.KafkaConsumerSettings.KafkaSettings)
+	if err != nil {
+		a.log.Errorw("app.user_relationship_changes_tasks_kafka_client_init_failed", "err", err)
+		return err
+	}
+	a.userRelationshipChangesTasksKafkaClient = kafkaClient
+
+	a.log.Infow("app.user_relationship_changes_tasks_kafka_connected")
+	return nil
+}
+
 func (a *WorkerApp) initUserDataDeletionTasksKafkaProducer() error {
 	producer, err := implkafkaproducer.New(a.cfg.UserDataDeletionTasksProducer, a.userDataDeletionTasksKafkaClient)
 	if err != nil {
@@ -175,6 +200,10 @@ func (a *WorkerApp) initUserDataDeletionTasksKafkaProducer() error {
 
 func (a *WorkerApp) initUserDataDeletionTasksService() {
 	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.userDataDeletionTasksKafkaProducer, a.log)
+}
+
+func (a *WorkerApp) initUpdateFriendsInPrivacySettingsService() {
+	a.updateFriendsInPrivacySettingsService = updatefriendsinprivacysettingstasksservice.New(a.postgresClient, a.userService, a.log)
 }
 
 func (a *WorkerApp) initUserService() {
@@ -249,6 +278,44 @@ func (a *WorkerApp) startUserDataDeletionTasksSendingWorkers() {
 		w := usersdatadeletiontaskssendingworker.New(
 			a.cfg.UserDataDeletionTasksSendingWorker,
 			a.userDataDeletionTasksService,
+			a.log,
+			a.workerMetrics,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startUserRelationshipChangesTasksConsumerWorkers() error {
+	for i := 0; i < int(a.cfg.UserRelationshipChangesTasksConsumer.Count); i++ {
+		w, err := userrelationshipchangestasksconsumerworker.New(
+			a.cfg.UserRelationshipChangesTasksConsumer.KafkaConsumerSettings,
+			a.userDataDeletionTasksKafkaClient,
+			a.updateFriendsInPrivacySettingsService,
+			a.log,
+			a.workerMetrics,
+		)
+		if err != nil {
+			a.log.Errorw("app.user_relationship_changes_tasks_consumer_worker_init_failed", "err", err, "worker_id", i)
+			return err
+		}
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+	return nil
+}
+
+func (a *WorkerApp) startUpdatingFriendsInPrivacySettingsWorkers() {
+	for i := 0; i < int(a.cfg.UpdateFriendsInPrivacySettingsWorker.Count); i++ {
+		w := updatingfriendsinprivacysettingsworker.New(
+			a.cfg.UpdateFriendsInPrivacySettingsWorker,
+			a.updateFriendsInPrivacySettingsService,
 			a.log,
 			a.workerMetrics,
 		)

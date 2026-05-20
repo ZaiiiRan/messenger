@@ -1,4 +1,4 @@
-package updatefriendsinprivacysettingstasks
+package updatefriendsinprivacysettingstasksservice
 
 type UpdateFriendsInPrivacySettingsTasksServiceError struct {
 	message string
