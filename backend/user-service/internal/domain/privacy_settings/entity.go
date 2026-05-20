@@ -132,6 +132,17 @@ func (p *PrivacySettings) GetOnlineStatus() PrivacySetting     { return p.online
 func (p *PrivacySettings) GetFirstDialogsInit() PrivacySetting { return p.firstDialogsInit }
 func (p *PrivacySettings) GetGroupChatInvites() PrivacySetting { return p.groupChatInvites }
 
+func (p *PrivacySettings) ClearAllLists() {
+	p.avatar = p.avatar.WithFavourites(nil).WithExceptions(nil)
+	p.photos = p.photos.WithFavourites(nil).WithExceptions(nil)
+	p.phoneNumber = p.phoneNumber.WithFavourites(nil).WithExceptions(nil)
+	p.email = p.email.WithFavourites(nil).WithExceptions(nil)
+	p.birthdate = p.birthdate.WithFavourites(nil).WithExceptions(nil)
+	p.onlineStatus = p.onlineStatus.WithFavourites(nil).WithExceptions(nil)
+	p.firstDialogsInit = p.firstDialogsInit.WithFavourites(nil).WithExceptions(nil)
+	p.groupChatInvites = p.groupChatInvites.WithFavourites(nil).WithExceptions(nil)
+}
+
 func (p *PrivacySettings) SetAvatar(s PrivacySetting)           { p.avatar = s }
 func (p *PrivacySettings) SetPhotos(s PrivacySetting)           { p.photos = s }
 func (p *PrivacySettings) SetPhoneNumber(s PrivacySetting)      { p.phoneNumber = s }

@@ -777,6 +777,7 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 		u.GetStatus().SetPermanentlyBanned(false)
 		u.GetStatus().SetBannedUntil(nil)
 		u.GetStatus().SetPermanentlyDeleted(true)
+		u.GetPrivacySettings().ClearAllLists()
 		u.SetUpdatedAt(&now)
 	}
 
