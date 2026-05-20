@@ -12,19 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type commonOutboxEventRepository struct {
+type commonEventRepository struct {
 	tableName string
 	conn      *pgxpool.Conn
 }
 
-func newCommonOutboxEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
-	return &commonOutboxEventRepository{
+func newCommonEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
+	return &commonEventRepository{
 		tableName: tableName,
 		conn:      conn,
 	}
 }
 
-func (r *commonOutboxEventRepository) Create(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) Create(ctx context.Context, events []*event.Event, onConflictDoUpdate bool) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -47,8 +47,23 @@ func (r *commonOutboxEventRepository) Create(ctx context.Context, events []*even
 		SELECT u.payload, u.status, u.attempts, u.created_at, u.updated_at
 		FROM UNNEST($1::jsonb[], $2::smallint[], $3::smallint[], $4::timestamptz[], $5::timestamptz[])
 			AS u(payload, status, attempts, created_at, updated_at)
-		RETURNING id, payload, status, attempts, created_at, updated_at
 	`, r.tableName)
+
+	if onConflictDoUpdate {
+		sql = fmt.Sprintf(`
+			%s
+			ON CONFLICT (id) DO UPDATE
+			SET
+				payload = EXCLUDED.payload,
+				status = EXCLUDED.status,
+				attempts = EXCLUDED.attempts,
+				updated_at = EXCLUDED.updated_at
+		`, sql)
+	}
+	sql = fmt.Sprintf(`
+		%s
+		RETURNING id, payload, status, attempts, created_at, updated_at
+	`, sql)
 
 	rows, err := r.conn.Query(ctx, sql, payloads, statuses, attempts, createdAts, updatedAts)
 	if err != nil {
@@ -70,7 +85,7 @@ func (r *commonOutboxEventRepository) Create(ctx context.Context, events []*even
 	return nil
 }
 
-func (r *commonOutboxEventRepository) Update(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) Update(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -117,7 +132,7 @@ func (r *commonOutboxEventRepository) Update(ctx context.Context, events []*even
 	return nil
 }
 
-func (r *commonOutboxEventRepository) Delete(ctx context.Context, events []*event.Event) error {
+func (r *commonEventRepository) Delete(ctx context.Context, events []*event.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -139,7 +154,7 @@ func (r *commonOutboxEventRepository) Delete(ctx context.Context, events []*even
 	return nil
 }
 
-func (r *commonOutboxEventRepository) Query(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
+func (r *commonEventRepository) Query(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}
@@ -185,7 +200,7 @@ func (r *commonOutboxEventRepository) Query(ctx context.Context, query *models.Q
 	return result, nil
 }
 
-func (r *commonOutboxEventRepository) QueryLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
+func (r *commonEventRepository) QueryLocked(ctx context.Context, query *models.QueryEventsLockedDal) ([]*event.Event, error) {
 	if query == nil {
 		return nil, nil
 	}

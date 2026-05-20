@@ -121,16 +121,20 @@ func (udp *userDataProvider) deleteUsers(ctx context.Context, users []*user.User
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	err = dbRepo.Delete(ctx, users)
-	if err != nil {
+	if err := dbRepo.Delete(ctx, users); err != nil {
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
-	for _, u := range users {
-		cacheRepo.DeleteUser(ctx, u.GetID())
+	ids := make([]string, len(users))
+	for i, u := range users {
+		ids[i] = u.GetID()
 	}
-
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+		for _, id := range ids {
+			cacheRepo.DeleteUser(ctx, id)
+		}
+	})
 	return nil
 }
 
@@ -141,16 +145,20 @@ func (udp *userDataProvider) updateUsers(ctx context.Context, users []*user.User
 	}
 
 	dbRepo := postgresimpl.NewUserRepository(pgConn)
-	err = dbRepo.Update(ctx, users)
-	if err != nil {
+	if err := dbRepo.Update(ctx, users); err != nil {
 		return err
 	}
 
-	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
-	for _, u := range users {
-		cacheRepo.DeleteUser(ctx, u.GetID())
+	ids := make([]string, len(users))
+	for i, u := range users {
+		ids[i] = u.GetID()
 	}
-
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+		for _, id := range ids {
+			cacheRepo.DeleteUser(ctx, id)
+		}
+	})
 	return nil
 }
 
@@ -198,26 +206,20 @@ func (udp *userDataProvider) save(ctx context.Context, u *user.User, uow *uow.Un
 		}
 	}
 
-	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
-	cacheRepo.DeleteUser(ctx, u.GetID())
-
-	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, models.UserSortDal{}, 1, 1)
-	cacheRepo.InvalidateUserList(ctx, emailQuery)
-	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, models.UserSortDal{}, 1, 1)
-	cacheRepo.InvalidateUserList(ctx, usernameQuery)
+	id := u.GetID()
+	email := u.GetEmail()
+	username := u.GetUsername()
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
+		cacheRepo.DeleteUser(ctx, id)
+		emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{email}}, models.UserSortDal{}, 1, 1)
+		cacheRepo.InvalidateUserList(ctx, emailQuery)
+		usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{username}}, models.UserSortDal{}, 1, 1)
+		cacheRepo.InvalidateUserList(ctx, usernameQuery)
+		cacheRepo.SetUser(ctx, u)
+		cacheRepo.SetUserList(ctx, emailQuery, []*user.User{u})
+		cacheRepo.SetUserList(ctx, usernameQuery, []*user.User{u})
+	})
 
 	return nil
-}
-
-func (udp *userDataProvider) saveCache(ctx context.Context, u *user.User) {
-	if u == nil || u.GetID() == "" {
-		return
-	}
-
-	cacheRepo := redisimpl.NewUserCacheRepository(udp.redis)
-	cacheRepo.SetUser(ctx, u)
-	emailQuery := models.NewQueryUsersDal(models.UserFilterDal{Emails: []string{u.GetEmail()}}, models.UserSortDal{}, 1, 1)
-	cacheRepo.SetUserList(ctx, emailQuery, []*user.User{u})
-	usernameQuery := models.NewQueryUsersDal(models.UserFilterDal{Usernames: []string{u.GetUsername()}}, models.UserSortDal{}, 1, 1)
-	cacheRepo.SetUserList(ctx, usernameQuery, []*user.User{u})
 }

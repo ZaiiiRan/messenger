@@ -146,7 +146,6 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 		l.Errorw("user.create_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
 	return &pb.CreateUserResponse{User: userToProto(u, false)}, nil
@@ -211,7 +210,6 @@ func (s *service) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRe
 		l.Errorw("user.update_user_email_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.update_user_email_success", "user_id", u.GetID())
 	return &pb.UpdateUserEmailResponse{User: userToProto(u, false)}, nil
@@ -458,7 +456,6 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 		l.Errorw("user.confirm_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
 	return &pb.ConfirmUserResponse{User: userToProto(u, false)}, nil
@@ -534,7 +531,6 @@ func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequ
 		l.Errorw("user.update_me_by_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.update_me_by_user_success", "user_id", u.GetID())
 	return &pb.UpdateMeByUserResponse{User: userToProto(u, false)}, nil
@@ -625,7 +621,6 @@ func (s *service) UpdateMyPrivacySettingsByUserRequest(
 		l.Errorw("user.update_my_privacy_settings_by_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.update_my_privacy_settings_by_user_success", "user_id", u.GetID())
 	return &pb.UpdateMyPrivacySettingsByUserResponse{
@@ -673,7 +668,6 @@ func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequ
 		l.Errorw("user.delete_me_by_user_failed.commit_error", "err", err)
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	s.dataProvider.saveCache(ctx, u)
 
 	l.Infow("user.delete_me_by_user_success", "user_id", u.GetID())
 	return &pb.DeleteMeByUserResponse{User: userToProto(u, false)}, nil

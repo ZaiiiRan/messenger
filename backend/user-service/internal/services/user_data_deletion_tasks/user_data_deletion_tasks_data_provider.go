@@ -36,7 +36,7 @@ func (udp *userDataDeletionTasksDataProvider) createUserDataDeletionTasks(
 	}
 
 	dbRepo := postgresimpl.NewUserDataDeletionTasksOutboxRepository(pgConn)
-	err = dbRepo.Create(ctx, events)
+	err = dbRepo.Create(ctx, events, false)
 
 	return err
 }

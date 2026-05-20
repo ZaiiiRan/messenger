@@ -55,9 +55,27 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 		outboxEvents = append(outboxEvents, evt)
 	}
 
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.begin_transaction_error", "err", err)
+			return ErrCreateUserDataDeletionTask
+		}
+	}
+
 	if err := s.dataProvider.createUserDataDeletionTasks(ctx, outboxEvents, uow); err != nil {
 		l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.create_error", "err", err)
 		return ErrCreateUserDataDeletionTask
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.commit_error", "err", err)
+			return ErrCreateUserDataDeletionTask
+		}
 	}
 
 	if len(outboxEvents) > 0 {

@@ -8,7 +8,7 @@ import (
 )
 
 type EventRepository interface {
-	Create(ctx context.Context, events []*event.Event) error
+	Create(ctx context.Context, events []*event.Event, onConflictDoUpdate bool) error
 	Update(ctx context.Context, events []*event.Event) error
 	Delete(ctx context.Context, events []*event.Event) error
 	Query(ctx context.Context, query *models.QueryEventsDal) ([]*event.Event, error)

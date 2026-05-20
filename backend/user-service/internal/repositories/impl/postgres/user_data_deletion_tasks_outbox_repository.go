@@ -6,8 +6,5 @@ import (
 )
 
 func NewUserDataDeletionTasksOutboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
-	return &commonOutboxEventRepository{
-		conn:      conn,
-		tableName: "user_data_deletion_tasks_outbox",
-	}
+	return newCommonEventRepositoryRepository(conn, "user_data_deletion_tasks_outbox")
 }
