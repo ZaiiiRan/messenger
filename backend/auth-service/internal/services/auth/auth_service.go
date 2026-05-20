@@ -434,10 +434,7 @@ func (s *service) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Logout
 		return nil, status.Error(codes.Unauthenticated, commonerror.ErrUnauthorized.Error())
 	}
 
-	uow := s.authDataProvider.newUOW()
-	defer uow.Close()
-
-	if err := s.tokenService.InvalidateRefreshToken(ctx, uow, refreshTokenStr); err != nil {
+	if err := s.tokenService.InvalidateRefreshToken(ctx, nil, refreshTokenStr); err != nil {
 		return nil, status.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 

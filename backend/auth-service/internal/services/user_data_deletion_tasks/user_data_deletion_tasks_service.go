@@ -63,7 +63,7 @@ func (s *service) CreateUserDataDeletionTasks(ctx context.Context, workerID stri
 		if value, ok := inboxEventsByID[evt.GetID()]; ok {
 			l.Warnw(
 				"user_data_deletion_tasks.create_user_data_deletion_tasks_warning.duplicate_task",
-				"task_mesage", value.GetPayload(),
+				"task_message", value.GetPayload(),
 				"duplicate_task_message", taskMessage,
 				"action", "using_last_duplicate",
 			)

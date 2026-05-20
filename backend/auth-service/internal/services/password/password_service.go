@@ -47,6 +47,17 @@ func (s *passwordService) CreatePassword(ctx context.Context, uow *uow.UnitOfWor
 		return nil, err
 	}
 
+	needToCommit := false
+	if uow == nil {
+		uow = s.passwordDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("password.create_password_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	existed, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
 	if err != nil {
 		l.Errorw("password.create_password_failed", "err", err)
@@ -61,12 +72,24 @@ func (s *passwordService) CreatePassword(ctx context.Context, uow *uow.UnitOfWor
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("password.create_password_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("password.create_password.success")
 	return p, nil
 }
 
 func (s *passwordService) CheckPassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (bool, error) {
 	l := s.log.With("op", "check_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if uow == nil {
+		uow = s.passwordDataProvider.newUOW()
+		defer uow.Close()
+	}
 
 	p, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
 	if err != nil {
@@ -85,6 +108,17 @@ func (s *passwordService) CheckPassword(ctx context.Context, uow *uow.UnitOfWork
 
 func (s *passwordService) UpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error) {
 	l := s.log.With("op", "update_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.passwordDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("password.update_password_failed", "err", err)
+			return nil, err
+		}
+	}
 
 	p, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
 	if err != nil {
@@ -111,12 +145,30 @@ func (s *passwordService) UpdatePassword(ctx context.Context, uow *uow.UnitOfWor
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("password.update_password_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("password.update_password.success")
 	return p, nil
 }
 
 func (s *passwordService) ForceUpdatePassword(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User, rawPassword string) (*passworddomain.Password, error) {
 	l := s.log.With("op", "force_update_password", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.passwordDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("password.force_update_password_failed", "err", err)
+			return nil, err
+		}
+	}
 
 	p, err := s.passwordDataProvider.getByUserID(ctx, user.Id, uow)
 	if err != nil {
@@ -143,12 +195,30 @@ func (s *passwordService) ForceUpdatePassword(ctx context.Context, uow *uow.Unit
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("password.force_update_password_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("password.force_update_password.success")
 	return p, nil
 }
 
 func (s *passwordService) DeletePasswordByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error {
 	l := s.log.With("op", "delete_password_by_user_id", "worker_id", workerID, "user_id", userID)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.passwordDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("password.delete_password_by_user_id_failed", "err", err)
+			return err
+		}
+	}
 
 	p, err := s.passwordDataProvider.getByUserID(ctx, userID, uow)
 	if err != nil {
@@ -162,6 +232,13 @@ func (s *passwordService) DeletePasswordByUserID(ctx context.Context, workerID s
 	if err := s.passwordDataProvider.delete(ctx, p, uow); err != nil {
 		l.Errorw("password.delete_password_by_user_id_failed", "err", err)
 		return err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("password.delete_password_by_user_id_failed", "err", err)
+			return err
+		}
 	}
 
 	l.Infow("password.delete_password_by_user_id.success")

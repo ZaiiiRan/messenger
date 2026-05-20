@@ -72,27 +72,26 @@ func (uvdp *userVersionDataProvider) save(ctx context.Context, uv *userversion.U
 		}
 	}
 
-	cacheRepo := redisimpl.NewUserVersionCacheRepository(uvdp.redis)
-	if err := cacheRepo.SetByUserId(ctx, uv); err != nil {
-		return err
-	}
-
+	uow.OnCommit(func() {
+		redisimpl.NewUserVersionCacheRepository(uvdp.redis).SetByUserId(ctx, uv)
+	})
 	return nil
 }
 
 func (uvdp *userVersionDataProvider) delete(ctx context.Context, uv *userversion.UserVersion, uow *uow.UnitOfWork) error {
-	cacheRepo := redisimpl.NewUserVersionCacheRepository(uvdp.redis)
-	if err := cacheRepo.DelByUserId(ctx, uv.GetUserID()); err != nil {
-		return err
-	}
-
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
 	}
 
 	dbRepo := postgresimpl.NewUserVersionRepository(pgConn)
-	err = dbRepo.DeleteUserVersion(ctx, uv)
+	if err := dbRepo.DeleteUserVersion(ctx, uv); err != nil {
+		return err
+	}
 
-	return err
+	userID := uv.GetUserID()
+	uow.OnCommit(func() {
+		redisimpl.NewUserVersionCacheRepository(uvdp.redis).DelByUserId(ctx, userID)
+	})
+	return nil
 }

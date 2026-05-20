@@ -115,17 +115,13 @@ func (cdp *codeDataProvider) save(ctx context.Context, c *code.Code, uow *uow.Un
 		}
 	}
 
-	cacheRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
-	if err := cacheRepo.SetCodeByUserId(ctx, c); err != nil {
-		return err
-	}
+	uow.OnCommit(func() {
+		redisimpl.NewCodeCacheRepository(cdp.redis).SetCodeByUserId(ctx, c)
+	})
 	return nil
 }
 
 func (cdp *codeDataProvider) delete(ctx context.Context, c *code.Code, uow *uow.UnitOfWork) error {
-	cacheRepo := redisimpl.NewCodeCacheRepository(cdp.redis)
-	cacheRepo.DelCodeByUserId(ctx, c.GetUserID(), c.GetCodeType())
-
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
@@ -138,7 +134,15 @@ func (cdp *codeDataProvider) delete(ctx context.Context, c *code.Code, uow *uow.
 		dbRepo = postgresimpl.NewActivationCodeRepository(pgConn)
 	}
 
-	return dbRepo.DeleteCode(ctx, c)
+	if err := dbRepo.DeleteCode(ctx, c); err != nil {
+		return err
+	}
+
+	userID, codeType := c.GetUserID(), c.GetCodeType()
+	uow.OnCommit(func() {
+		redisimpl.NewCodeCacheRepository(cdp.redis).DelCodeByUserId(ctx, userID, codeType)
+	})
+	return nil
 }
 
 func (cdp *codeDataProvider) deleteExpiredCodes(ctx context.Context, batchSize uint, codeType code.CodeType, uow *uow.UnitOfWork) ([]*code.Code, error) {
@@ -223,22 +227,27 @@ func (cdp *codeDataProvider) saveEmailChangeCode(ctx context.Context, c *emailch
 		}
 	}
 
-	cacheRepo := redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis)
-	if err := cacheRepo.SetCodeByUserId(ctx, c); err != nil {
-		return err
-	}
+	uow.OnCommit(func() {
+		redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis).SetCodeByUserId(ctx, c)
+	})
 	return nil
 }
 
 func (cdp *codeDataProvider) deleteEmailChangeCode(ctx context.Context, c *emailchangecode.EmailChangeCode, uow *uow.UnitOfWork) error {
-	redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis).DelCodeByUserId(ctx, c.GetUserID())
-
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
 	}
 
-	return postgresimpl.NewEmailChangeCodeRepository(pgConn).DeleteCode(ctx, c)
+	if err := postgresimpl.NewEmailChangeCodeRepository(pgConn).DeleteCode(ctx, c); err != nil {
+		return err
+	}
+
+	userID := c.GetUserID()
+	uow.OnCommit(func() {
+		redisimpl.NewEmailChangeCodeCacheRepository(cdp.redis).DelCodeByUserId(ctx, userID)
+	})
+	return nil
 }
 
 func (cdp *codeDataProvider) deleteExpiredEmailChangeCodes(ctx context.Context, batchSize uint, uow *uow.UnitOfWork) ([]*emailchangecode.EmailChangeCode, error) {

@@ -72,11 +72,9 @@ func (pdp *passwordDataProvider) save(ctx context.Context, p *password.Password,
 		}
 	}
 
-	cacheRepo := redisimpl.NewPasswordCacheRepository(pdp.redis)
-	if err := cacheRepo.SetPasswordByUserId(ctx, p); err != nil {
-		return err
-	}
-
+	uow.OnCommit(func() {
+		redisimpl.NewPasswordCacheRepository(pdp.redis).SetPasswordByUserId(ctx, p)
+	})
 	return nil
 }
 
@@ -91,7 +89,9 @@ func (pdp *passwordDataProvider) delete(ctx context.Context, p *password.Passwor
 		return err
 	}
 
-	cacheRepo := redisimpl.NewPasswordCacheRepository(pdp.redis)
-	cacheRepo.DelPasswordByUserId(ctx, p.GetUserID())
+	userID := p.GetUserID()
+	uow.OnCommit(func() {
+		redisimpl.NewPasswordCacheRepository(pdp.redis).DelPasswordByUserId(ctx, userID)
+	})
 	return nil
 }

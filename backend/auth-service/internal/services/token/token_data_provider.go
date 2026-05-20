@@ -73,31 +73,34 @@ func (tdp *tokenDataProvider) save(ctx context.Context, t *token.Token, uow *uow
 		}
 	}
 
-	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
-	cacheRepo.SetToken(ctx, t)
-	cacheRepo.DelTokenListsByUserId(ctx, t.GetUserID())
-
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
+		cacheRepo.SetToken(ctx, t)
+		cacheRepo.DelTokenListsByUserId(ctx, t.GetUserID())
+	})
 	return nil
 }
 
 func (tdp *tokenDataProvider) delete(ctx context.Context, tokenStr string, uow *uow.UnitOfWork) error {
-	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
 	pgConn, err := uow.GetConn(ctx)
 	if err != nil {
 		return err
 	}
 
-	token, _ := tdp.getByToken(ctx, tokenStr, uow)
+	t, _ := tdp.getByToken(ctx, tokenStr, uow)
 
 	dbRepo := postgresimpl.NewTokenRepository(pgConn)
 	if err := dbRepo.DeleteToken(ctx, tokenStr); err != nil {
 		return err
 	}
 
-	cacheRepo.DelToken(ctx, tokenStr)
-	if token != nil {
-		cacheRepo.DelTokenListsByUserId(ctx, token.GetUserID())
-	}
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
+		cacheRepo.DelToken(ctx, tokenStr)
+		if t != nil {
+			cacheRepo.DelTokenListsByUserId(ctx, t.GetUserID())
+		}
+	})
 	return nil
 }
 
@@ -117,13 +120,15 @@ func (tdp *tokenDataProvider) deleteByIds(ctx context.Context, userId string, id
 		return err
 	}
 
-	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
-	for _, tokenStr := range deletedTokenStrs {
-		cacheRepo.DelToken(ctx, tokenStr)
-	}
-	if len(deletedTokenStrs) > 0 {
-		cacheRepo.DelTokenListsByUserId(ctx, userId)
-	}
+	uow.OnCommit(func() {
+		cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
+		for _, tokenStr := range deletedTokenStrs {
+			cacheRepo.DelToken(ctx, tokenStr)
+		}
+		if len(deletedTokenStrs) > 0 {
+			cacheRepo.DelTokenListsByUserId(ctx, userId)
+		}
+	})
 	return nil
 }
 
@@ -171,12 +176,12 @@ func (tdp *tokenDataProvider) deleteByUserId(ctx context.Context, userId string,
 
 	dbRepo := postgresimpl.NewTokenRepository(pgConn)
 
-	err = dbRepo.DeleteTokensByUserId(ctx, userId)
-	if err != nil {
+	if err := dbRepo.DeleteTokensByUserId(ctx, userId); err != nil {
 		return err
 	}
 
-	cacheRepo := redisimpl.NewTokenCacheRepository(tdp.redis)
-	cacheRepo.DelTokenListsByUserId(ctx, userId)
+	uow.OnCommit(func() {
+		redisimpl.NewTokenCacheRepository(tdp.redis).DelTokenListsByUserId(ctx, userId)
+	})
 	return nil
 }

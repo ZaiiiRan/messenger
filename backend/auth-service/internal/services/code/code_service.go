@@ -41,6 +41,17 @@ func New(pgClient *pgclient.PostgresClient, redisClient *redisclient.RedisClient
 func (s *codeService) GenerateCode(ctx context.Context, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) (*codedomain.Code, error) {
 	l := s.log.With("op", "generate_code", "code_type", codeType, "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("code.generate_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	existedCode, err := s.codeDataProvider.getByUserIDLocked(ctx, userID, codeType, uow)
 	if err != nil {
 		l.Errorw("code.generate_failed", "err", err)
@@ -69,12 +80,30 @@ func (s *codeService) GenerateCode(ctx context.Context, uow *uow.UnitOfWork, use
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("code.generate_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("code.generate.success")
 	return c, nil
 }
 
 func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string, codeType codedomain.CodeType) (bool, error) {
 	l := s.log.With("op", "check_code_by_code", "code_type", codeType, "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("code.check_by_code_failed", "err", err)
+			return false, err
+		}
+	}
 
 	c, err := s.codeDataProvider.getByUserID(ctx, userID, codeType, uow)
 	if err != nil {
@@ -97,6 +126,12 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 			l.Errorw("code.check_by_code_failed", "err", err)
 			return false, err
 		}
+		if needToCommit {
+			if err := uow.Commit(ctx); err != nil {
+				l.Errorw("code.check_by_code_failed", "err", err)
+				return false, err
+			}
+		}
 		return false, nil
 	}
 
@@ -105,12 +140,30 @@ func (s *codeService) CheckCodeByCode(ctx context.Context, uow *uow.UnitOfWork, 
 		return false, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("code.check_by_code_failed", "err", err)
+			return false, err
+		}
+	}
+
 	l.Infow("code.check_by_code.success")
 	return true, nil
 }
 
 func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string, codeType codedomain.CodeType) (string, bool, error) {
 	l := s.log.With("op", "check_code_by_link_token", "code_type", codeType, "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("code.check_by_link_token_failed", "err", err)
+			return "", false, err
+		}
+	}
 
 	c, err := s.codeDataProvider.getByLinkTokenLocked(ctx, linkToken, codeType, uow)
 	if err != nil {
@@ -130,12 +183,30 @@ func (s *codeService) CheckCodeByLinkToken(ctx context.Context, uow *uow.UnitOfW
 		return "", false, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("code.check_by_link_token_failed", "err", err)
+			return "", false, err
+		}
+	}
+
 	l.Infow("code.check_by_link_token.success")
 	return c.GetUserID(), true, nil
 }
 
 func (s *codeService) DeleteCodeByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string, codeType codedomain.CodeType) error {
 	l := s.log.With("op", "delete_code_by_user_id", "code_type", codeType, "worker_id", workerID, "user_id", userID)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+			return err
+		}
+	}
 
 	c, err := s.codeDataProvider.getByUserID(ctx, userID, codeType, uow)
 	if err != nil {
@@ -149,6 +220,13 @@ func (s *codeService) DeleteCodeByUserID(ctx context.Context, workerID string, u
 	if err := s.codeDataProvider.delete(ctx, c, uow); err != nil {
 		l.Errorw("code.delete_code_by_user_id_failed", "err", err)
 		return err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("code.delete_code_by_user_id_failed", "err", err)
+			return err
+		}
 	}
 
 	l.Infow("code.delete_code_by_user_id.success")
@@ -176,6 +254,17 @@ func (s *codeService) DeleteExpiredCodes(ctx context.Context, workerID string, b
 
 func (s *codeService) GenerateEmailChangeCode(ctx context.Context, uow *uow.UnitOfWork, userID, email string) (*emailchangecode.EmailChangeCode, error) {
 	l := s.log.With("op", "generate_email_change_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("email_change_code.generate_failed", "err", err)
+			return nil, err
+		}
+	}
 
 	existedCode, err := s.codeDataProvider.getEmailChangeCodeByUserIDLocked(ctx, userID, uow)
 	if err != nil {
@@ -208,12 +297,30 @@ func (s *codeService) GenerateEmailChangeCode(ctx context.Context, uow *uow.Unit
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("email_change_code.generate_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("email_change_code.generate.success")
 	return c, nil
 }
 
 func (s *codeService) CheckEmailChangeCodeByCode(ctx context.Context, uow *uow.UnitOfWork, userID, rawCode string) (*emailchangecode.EmailChangeCode, bool, error) {
 	l := s.log.With("op", "check_email_change_code_by_code", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("email_change_code.check_by_code_failed", "err", err)
+			return nil, false, err
+		}
+	}
 
 	c, err := s.codeDataProvider.getEmailChangeCodeByUserID(ctx, userID, uow)
 	if err != nil {
@@ -236,6 +343,12 @@ func (s *codeService) CheckEmailChangeCodeByCode(ctx context.Context, uow *uow.U
 			l.Errorw("email_change_code.check_by_code_failed", "err", err)
 			return nil, false, err
 		}
+		if needToCommit {
+			if err := uow.Commit(ctx); err != nil {
+				l.Errorw("email_change_code.check_by_code_failed", "err", err)
+				return nil, false, err
+			}
+		}
 		return nil, false, nil
 	}
 
@@ -244,12 +357,30 @@ func (s *codeService) CheckEmailChangeCodeByCode(ctx context.Context, uow *uow.U
 		return nil, false, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("email_change_code.check_by_code_failed", "err", err)
+			return nil, false, err
+		}
+	}
+
 	l.Infow("email_change_code.check_by_code.success")
 	return c, true, nil
 }
 
 func (s *codeService) CheckEmailChangeCodeByLinkToken(ctx context.Context, uow *uow.UnitOfWork, linkToken string) (*emailchangecode.EmailChangeCode, bool, error) {
 	l := s.log.With("op", "check_email_change_code_by_link_token", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.codeDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("email_change_code.check_by_link_token_failed", "err", err)
+			return nil, false, err
+		}
+	}
 
 	c, err := s.codeDataProvider.getEmailChangeCodeByLinkTokenLocked(ctx, linkToken, uow)
 	if err != nil {
@@ -267,6 +398,13 @@ func (s *codeService) CheckEmailChangeCodeByLinkToken(ctx context.Context, uow *
 	if err := s.codeDataProvider.deleteEmailChangeCode(ctx, c, uow); err != nil {
 		l.Errorw("email_change_code.check_by_link_token_failed", "err", err)
 		return nil, false, err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("email_change_code.check_by_link_token_failed", "err", err)
+			return nil, false, err
+		}
 	}
 
 	l.Infow("email_change_code.check_by_link_token.success")

@@ -107,9 +107,27 @@ func (s *tokenService) GenerateToken(
 		refreshToken = token.New(user.Id, refresh, token.RefreshTokenType, version, ip, country, city, os, browser, refreshExp)
 	}
 
+	needToCommit := false
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("token.save_token_failed", "err", err)
+			return nil, nil, err
+		}
+	}
+
 	if err := s.tokenDataProvider.save(ctx, refreshToken, uow); err != nil {
 		l.Errorw("token.save_token_failed", "err", err)
 		return nil, nil, err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("token.save_token_failed", "err", err)
+			return nil, nil, err
+		}
 	}
 
 	l.Infow("token.generate.success")
@@ -123,6 +141,11 @@ func (s *tokenService) ValidateRefreshToken(ctx context.Context, uow *uow.UnitOf
 	if err != nil {
 		l.Warnw("token.refresh_token_parse_failed", "err", err)
 		return nil, nil, commonjwt.ErrInvalidToken
+	}
+
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
 	}
 
 	t, err := s.tokenDataProvider.getByToken(ctx, refreshToken, uow)
@@ -172,29 +195,40 @@ func (s *tokenService) ValidateAccessToken(ctx context.Context, accessToken stri
 func (s *tokenService) InvalidateRefreshToken(ctx context.Context, uow *uow.UnitOfWork, refreshToken string) error {
 	l := s.log.With("op", "invalidate_refresh_token", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
 
-	err := s.tokenDataProvider.delete(ctx, refreshToken, uow)
-	if err != nil {
+	needToCommit := false
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("token.delete_refresh_token_failed", "err", err)
+			return err
+		}
+	}
+
+	if err := s.tokenDataProvider.delete(ctx, refreshToken, uow); err != nil {
 		l.Errorw("token.delete_refresh_token_failed", "err", err)
 		return err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("token.delete_refresh_token_failed", "err", err)
+			return err
+		}
 	}
 
 	l.Infow("token.invalidate_refresh_token.success")
 	return nil
 }
 
-func (s *tokenService) InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error {
-	l := s.log.With("op", "invalidate_refresh_tokens_by_ids", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", currentToken.GetUserID())
-
-	if err := s.tokenDataProvider.deleteByIds(ctx, currentToken.GetUserID(), ids, currentToken.GetID(), uow); err != nil {
-		l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
-		return err
-	}
-	l.Infow("token.invalidate_refresh_tokens_by_ids.success", "count", len(ids))
-	return nil
-}
-
 func (s *tokenService) GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, userId string) (*userversion.UserVersion, error) {
 	l := s.log.With("op", "get_user_version", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", userId)
+
+	if uow == nil {
+		uow = s.userVersionDataProvider.newUOW()
+		defer uow.Close()
+	}
 
 	uv, err := s.userVersionDataProvider.getByUserId(ctx, userId, uow)
 	if err != nil {
@@ -207,6 +241,17 @@ func (s *tokenService) GetUserVersion(ctx context.Context, uow *uow.UnitOfWork, 
 
 func (s *tokenService) UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWork, user *userpb.User) (*userversion.UserVersion, error) {
 	l := s.log.With("op", "update_user_version", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", user.Id)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.userVersionDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("token.save_user_version_failed", "err", err)
+			return nil, err
+		}
+	}
 
 	var uv *userversion.UserVersion
 
@@ -228,6 +273,13 @@ func (s *tokenService) UpdateUserVersion(ctx context.Context, uow *uow.UnitOfWor
 		return nil, err
 	}
 
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("token.save_user_version_failed", "err", err)
+			return nil, err
+		}
+	}
+
 	l.Infow("token.update_user_version.success")
 	return uv, nil
 }
@@ -241,6 +293,11 @@ func (s *tokenService) GetRefreshTokens(
 ) ([]*token.Token, error) {
 	l := s.log.With("op", "get_refresh_tokens", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", refreshToken.GetUserID())
 
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
+	}
+
 	query := models.NewQueryTokensDal(refreshToken.GetUserID(), refreshToken.GetToken(), userVersion.GetVersion(), int(req.Page), int(req.PageSize))
 
 	tokens, err := s.tokenDataProvider.getActiveByUserId(ctx, query, uow)
@@ -250,6 +307,36 @@ func (s *tokenService) GetRefreshTokens(
 	}
 	l.Infow("token.get_refresh_tokens.success", "count", len(tokens))
 	return tokens, nil
+}
+
+func (s *tokenService) InvalidateRefreshTokensByIds(ctx context.Context, uow *uow.UnitOfWork, currentToken *token.Token, ids []int64) error {
+	l := s.log.With("op", "invalidate_refresh_tokens_by_ids", "req_id", ctxmetadata.GetReqIdFromContext(ctx), "user_id", currentToken.GetUserID())
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
+			return err
+		}
+	}
+
+	if err := s.tokenDataProvider.deleteByIds(ctx, currentToken.GetUserID(), ids, currentToken.GetID(), uow); err != nil {
+		l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
+		return err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("token.invalidate_refresh_tokens_by_ids_failed", "err", err)
+			return err
+		}
+	}
+
+	l.Infow("token.invalidate_refresh_tokens_by_ids.success", "count", len(ids))
+	return nil
 }
 
 func (s *tokenService) DeleteExpiredTokens(ctx context.Context, workerID string, batchSize uint) error {
@@ -274,8 +361,18 @@ func (s *tokenService) DeleteExpiredTokens(ctx context.Context, workerID string,
 func (s *tokenService) DeleteUserVersionAndTokensByUserID(ctx context.Context, workerID string, uow *uow.UnitOfWork, userID string) error {
 	l := s.log.With("op", "delete_user_version_and_tokens_by_user_id", "worker_id", workerID, "user_id", userID)
 
-	err := s.tokenDataProvider.deleteByUserId(ctx, userID, uow)
-	if err != nil {
+	needToCommit := false
+	if uow == nil {
+		uow = s.tokenDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+			return err
+		}
+	}
+
+	if err := s.tokenDataProvider.deleteByUserId(ctx, userID, uow); err != nil {
 		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
 		return err
 	}
@@ -292,6 +389,13 @@ func (s *tokenService) DeleteUserVersionAndTokensByUserID(ctx context.Context, w
 	if err := s.userVersionDataProvider.delete(ctx, uv, uow); err != nil {
 		l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
 		return err
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("token.delete_user_version_and_tokens_by_user_id_failed", "err", err)
+			return err
+		}
 	}
 
 	l.Infow("token.delete_user_version_and_tokens_by_user_id.success")

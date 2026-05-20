@@ -9,10 +9,11 @@ import (
 )
 
 type UnitOfWork struct {
-	pgClient *postgres.PostgresClient
-	conn     *pgxpool.Conn
-	tx       pgx.Tx
-	closed   bool
+	pgClient    *postgres.PostgresClient
+	conn        *pgxpool.Conn
+	tx          pgx.Tx
+	closed      bool
+	afterCommit []func()
 }
 
 func New(pgClient *postgres.PostgresClient) *UnitOfWork {
@@ -58,13 +59,24 @@ func (u *UnitOfWork) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	return u.tx, nil
 }
 
+func (u *UnitOfWork) OnCommit(fn func()) {
+	u.afterCommit = append(u.afterCommit, fn)
+}
+
 func (u *UnitOfWork) Commit(ctx context.Context) error {
 	if u.tx == nil {
 		return nil
 	}
 	err := u.tx.Commit(ctx)
 	u.tx = nil
-	return err
+	if err != nil {
+		return err
+	}
+	for _, fn := range u.afterCommit {
+		fn()
+	}
+	u.afterCommit = nil
+	return nil
 }
 
 func (u *UnitOfWork) Rollback(ctx context.Context) error {
@@ -85,5 +97,6 @@ func (u *UnitOfWork) Close() {
 		u.conn.Release()
 		u.conn = nil
 	}
+	u.afterCommit = nil
 	u.closed = true
 }
