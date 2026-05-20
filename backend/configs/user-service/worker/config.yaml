@@ -29,3 +29,16 @@ user_data_deletion_tasks_sending_worker:
   interval_ms: 1000
   retry_interval_ms: 300000
   batch_size: 1000
+user_relationship_changes_tasks_consumer:
+  count: 5
+  kafka_consumer:
+    group_id: "user-service-consumer"
+    topic: "user-relationship-changes-tasks"
+    batch_size: 1000
+    batch_timeout_ms: 1000
+    name: "user_relationship_changes_tasks_consumer"
+update_friends_in_privacy_settings_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 1000
