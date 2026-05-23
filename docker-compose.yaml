@@ -547,6 +547,8 @@ services:
         condition: service_healthy
       user-relationship-changes-kafka:
         condition: service_healthy
+      user-data-deletion-kafka:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
       interval: 5s
@@ -566,6 +568,9 @@ services:
       USER_RELATIONSHIP_CHANGES_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "user-relationship-changes-kafka:9092"
       USER_RELATIONSHIP_CHANGES_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
       USER_RELATIONSHIP_CHANGES_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_BROKERS: "user-data-deletion-kafka:9092"
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
+      USER_DATA_DELETION_TASKS_CONSUMER_KAFKA_CONSUMER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
     volumes:
       - ./backend/configs/social-service/worker:/etc/social-service
     networks:
