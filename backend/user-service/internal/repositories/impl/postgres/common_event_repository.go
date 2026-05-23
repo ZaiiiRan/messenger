@@ -13,8 +13,9 @@ import (
 )
 
 type commonEventRepository struct {
-	tableName string
-	conn      *pgxpool.Conn
+	tableName         string
+	conn              *pgxpool.Conn
+	clientGeneratedID bool
 }
 
 func newCommonEventRepositoryRepository(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
@@ -24,11 +25,26 @@ func newCommonEventRepositoryRepository(conn *pgxpool.Conn, tableName string) in
 	}
 }
 
+func newCommonEventRepositoryRepositoryWithClientID(conn *pgxpool.Conn, tableName string) interfaces.EventRepository {
+	return &commonEventRepository{
+		tableName:         tableName,
+		conn:              conn,
+		clientGeneratedID: true,
+	}
+}
+
 func (r *commonEventRepository) Create(ctx context.Context, events []*event.Event, onConflictDoUpdate bool) error {
 	if len(events) == 0 {
 		return nil
 	}
 
+	if r.clientGeneratedID {
+		return r.createWithClientID(ctx, events)
+	}
+	return r.createWithDBID(ctx, events, onConflictDoUpdate)
+}
+
+func (r *commonEventRepository) createWithDBID(ctx context.Context, events []*event.Event, onConflictDoUpdate bool) error {
 	payloads := make([][]byte, len(events))
 	statuses := make([]int16, len(events))
 	attempts := make([]int16, len(events))
@@ -80,6 +96,56 @@ func (r *commonEventRepository) Create(ctx context.Context, events []*event.Even
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate inserted outbox events: %w", err)
+	}
+
+	return nil
+}
+
+func (r *commonEventRepository) createWithClientID(ctx context.Context, events []*event.Event) error {
+	ids := make([]string, len(events))
+	payloads := make([][]byte, len(events))
+	statuses := make([]int16, len(events))
+	attempts := make([]int16, len(events))
+	createdAts := make([]time.Time, len(events))
+	updatedAts := make([]time.Time, len(events))
+	for i, e := range events {
+		ids[i] = e.GetID()
+		payloads[i] = e.GetPayload()
+		statuses[i] = int16(e.GetStatus())
+		attempts[i] = e.GetAttempts()
+		createdAts[i] = e.GetCreatedAt()
+		updatedAts[i] = e.GetUpdatedAt()
+	}
+
+	sql := fmt.Sprintf(`
+		INSERT INTO %s (id, payload, status, attempts, created_at, updated_at)
+		SELECT u.id, u.payload, u.status, u.attempts, u.created_at, u.updated_at
+		FROM UNNEST($1::uuid[], $2::jsonb[], $3::smallint[], $4::smallint[], $5::timestamptz[], $6::timestamptz[])
+			AS u(id, payload, status, attempts, created_at, updated_at)
+		ON CONFLICT (id) DO UPDATE
+		SET
+			payload    = EXCLUDED.payload,
+			status     = EXCLUDED.status,
+			attempts   = EXCLUDED.attempts,
+			updated_at = EXCLUDED.updated_at
+		RETURNING id, payload, status, attempts, created_at, updated_at
+	`, r.tableName)
+
+	rows, err := r.conn.Query(ctx, sql, ids, payloads, statuses, attempts, createdAts, updatedAts)
+	if err != nil {
+		return fmt.Errorf("insert inbox events: %w", err)
+	}
+	defer rows.Close()
+
+	for i := 0; rows.Next(); i++ {
+		var res models.V1EventDal
+		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
+			return fmt.Errorf("scan inserted inbox event: %w", err)
+		}
+		events[i] = res.ToDomain()
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate inserted inbox events: %w", err)
 	}
 
 	return nil

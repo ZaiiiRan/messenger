@@ -6,5 +6,5 @@ import (
 )
 
 func NewUpdateFriendsInPrivacySettingsTasksInboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
-	return newCommonEventRepositoryRepository(conn, "update_friends_in_privacy_settings_inbox")
+	return newCommonEventRepositoryRepositoryWithClientID(conn, "update_friends_in_privacy_settings_inbox")
 }
