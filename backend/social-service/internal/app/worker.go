@@ -8,11 +8,15 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config"
 	implkafkaproducer "github.com/ZaiiiRan/messenger/backend/social-service/internal/producers/impl/kafka"
+	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_data_deletion_tasks"
+	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
 	userrelationshipchangestasks "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship_changes_tasks"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/redis"
+	userdatadeletionworker "github.com/ZaiiiRan/messenger/backend/social-service/internal/workers/user_data_deletion"
+	userdatadeletiontasksconsumerworker "github.com/ZaiiiRan/messenger/backend/social-service/internal/workers/user_data_deletion_tasks_consumer"
 	userrelationshipchangestaskssendingworker "github.com/ZaiiiRan/messenger/backend/social-service/internal/workers/user_relationship_changes_tasks_sending"
 	"go.uber.org/zap"
 )
@@ -27,7 +31,11 @@ type WorkerApp struct {
 	userRelationshipChangesTasksKafkaClient   *kafka.KafkaClient
 	userRelationshipChangesTasksKafkaProducer *implkafkaproducer.Producer
 
+	userDataDeletionTasksKafkaClient *kafka.KafkaClient
+
+	userRelationshipService             userrelationshipservice.UserRelationshipService
 	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService
+	userDataDeletionTasksService        userdatadeletiontasksservice.UserDataDeletionTasksService
 
 	metricsServer    *prommetrics.Server
 	workerMetrics    *prommetrics.WorkerMetrics
@@ -69,8 +77,13 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.initUserRelationshipChangesTasksKafkaProducer(ctx); err != nil {
 		return err
 	}
+	if err := a.initUserDataDeletionTasksKafkaClient(ctx); err != nil {
+		return err
+	}
 
+	a.initUserRelationshipService()
 	a.initUserRelationshipChangesTasksService()
+	a.initUserDataDeletionTasksService()
 
 	a.initMetricsServer()
 	a.startMetricsServer()
@@ -78,6 +91,10 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startUserRelationshipChangesTasksWorkers()
+	if err := a.startUserDataDeletionTasksConsumerWorkers(); err != nil {
+		return err
+	}
+	a.startUserDataDeletionWorkers()
 
 	<-a.isMetricsStarted
 	a.log.Infow("app.started")
@@ -111,6 +128,7 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	}
 
 	a.userRelationshipChangesTasksKafkaProducer.Close()
+	a.userDataDeletionTasksKafkaClient.Close()
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
@@ -164,8 +182,26 @@ func (a *WorkerApp) initUserRelationshipChangesTasksKafkaProducer(ctx context.Co
 	return nil
 }
 
+func (a *WorkerApp) initUserDataDeletionTasksKafkaClient(ctx context.Context) error {
+	kafkaClient, err := kafka.New(a.cfg.UserDataDeletionTasksConsumer.KafkaConsumerSettings.KafkaSettings)
+	if err != nil {
+		a.log.Errorw("app.user_data_deletion_tasks_kafka_client_init_failed", "err", err)
+		return err
+	}
+	a.userDataDeletionTasksKafkaClient = kafkaClient
+	return nil
+}
+
+func (a *WorkerApp) initUserRelationshipService() {
+	a.userRelationshipService = userrelationshipservice.New(a.postgresClient, a.redisClient, a.log)
+}
+
 func (a *WorkerApp) initUserRelationshipChangesTasksService() {
 	a.userRelationshipChangesTasksService = userrelationshipchangestasks.New(a.postgresClient, a.userRelationshipChangesTasksKafkaProducer, a.log)
+}
+
+func (a *WorkerApp) initUserDataDeletionTasksService() {
+	a.userDataDeletionTasksService = userdatadeletiontasksservice.New(a.postgresClient, a.userRelationshipService, a.log)
 }
 
 func (a *WorkerApp) initMetricsServer() {
@@ -188,6 +224,44 @@ func (a *WorkerApp) startUserRelationshipChangesTasksWorkers() {
 		w := userrelationshipchangestaskssendingworker.New(
 			a.cfg.UserRelationshipChangesTasksSendindWorker,
 			a.userRelationshipChangesTasksService,
+			a.log,
+			a.workerMetrics,
+		)
+		a.workersWg.Add(1)
+		go func() {
+			defer a.workersWg.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startUserDataDeletionTasksConsumerWorkers() error {
+	for i := 0; i < int(a.cfg.UserDataDeletionTasksConsumer.Count); i++ {
+		w, err := userdatadeletiontasksconsumerworker.New(
+			a.cfg.UserDataDeletionTasksConsumer.KafkaConsumerSettings,
+			a.userDataDeletionTasksKafkaClient,
+			a.userDataDeletionTasksService,
+			a.log,
+			a.workerMetrics,
+		)
+		if err != nil {
+			a.log.Errorw("app.user_data_deletion_tasks_consumer_worker_init_failed", "err", err)
+			return err
+		}
+		a.workersWg.Add(1)
+		go func() {
+			defer a.workersWg.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+	return nil
+}
+
+func (a *WorkerApp) startUserDataDeletionWorkers() {
+	for i := 0; i < int(a.cfg.UserDataDeletionWorker.Count); i++ {
+		w := userdatadeletionworker.New(
+			a.cfg.UserDataDeletionWorker,
+			a.userDataDeletionTasksService,
 			a.log,
 			a.workerMetrics,
 		)

@@ -10,13 +10,15 @@ import (
 )
 
 type WorkerConfig struct {
-	MetricsServer                             settings.MetricsServerSettings      `mapstructure:"metrics_server"`
-	DB                                        settings.PostgresSettings           `mapstructure:"db"`
-	Redis                                     settings.RedisSettings              `mapstructure:"redis"`
-	UserRelationshipChangesTasksProducer      settings.KafkaProducerSettings      `mapstructure:"user_relationship_changes_tasks_producer"`
-	Shutdown                                  settings.ShutdownSettings           `mapstructure:"shutdown"`
-	Vault                                     settings.VaultSettings              `mapstructure:"vault"`
-	UserRelationshipChangesTasksSendindWorker settings.KafkaSendingWorkerSettings `mapstructure:"user_relationship_changes_tasks_sending_worker"`
+	MetricsServer                             settings.MetricsServerSettings                 `mapstructure:"metrics_server"`
+	DB                                        settings.PostgresSettings                      `mapstructure:"db"`
+	Redis                                     settings.RedisSettings                         `mapstructure:"redis"`
+	UserRelationshipChangesTasksProducer      settings.KafkaProducerSettings                 `mapstructure:"user_relationship_changes_tasks_producer"`
+	Shutdown                                  settings.ShutdownSettings                      `mapstructure:"shutdown"`
+	Vault                                     settings.VaultSettings                         `mapstructure:"vault"`
+	UserRelationshipChangesTasksSendindWorker settings.KafkaSendingWorkerSettings            `mapstructure:"user_relationship_changes_tasks_sending_worker"`
+	UserDataDeletionTasksConsumer             settings.UserDataDeletionTasksConsumerSettings `mapstructure:"user_data_deletion_tasks_consumer"`
+	UserDataDeletionWorker                    settings.UserDataDeletionWorker                `mapstructure:"user_data_deletion_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -59,4 +61,6 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetKafkaSendingWorkerDefaults(v, "user_relationship_changes_tasks_sending_worker")
+	settings.SetUserDataDeletionTasksConsumerSettings(v, "user_data_deletion_tasks_consumer")
+	settings.SetUserDataDeletionWorkerDefaults(v, "user_data_deletion_worker")
 }

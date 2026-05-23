@@ -1,0 +1,264 @@
+package userdatadeletiontasksservice
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	consumersmodels "github.com/ZaiiiRan/messenger/backend/social-service/internal/consumers/models"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/event"
+	uow "github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/unitofwork/postgres"
+	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
+	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
+	"go.uber.org/zap"
+)
+
+type UserDataDeletionTasksService interface {
+	CreateUserDataDeletionTasks(ctx context.Context, workerID string, taskMessages []*consumersmodels.UserDataDeletionTask, uow *uow.UnitOfWork) error
+	ProcessUserDataDeletionTasks(ctx context.Context, workerID string, retryIntervalMS uint, batchSize int, deleteRelationshipsBatchSize int, uow *uow.UnitOfWork) error
+}
+
+type service struct {
+	log                     *zap.SugaredLogger
+	dataProvider            *userDataDeletionTasksDataProvider
+	userRelationshipService userrelationshipservice.UserRelationshipService
+}
+
+func New(
+	pgClient *postgres.PostgresClient,
+	userRelationshipService userrelationshipservice.UserRelationshipService,
+	log *zap.SugaredLogger,
+) UserDataDeletionTasksService {
+	return &service{
+		log:                     log,
+		dataProvider:            newUserDataDeletionTasksDataProvider(pgClient),
+		userRelationshipService: userRelationshipService,
+	}
+}
+
+func (s *service) CreateUserDataDeletionTasks(
+	ctx context.Context,
+	workerID string,
+	taskMessages []*consumersmodels.UserDataDeletionTask,
+	uow *uow.UnitOfWork,
+) error {
+	l := s.log.With("op", "create_user_data_deletion_tasks", "worker_id", workerID)
+
+	inboxEvents := make([]*event.Event, 0, len(taskMessages))
+	inboxEventsByID := make(map[string]*event.Event)
+	for _, taskMessage := range taskMessages {
+		if !taskMessage.IsConfirmed || !taskMessage.IsDeleted {
+			continue
+		}
+		evt, err := s.createUserDataDeletionTask(taskMessage)
+		if err != nil {
+			l.Warnw(
+				"user_data_deletion_tasks.create_user_data_deletion_tasks_failed",
+				"err", err,
+				"task_message", taskMessage,
+			)
+			continue
+		}
+		if value, ok := inboxEventsByID[evt.GetID()]; ok {
+			l.Warnw(
+				"user_data_deletion_tasks.create_user_data_deletion_tasks_failed",
+				"task_message", value.GetPayload(),
+				"duplicate_task_message", taskMessage,
+				"action", "using_last_duplicate",
+			)
+		}
+		inboxEventsByID[evt.GetID()] = evt
+	}
+
+	for _, value := range inboxEventsByID {
+		inboxEvents = append(inboxEvents, value)
+	}
+	if len(inboxEvents) == 0 {
+		return nil
+	}
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		_, err := uow.BeginTransaction(ctx)
+		if err != nil {
+			l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.begin_transaction_error", "err", err)
+			return ErrCreateUserDataDeletionTask
+		}
+	}
+
+	if err := s.dataProvider.createUserDataDeletionTasks(ctx, inboxEvents, uow); err != nil {
+		l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.create__error", "err", err)
+		return ErrCreateUserDataDeletionTask
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_data_deletion_tasks.create_user_data_deletion_tasks_failed.commit_error", "err", err)
+			return ErrCreateUserDataDeletionTask
+		}
+	}
+
+	l.Infow("user_data_deletion_tasks.create_user_data_deletion_tasks.success", "count", len(inboxEvents))
+	return nil
+}
+
+func (s *service) ProcessUserDataDeletionTasks(
+	ctx context.Context,
+	workerID string,
+	retryIntervalMS uint,
+	batchSize int,
+	deleteRelationshipsBatchSize int,
+	uow *uow.UnitOfWork,
+) error {
+	l := s.log.With("op", "process_user_data_deletion_tasks", "worker_id", workerID)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.dataProvider.newUOW()
+		defer uow.Close()
+		_, err := uow.BeginTransaction(ctx)
+		if err != nil {
+			l.Errorw("user_data_deletion_tasks.process_user_data_deletion_tasks_failed.begin_transaction_error", "err", err)
+			return ErrProcessUserDataDeletionTasks
+		}
+		needToCommit = true
+	}
+
+	now := time.Now()
+	retryAfter := now.Add(-1 * (time.Duration(retryIntervalMS) * time.Millisecond))
+	inboxEvents, err := s.dataProvider.getUserDataDeletionTasksLocked(ctx, batchSize, retryAfter, uow)
+	if err != nil {
+		l.Errorw("user_data_deletion_tasks.process_user_data_deletion_tasks_failed.get_error", "err", err)
+		return ErrProcessUserDataDeletionTasks
+	}
+	if inboxEvents == nil {
+		return nil
+	}
+
+	inboxEventsSuccess := make([]*event.Event, 0, len(inboxEvents))
+	inboxEventsFailed := make([]*event.Event, 0, len(inboxEvents))
+
+	for _, evt := range inboxEvents {
+		var taskMessage *consumersmodels.UserDataDeletionTask
+		if err := json.Unmarshal(evt.GetPayload(), &taskMessage); err != nil {
+			l.Errorw(
+				"user_data_deletion_tasks.process_user_data_deletion_tasks_failed.unmarshal_payload_error",
+				"err", err,
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
+			)
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
+			if err != nil {
+				continue
+			}
+			inboxEventsFailed = append(inboxEventsFailed, evt)
+			continue
+		}
+
+		end, err := s.processUserDataDeletionTask(ctx, workerID, taskMessage, deleteRelationshipsBatchSize)
+		if err != nil {
+			l.Errorw(
+				"user_data_deletion_tasks.process_user_data_deletion_tasks_failed.process_task_error",
+				"err", err,
+				"event", evt.GetID(),
+				"payload", evt.GetPayload(),
+				"attempts", evt.GetAttempts(),
+				"status", evt.GetStatus(),
+			)
+			err = s.markUserDataDeletionTaskFailed(evt, now, l, "user_data_deletion_tasks.process_user_data_deletion_tasks_failed")
+			if err != nil {
+				continue
+			}
+			inboxEventsFailed = append(inboxEventsFailed, evt)
+			continue
+		}
+		if end {
+			inboxEventsSuccess = append(inboxEventsSuccess, evt)
+		}
+	}
+
+	if len(inboxEventsSuccess) > 0 {
+		if err := s.dataProvider.deleteUserDataDeletionTasks(ctx, inboxEventsSuccess, uow); err != nil {
+			l.Errorw("user_data_deletion_tasks.process_user_data_deletion_tasks_failed.delete_error", "err", err)
+			return ErrProcessUserDataDeletionTasks
+		}
+	}
+	if len(inboxEventsFailed) > 0 {
+		if err := s.dataProvider.updatetUserDataDeletionTasks(ctx, inboxEventsFailed, uow); err != nil {
+			l.Errorw("user_data_deletion_tasks.process_user_data_deletion_tasks_failed.update_error", "err", err)
+			return ErrProcessUserDataDeletionTasks
+		}
+	}
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("user_data_deletion_tasks.process_user_data_deletion_tasks_failed.commit_error", "err", err)
+			return ErrProcessUserDataDeletionTasks
+		}
+	}
+
+	if len(inboxEventsSuccess) > 0 {
+		l.Infow("user_data_deletion_tasks.process_user_data_deletion_tasks.success", "successfully_processed", len(inboxEventsSuccess))
+	}
+	if len(inboxEventsFailed) > 0 {
+		l.Warnw("user_data_deletion_tasks.process_user_data_deletion_tasks.success", "failed", len(inboxEventsFailed))
+	}
+
+	return nil
+}
+
+func (s *service) processUserDataDeletionTask(
+	ctx context.Context,
+	workerID string,
+	taskMessage *consumersmodels.UserDataDeletionTask,
+	deleteRelationshipsBatchSize int,
+) (bool, error) {
+	end, err := s.userRelationshipService.DeleteDeletedUsersRelationships(ctx, workerID, taskMessage.UserId, deleteRelationshipsBatchSize, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return end, nil
+}
+
+func (s *service) markUserDataDeletionTaskFailed(
+	evt *event.Event,
+	now time.Time,
+	log *zap.SugaredLogger,
+	logPrefix string,
+) error {
+	err := evt.IncrementAttempts()
+	if err != nil {
+		log.Errorw(logPrefix+".mark_task_as_failed_error",
+			"err", err,
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
+		)
+		return err
+	}
+	evt.SetUpdatedAt(&now)
+	if err := evt.SetStatus(event.EventStatusFailed); err != nil {
+		log.Errorw(
+			logPrefix+".mark_task_as_failed_error",
+			"err", err,
+			"event", evt.GetID(),
+			"attempts", evt.GetAttempts(),
+			"status", evt.GetStatus(),
+		)
+		return err
+	}
+	return nil
+}
+
+func (s *service) createUserDataDeletionTask(taskMessage *consumersmodels.UserDataDeletionTask) (*event.Event, error) {
+	jsonPayload, err := json.Marshal(taskMessage)
+	if err != nil {
+		return nil, err
+	}
+	return event.New(taskMessage.Id, jsonPayload), nil
+}

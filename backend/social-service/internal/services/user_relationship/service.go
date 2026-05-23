@@ -26,6 +26,7 @@ type UserRelationshipService interface {
 	GetUserRelationship(ctx context.Context, actor, target *userpb.User, uow *uow.UnitOfWork) (*userrelationship.UserRelationship, error)
 	GetUserRelationships(ctx context.Context, actor *userpb.User, targets []*userpb.User, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
 	GetUserRelationshipsByQuery(ctx context.Context, query *models.QueryUserRelationshipsDal, uow *uow.UnitOfWork) ([]*userrelationship.UserRelationship, error)
+	DeleteDeletedUsersRelationships(ctx context.Context, workerID string, userID string, batchSize int, uow *uow.UnitOfWork) (bool, error)
 }
 
 type service struct {

@@ -6,8 +6,5 @@ import (
 )
 
 func NewUserRelationshipChangesTasksOutboxRepository(conn *pgxpool.Conn) interfaces.EventRepository {
-	return &commonEventRepository{
-		tableName: "user_relationship_changes_tasks_outbox",
-		conn:      conn,
-	}
+	return newCommonEventRepository(conn, "user_relationship_changes_tasks_outbox")
 }
