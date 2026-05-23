@@ -504,7 +504,7 @@ services:
       vault:
         condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
       interval: 5s
@@ -576,6 +576,73 @@ services:
     networks:
       - messenger-network
   
+  file-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - file-db-data:/var/lib/postgresql/
+    networks:
+      - messenger-network
+  
+  file-redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - messenger-network
+  
+  file-service:
+    build:
+      context: ./backend/file-service
+      dockerfile: Dockerfile
+    depends_on:
+      file-db:
+        condition: service_healthy
+      file-redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_ADDRESS: file-db:5432
+      DB_DATABASE: postgres
+      MIGRATE_NEED_TO_MIGRATE: true
+      REDIS_ADDRESS: file-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+    volumes:
+      - ./backend/configs/file-service/server:/etc/file-service
+    ports:
+      - "50054:50051"
+    networks:
+      - messenger-network
+
   prometheus:
     image: prom/prometheus:v3.5.0
     depends_on:
@@ -584,6 +651,8 @@ services:
       auth-service:
         condition: service_healthy
       social-service:
+        condition: service_healthy
+      file-service:
         condition: service_healthy
       user-worker:
         condition: service_healthy
@@ -628,6 +697,7 @@ volumes:
   user-db-data:
   auth-db-data:
   social-db-data:
+  file-db-data:
   user-data-deletion-kafka-data:
   email-codes-kafka-data:
   user-relationship-changes-kafka-data:
