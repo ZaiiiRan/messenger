@@ -1,7 +1,7 @@
 BUF ?= buf
 GIT ?= git
 
-SERVICES := user-service auth-service social-service
+SERVICES := user-service auth-service social-service file-service
 
 SERVICE_DIRS := $(addprefix api/,$(SERVICES))
 
