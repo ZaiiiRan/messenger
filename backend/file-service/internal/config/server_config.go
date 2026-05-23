@@ -10,14 +10,16 @@ import (
 )
 
 type ServerConfig struct {
-	GRPCServer            settings.GRPCServerSettings    `mapstructure:"grpc_server"`
-	JWT                   settings.JWTSettings           `mapstructure:"jwt"`
-	DB                    settings.PostgresSettings      `mapstructure:"db"`
-	Migrate               settings.MigrateSettings       `mapstructure:"migrate"`
-	Redis                 settings.RedisSettings         `mapstructure:"redis"`
-	Shutdown              settings.ShutdownSettings      `mapstructure:"shutdown"`
-	MetricsServer         settings.MetricsServerSettings `mapstructure:"metrics_server"`
-	Vault                 settings.VaultSettings         `mapstructure:"vault"`
+	GRPCServer    settings.GRPCServerSettings    `mapstructure:"grpc_server"`
+	JWT           settings.JWTSettings           `mapstructure:"jwt"`
+	DB            settings.PostgresSettings      `mapstructure:"db"`
+	Migrate       settings.MigrateSettings       `mapstructure:"migrate"`
+	Redis         settings.RedisSettings         `mapstructure:"redis"`
+	Shutdown      settings.ShutdownSettings      `mapstructure:"shutdown"`
+	MetricsServer settings.MetricsServerSettings `mapstructure:"metrics_server"`
+	Vault         settings.VaultSettings         `mapstructure:"vault"`
+	UserPhotosS3  settings.S3Settings            `mapstructure:"user_photos_s3"`
+	ChatFilesS3   settings.S3Settings            `mapstructure:"chat_files_s3"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -61,4 +63,6 @@ func setServerDefaults(v *viper.Viper) {
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetVaultDefaults(v, "vault")
+	settings.SetS3Defaults(v, "user_photos_s3")
+	settings.SetS3Defaults(v, "chat_files_s3")
 }

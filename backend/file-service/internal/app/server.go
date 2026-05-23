@@ -10,6 +10,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/redis"
+	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/s3"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/server/grpc"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"go.uber.org/zap"
@@ -22,6 +23,9 @@ type ServerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+
+	userPhotosS3Client *s3.S3Client
+	chatFilesS3Client  *s3.S3Client
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -54,6 +58,12 @@ func (a *ServerApp) Run(ctx context.Context) error {
 		return err
 	}
 	if err := a.initRedisClient(ctx); err != nil {
+		return err
+	}
+	if err := a.initUserPhotosS3Client(ctx); err != nil {
+		return err
+	}
+	if err := a.initChatFilesS3Client(ctx); err != nil {
 		return err
 	}
 
@@ -117,6 +127,30 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 	a.redisClient = redisClient
 
 	a.log.Infow("app.redis_connected")
+	return nil
+}
+
+func (a *ServerApp) initUserPhotosS3Client(ctx context.Context) error {
+	s3Client, err := s3.New(ctx, a.cfg.UserPhotosS3)
+	if err != nil {
+		a.log.Errorw("app.user_photos_s3_client_init_failed", "err", err)
+		return err
+	}
+	a.userPhotosS3Client = s3Client
+
+	a.log.Infow("app.user_photos_s3_connected")
+	return nil
+}
+
+func (a *ServerApp) initChatFilesS3Client(ctx context.Context) error {
+	s3Client, err := s3.New(ctx, a.cfg.ChatFilesS3)
+	if err != nil {
+		a.log.Errorw("app.chat_files_s3_client_init_failed", "err", err)
+		return err
+	}
+	a.chatFilesS3Client = s3Client
+
+	a.log.Infow("app.chat_files_s3_connected")
 	return nil
 }
 
