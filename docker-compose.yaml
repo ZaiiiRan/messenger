@@ -638,6 +638,8 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      file-minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
       interval: 5s
