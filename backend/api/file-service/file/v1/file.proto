@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package file.v1;
+
+option go_package = "file-service/gen/go/file;file";
+
+service FileService {}
