@@ -68,19 +68,19 @@ func (r *commonEventRepository) createEventsWithDBID(ctx context.Context, events
 
 	rows, err := r.conn.Query(ctx, sql, payloads, statuses, attempts, createdAts, updatedAts)
 	if err != nil {
-		return fmt.Errorf("insert outbox events: %w", err)
+		return fmt.Errorf("insert events: %w", err)
 	}
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
 		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
-			return fmt.Errorf("scan inserted outbox event: %w", err)
+			return fmt.Errorf("scan inserted event: %w", err)
 		}
 		events[i] = res.ToDomain()
 	}
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate inserted outbox events: %w", err)
+		return fmt.Errorf("iterate inserted events: %w", err)
 	}
 
 	return nil
@@ -118,19 +118,19 @@ func (r *commonEventRepository) createEventsWithClientID(ctx context.Context, ev
 
 	rows, err := r.conn.Query(ctx, sql, ids, payloads, statuses, attempts, createdAts, updatedAts)
 	if err != nil {
-		return fmt.Errorf("insert inbox events: %w", err)
+		return fmt.Errorf("insert events: %w", err)
 	}
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
 		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
-			return fmt.Errorf("scan inserted inbox event: %w", err)
+			return fmt.Errorf("scan inserted event: %w", err)
 		}
 		events[i] = res.ToDomain()
 	}
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate inserted inbox events: %w", err)
+		return fmt.Errorf("iterate inserted events: %w", err)
 	}
 
 	return nil
@@ -160,7 +160,7 @@ func (r *commonEventRepository) UpdateEvents(ctx context.Context, events []*even
 
 	rows, err := r.conn.Query(ctx, sql, eventDals)
 	if err != nil {
-		return fmt.Errorf("update outbox events: %w", err)
+		return fmt.Errorf("update events: %w", err)
 	}
 	defer rows.Close()
 
@@ -168,12 +168,12 @@ func (r *commonEventRepository) UpdateEvents(ctx context.Context, events []*even
 	for rows.Next() {
 		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
-			return fmt.Errorf("scan updated outbox event: %w", err)
+			return fmt.Errorf("scan updated event: %w", err)
 		}
 		eventById[res.Id] = res
 	}
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate updated outbox events: %w", err)
+		return fmt.Errorf("iterate updated events: %w", err)
 	}
 	for _, e := range events {
 		id := e.GetID()
@@ -199,7 +199,7 @@ func (r *commonEventRepository) DeleteEvents(ctx context.Context, events []*even
 	`, r.tableName)
 
 	if _, err := r.conn.Exec(ctx, sql, ids); err != nil {
-		return fmt.Errorf("delete outbox events: %w", err)
+		return fmt.Errorf("delete events: %w", err)
 	}
 
 	return nil
@@ -232,7 +232,7 @@ func (r *commonEventRepository) QueryEvents(ctx context.Context, query *models.Q
 
 	rows, err := r.conn.Query(ctx, sb.String(), args...)
 	if err != nil {
-		return nil, fmt.Errorf("query outbox events: %w", err)
+		return nil, fmt.Errorf("query events: %w", err)
 	}
 	defer rows.Close()
 
@@ -240,12 +240,12 @@ func (r *commonEventRepository) QueryEvents(ctx context.Context, query *models.Q
 	for rows.Next() {
 		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("scan outbox event: %w", err)
+			return nil, fmt.Errorf("scan event: %w", err)
 		}
 		result = append(result, res.ToDomain())
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate outbox events: %w", err)
+		return nil, fmt.Errorf("iterate events: %w", err)
 	}
 
 	return result, nil
@@ -274,7 +274,7 @@ func (r *commonEventRepository) QueryEventsLocked(ctx context.Context, query *mo
 		query.Limit,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("query outbox events: %w", err)
+		return nil, fmt.Errorf("query events: %w", err)
 	}
 	defer rows.Close()
 
@@ -282,12 +282,12 @@ func (r *commonEventRepository) QueryEventsLocked(ctx context.Context, query *mo
 	for rows.Next() {
 		var res models.V1EventDal
 		if err := rows.Scan(&res.Id, &res.Payload, &res.Status, &res.Attempts, &res.CreatedAt, &res.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("scan outbox event: %w", err)
+			return nil, fmt.Errorf("scan event: %w", err)
 		}
 		result = append(result, res.ToDomain())
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate outbox events: %w", err)
+		return nil, fmt.Errorf("iterate events: %w", err)
 	}
 
 	return result, nil
