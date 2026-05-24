@@ -4,4 +4,112 @@ package file.v1;
 
 option go_package = "file-service/gen/go/file;file";
 
-service FileService {}
+service FileService {
+    rpc CreateFilesByUser(CreateFilesByUserRequest) returns (CreateFilesByUserResponse);
+    rpc ConfirmUploadsByUser(ConfirmUploadsByUserRequest) returns (ConfirmUploadsByUserResponse);
+    rpc GetFilesByUser(GetFilesByUserRequest) returns (GetFilesByUserResponse);
+    rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
+    rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
+    rpc UpdateFiles(UpdateFilesRequest) returns (UpdateFilesResponse);
+}
+
+message FileVariant {
+    string id = 1;
+    string variant_type = 2;
+    int64 size = 3;
+    string mime_type = 4;
+    string meta = 5;
+    optional string url_for_download = 6;
+    optional string s3_key = 7;
+    optional string bucket = 8;
+    optional string created_at = 9;
+    optional string updated_at = 10;
+}
+
+message File {
+    string id = 1;
+    string owner_id = 2;
+    string status = 3;
+    repeated FileVariant variants = 4;
+    optional string created_at = 5;
+    optional string updated_at = 6;
+}
+
+message CreateFileRequest {
+    string mime_type = 1;
+    int64 size = 2;
+    string file_purpose = 3;
+}
+
+message CreateFilesByUserRequest {
+    repeated CreateFileRequest files = 1;
+}
+
+message CreateFileResult {
+    File file = 1;
+    string url_for_upload = 2;
+    map<string, string> form_data = 3;
+}
+
+message CreateFilesByUserResponse {
+    repeated CreateFileResult files = 1;
+}
+
+message ConfirmUploadsByUserRequest {
+    repeated string file_ids = 1;
+}
+
+message ConfirmUploadsByUserResponse {
+    repeated File file = 1;
+}
+
+message GetFilesByUserRequest {
+    repeated string file_ids = 1;
+}
+
+message GetFilesByUserResponse {
+    repeated File file = 1;
+}
+
+message GetFilesRequest {
+    repeated string file_ids = 1;
+    bool include_proprietary_info = 2;
+}
+
+message GetFilesResponse {
+    repeated File file = 1;
+}
+
+message DeleteFilesRequest {
+    repeated string file_ids = 1;
+}
+
+message DeleteFilesResponse {}
+
+message UpdateVariantRequest {
+    string id = 1;
+    optional string variant_type = 2;
+    optional string meta = 3;
+}
+
+message AddVariantRequest {
+    string variant_type = 1;
+    string s3_key = 2;
+    string meta = 3;
+}
+
+message UpdateFileRequest {
+    string id = 1;
+    optional string status = 2;
+    repeated UpdateVariantRequest update_variants = 3;
+    repeated AddVariantRequest add_variants = 4;
+    repeated string delete_variants = 5;
+}
+
+message UpdateFilesRequest {
+    repeated UpdateFileRequest files = 1;
+}
+
+message UpdateFilesResponse {
+    repeated File file = 1;
+}

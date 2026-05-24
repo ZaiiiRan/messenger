@@ -94,11 +94,19 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/file.v1.FileService/CreateFilesByUser",
+				"/file.v1.FileService/ConfirmUploadsByUser",
+				"/file.v1.FileService/GetFilesByUser",
+			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/file.v1.FileService/CreateFilesByUser",
+				"/file.v1.FileService/ConfirmUploadsByUser",
+				"/file.v1.FileService/GetFilesByUser",
+			),
 		),
 	)
 }
