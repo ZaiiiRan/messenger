@@ -17,19 +17,13 @@ type FileVariant struct {
 	s3Key     string
 	mimeType  string
 	size      int64
-	meta      json.RawMessage
+	meta      Meta
 	createdAt time.Time
 	updatedAt time.Time
 }
 
 func New(fileId string, bucket BucketType, s3Key string, mimeType string) (*FileVariant, error) {
 	now := time.Now()
-
-	meta := Meta{}
-	metaBytes, err := json.Marshal(meta)
-	if err != nil {
-		return nil, err
-	}
 
 	return &FileVariant{
 		fileID:    fileId,
@@ -38,7 +32,7 @@ func New(fileId string, bucket BucketType, s3Key string, mimeType string) (*File
 		s3Key:     s3Key,
 		mimeType:  mimeType,
 		size:      0,
-		meta:      metaBytes,
+		meta:      Meta{},
 		createdAt: now,
 		updatedAt: now,
 	}, nil
@@ -99,13 +93,13 @@ func FromStorage(
 	s3Key string,
 	mimeType string,
 	size int64,
-	meta Meta,
+	metaBytes json.RawMessage,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) (*FileVariant, error) {
-	metaBytes, err := json.Marshal(meta)
-	if err != nil {
-		return nil, err
+	meta := Meta{}
+	if err := json.Unmarshal(metaBytes, &meta); err != nil {
+		return nil, ErrUmarshalMeta
 	}
 
 	return &FileVariant{
@@ -116,7 +110,7 @@ func FromStorage(
 		s3Key:     s3Key,
 		mimeType:  mimeType,
 		size:      size,
-		meta:      metaBytes,
+		meta:      meta,
 		createdAt: createdAt,
 		updatedAt: updatedAt,
 	}, nil
@@ -129,15 +123,7 @@ func (fv *FileVariant) GetBucket() BucketType   { return BucketType(fv.bucket) }
 func (fv *FileVariant) GetS3Key() string        { return fv.s3Key }
 func (fv *FileVariant) GetMimeType() string     { return fv.mimeType }
 func (fv *FileVariant) GetSize() int64          { return fv.size }
-
-func (fv *FileVariant) GetMeta() (Meta, error) {
-	meta := Meta{}
-	if err := json.Unmarshal(fv.meta, &meta); err != nil {
-		return Meta{}, ErrUmarshalMeta
-	}
-	return meta, nil
-}
-
+func (fv *FileVariant) GetMeta() Meta           { return fv.meta }
 func (fv *FileVariant) GetCreatedAt() time.Time { return fv.createdAt }
 func (fv *FileVariant) GetUpdatedAt() time.Time { return fv.updatedAt }
 
@@ -182,11 +168,7 @@ func (fv *FileVariant) SetMeta(meta Meta, purpose file.FilePurpose) error {
 		meta.Height = nil
 	}
 
-	metaBytes, err := json.Marshal(meta)
-	if err != nil {
-		return ErrMarshalMeta
-	}
-	fv.meta = metaBytes
+	fv.meta = meta
 	return nil
 }
 
