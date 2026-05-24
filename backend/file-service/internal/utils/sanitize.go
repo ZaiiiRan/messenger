@@ -72,6 +72,7 @@ func sanitizeUpdateFileRequest(req *pb.UpdateFileRequest) {
 	}
 	req.Id = strings.TrimSpace(req.Id)
 	req.Status = sanitizeLowerStringPtr(req.Status)
+	req.FilePurpose = sanitizeLowerStringPtr(req.FilePurpose)
 
 	updateVariantsById := make(map[string]*pb.UpdateVariantRequest)
 	for _, variant := range req.UpdateVariants {

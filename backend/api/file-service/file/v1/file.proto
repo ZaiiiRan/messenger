@@ -100,10 +100,11 @@ message AddVariantRequest {
 
 message UpdateFileRequest {
     string id = 1;
-    optional string status = 2;
-    repeated UpdateVariantRequest update_variants = 3;
-    repeated AddVariantRequest add_variants = 4;
-    repeated string delete_variants = 5;
+    optional string file_purpose = 2;
+    optional string status = 3;
+    repeated UpdateVariantRequest update_variants = 4;
+    repeated AddVariantRequest add_variants = 5;
+    repeated string delete_variants = 6;
 }
 
 message UpdateFilesRequest {
