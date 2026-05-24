@@ -42,12 +42,30 @@ func New(ctx context.Context, cfg settings.S3Settings) (*S3Client, error) {
 	}, nil
 }
 
-func (c *S3Client) PresignUpload(ctx context.Context, key string) (string, error) {
-	url, err := c.client.PresignedPutObject(ctx, c.bucket, key, c.presignTTL)
-	if err != nil {
-		return "", fmt.Errorf("presign upload: %w", err)
+func (c *S3Client) PresignUpload(ctx context.Context, key string, contentType string, maxSize int64) (string, map[string]string, error) {
+	policy := minio.NewPostPolicy()
+	if err := policy.SetBucket(c.bucket); err != nil {
+		return "", nil, fmt.Errorf("set bucket: %w", err)
 	}
-	return url.String(), nil
+	if err := policy.SetKey(key); err != nil {
+		return "", nil, fmt.Errorf("set key: %w", err)
+	}
+	if err := policy.SetExpires(time.Now().Add(c.presignTTL)); err != nil {
+		return "", nil, fmt.Errorf("set expires: %w", err)
+	}
+	if err := policy.SetContentType(contentType); err != nil {
+		return "", nil, fmt.Errorf("set content type: %w", err)
+	}
+	if err := policy.SetContentLengthRange(1, maxSize); err != nil {
+		return "", nil, fmt.Errorf("set content length range: %w", err)
+	}
+
+	url, formData, err := c.client.PresignedPostPolicy(ctx, policy)
+	if err != nil {
+		return "", nil, fmt.Errorf("presign upload: %w", err)
+	}
+
+	return url.String(), formData, nil
 }
 
 func (c *S3Client) PresignDownload(ctx context.Context, key string) (string, error) {
@@ -56,6 +74,21 @@ func (c *S3Client) PresignDownload(ctx context.Context, key string) (string, err
 		return "", fmt.Errorf("presign download: %w", err)
 	}
 	return url.String(), nil
+}
+
+func (c *S3Client) Stat(ctx context.Context, key string) (*ObjectInfo, error) {
+	info, err := c.client.StatObject(ctx, c.bucket, key, minio.StatObjectOptions{})
+	if err != nil {
+		errResp := minio.ToErrorResponse(err)
+		if errResp.Code == "NoSuchKey" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("stat object: %w", err)
+	}
+	return &ObjectInfo{
+		Size:        info.Size,
+		ContentType: info.ContentType,
+	}, nil
 }
 
 func (c *S3Client) Put(ctx context.Context, key string, data []byte, contentType string) error {
