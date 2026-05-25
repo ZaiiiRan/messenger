@@ -19,3 +19,16 @@ not_in_use_file_deletion_worker:
   count: 5
   interval_ms: 10000
   batch_size: 1000
+file_deletion_tasks_consumer:
+  kafka_consumer:
+    group_id: "file-service-consumer"
+    topic: "file-deletion-tasks"
+    batch_size: 1000
+    batch_timeout_ms: 1000
+    name: "file_deletion_tasks_consumer"
+  count: 5
+file_deletion_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 1000
