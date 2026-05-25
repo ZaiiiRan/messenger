@@ -15,3 +15,7 @@ file_deletion_from_s3_worker:
   interval_ms: 1000
   retry_interval_ms: 300000
   batch_size: 100
+not_in_use_file_deletion_worker:
+  count: 5
+  interval_ms: 10000
+  batch_size: 1000
