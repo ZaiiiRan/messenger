@@ -19,6 +19,8 @@ type WorkerConfig struct {
 	ChatFilesS3                settings.S3Settings                         `mapstructure:"chat_files_s3"`
 	FileDeletionFromS3Worker   settings.FileDeletionFromS3WorkerSettings   `mapstructure:"file_deletion_from_s3_worker"`
 	NotInUseFileDeletionWorker settings.NotInUseFileDeletionWorkerSettings `mapstructure:"not_in_use_file_deletion_worker"`
+	FileDeletionTasksConsumer  settings.FileDeletionTasksConsumerSettings  `mapstructure:"file_deletion_tasks_consumer"`
+	FileDeletionWorker         settings.FileDeletionWorkerSettings         `mapstructure:"file_deletion_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -63,4 +65,6 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetS3Defaults(v, "chat_files_s3")
 	settings.SetFileDeletionFromS3WorkerDefaults(v, "file_deletion_from_s3_worker")
 	settings.SetNotInUseFileDeletionWorkerDefaults(v, "not_in_use_file_deletion_worker")
+	settings.SetFileDeletionTasksConsumerSettings(v, "file_deletion_tasks_consumer")
+	settings.SetFileDeletionWorkerDefaults(v, "file_deletion_worker")
 }

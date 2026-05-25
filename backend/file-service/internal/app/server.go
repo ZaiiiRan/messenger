@@ -122,7 +122,7 @@ func (a *ServerApp) initPostgresClient(ctx context.Context) error {
 	}
 	a.postgresClient = pgClient
 
-	a.log.Infow("app.postgres_connectd")
+	a.log.Infow("app.postgres_connected")
 	return nil
 }
 

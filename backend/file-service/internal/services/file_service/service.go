@@ -32,6 +32,7 @@ type FileService interface {
 	DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest) (*pb.DeleteFilesResponse, error)
 	UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (*pb.UpdateFilesResponse, error)
 	DeleteNotInUseFiles(ctx context.Context, workerID string, batchSize int, uow *uow.UnitOfWork) error
+	DeleteFilesByIDs(ctx context.Context, workerID string, fileIDs []string, uow *uow.UnitOfWork) error
 }
 
 type service struct {
@@ -493,45 +494,7 @@ func (s *service) DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest) (
 		return &pb.DeleteFilesResponse{}, nil
 	}
 
-	fileIDs := make([]string, len(files))
-	for i, f := range files {
-		fileIDs[i] = f.GetID()
-	}
-
-	variantsQuery := models.NewQueryFileVariantsDal(
-		models.FileVariantFilterDal{FileIds: fileIDs},
-		nil, nil,
-	)
-	variants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
-	if err != nil {
-		l.Errorw("file.delete_files_failed.get_variants_locked_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
-
-	s3KeysByBucket := make(map[filevariant.BucketType][]string)
-	for _, fv := range variants {
-		s3KeysByBucket[fv.GetBucket()] = append(s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
-	}
-
-	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, variants, uow); err != nil {
-		l.Errorw("file.delete_files_failed.delete_variants_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
-
-	if err := s.fileDataProvider.deleteFiles(ctx, files, uow); err != nil {
-		l.Errorw("file.delete_files_failed.delete_files_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
-
-	tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(s3KeysByBucket))
-	for bucket, keys := range s3KeysByBucket {
-		tasks = append(tasks, filedeletionfroms3tasksservice.FileDeletionFromS3Task{
-			Bucket: int16(bucket),
-			S3Keys: keys,
-		})
-	}
-	if err := s.fileDeletionFromS3TasksService.CreateFileDeletionFromS3Tasks(ctx, "", tasks, uow); err != nil {
-		l.Errorw("file.delete_files_failed.create_deletion_tasks_error", "err", err)
+	if err := s.deleteFilesWithVariants(ctx, files, uow, "file.delete_files_failed", l); err != nil {
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
@@ -654,45 +617,7 @@ func (s *service) DeleteNotInUseFiles(ctx context.Context, workerID string, batc
 		return nil
 	}
 
-	fileIDs := make([]string, len(files))
-	for i, f := range files {
-		fileIDs[i] = f.GetID()
-	}
-
-	variantsQuery := models.NewQueryFileVariantsDal(
-		models.FileVariantFilterDal{FileIds: fileIDs},
-		nil, nil,
-	)
-	variants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
-	if err != nil {
-		l.Errorw("file.delete_not_in_use_files_failed.get_variants_locked_error", "err", err)
-		return ErrDeleteNotInUseFiles
-	}
-
-	s3KeysByBucket := make(map[filevariant.BucketType][]string)
-	for _, fv := range variants {
-		s3KeysByBucket[fv.GetBucket()] = append(s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
-	}
-
-	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, variants, uow); err != nil {
-		l.Errorw("file.delete_not_in_use_files_failed.delete_variants_error", "err", err)
-		return ErrDeleteNotInUseFiles
-	}
-
-	if err := s.fileDataProvider.deleteFiles(ctx, files, uow); err != nil {
-		l.Errorw("file.delete_not_in_use_files_failed.delete_files_error", "err", err)
-		return ErrDeleteNotInUseFiles
-	}
-
-	tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(s3KeysByBucket))
-	for bucket, keys := range s3KeysByBucket {
-		tasks = append(tasks, filedeletionfroms3tasksservice.FileDeletionFromS3Task{
-			Bucket: int16(bucket),
-			S3Keys: keys,
-		})
-	}
-	if err := s.fileDeletionFromS3TasksService.CreateFileDeletionFromS3Tasks(ctx, "", tasks, uow); err != nil {
-		l.Errorw("file.delete_not_in_use_files_failed.create_deletion_tasks_error", "err", err)
+	if err := s.deleteFilesWithVariants(ctx, files, uow, "file.delete_not_in_use_files_failed", l); err != nil {
 		return ErrDeleteNotInUseFiles
 	}
 
@@ -704,6 +629,101 @@ func (s *service) DeleteNotInUseFiles(ctx context.Context, workerID string, batc
 	}
 
 	l.Infow("file.delete_not_in_use_files.success", "count", len(files))
+	return nil
+}
+
+func (s *service) DeleteFilesByIDs(ctx context.Context, workerID string, fileIDs []string, uow *uow.UnitOfWork) error {
+	l := s.log.With("op", "delete_files_by_ids", "worker_id", workerID)
+
+	if len(fileIDs) == 0 {
+		return nil
+	}
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.fileDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("file.delete_files_by_ids_failed.begin_transaction_error", "err", err)
+			return ErrDeleteFilesByIDs
+		}
+	}
+
+	query := models.NewQueryFilesDal(models.FileFilterDal{Ids: fileIDs}, 1, len(fileIDs))
+	files, err := s.fileDataProvider.getFilesLocked(ctx, query, false, uow)
+	if err != nil {
+		l.Errorw("file.delete_files_by_ids_failed.get_files_locked_error", "err", err)
+		return ErrDeleteFilesByIDs
+	}
+	if len(files) == 0 {
+		return nil
+	}
+
+	if err := s.deleteFilesWithVariants(ctx, files, uow, "file.delete_files_by_ids_failed", l); err != nil {
+		return ErrDeleteFilesByIDs
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("file.delete_files_by_ids_failed.commit_error", "err", err)
+			return ErrDeleteFilesByIDs
+		}
+	}
+
+	l.Infow("file.delete_files_by_ids.success", "count", len(files))
+	return nil
+}
+
+func (s *service) deleteFilesWithVariants(
+	ctx context.Context,
+	files []*file.File,
+	uow *uow.UnitOfWork,
+	logPrefix string,
+	l *zap.SugaredLogger,
+) error {
+	fileIDs := make([]string, len(files))
+	for i, f := range files {
+		fileIDs[i] = f.GetID()
+	}
+
+	variantsQuery := models.NewQueryFileVariantsDal(
+		models.FileVariantFilterDal{FileIds: fileIDs},
+		nil, nil,
+	)
+	variants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
+	if err != nil {
+		l.Errorw(logPrefix+".get_variants_locked_error", "err", err)
+		return err
+	}
+
+	s3KeysByBucket := make(map[filevariant.BucketType][]string)
+	for _, fv := range variants {
+		s3KeysByBucket[fv.GetBucket()] = append(s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
+	}
+
+	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, variants, uow); err != nil {
+		l.Errorw(logPrefix+".delete_variants_error", "err", err)
+		return err
+	}
+
+	if err := s.fileDataProvider.deleteFiles(ctx, files, uow); err != nil {
+		l.Errorw(logPrefix+".delete_files_error", "err", err)
+		return err
+	}
+
+	tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(s3KeysByBucket))
+	for bucket, keys := range s3KeysByBucket {
+		tasks = append(tasks, filedeletionfroms3tasksservice.FileDeletionFromS3Task{
+			Bucket: int16(bucket),
+			S3Keys: keys,
+		})
+	}
+	if err := s.fileDeletionFromS3TasksService.CreateFileDeletionFromS3Tasks(ctx, "", tasks, uow); err != nil {
+		l.Errorw(logPrefix+".create_deletion_tasks_error", "err", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -1028,14 +1048,14 @@ func (s *service) buildUpdateFilesProto(
 				l.Errorw("file.update_files_failed.presign_download_error", "err", err)
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
-			pbVariant, err := fileVariantToProto(fv, &downloadURL, nil, false)
+			pbVariant, err := fileVariantToProto(fv, &downloadURL, nil, true)
 			if err != nil {
 				l.Errorw("file.update_files_failed.map_variant_error", "err", err)
 				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			pbVariants = append(pbVariants, pbVariant)
 		}
-		pbFiles = append(pbFiles, fileToProto(res.f, pbVariants, false))
+		pbFiles = append(pbFiles, fileToProto(res.f, pbVariants, true))
 	}
 	return pbFiles, nil
 }

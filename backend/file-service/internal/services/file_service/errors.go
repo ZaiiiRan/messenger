@@ -23,4 +23,5 @@ var (
 	ErrS3KeyIsRequired       = newFileServiceError("service.file.error.s3_key_is_required")
 	ErrS3ObjectNotFound      = newFileServiceError("service.file.error.s3_object_not_found")
 	ErrDeleteNotInUseFiles   = newFileServiceError("service.file.error.delete_not_in_use_files_failed")
+	ErrDeleteFilesByIDs      = newFileServiceError("service.file.error.delete_files_by_ids_failed")
 )

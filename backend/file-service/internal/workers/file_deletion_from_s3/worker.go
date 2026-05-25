@@ -65,7 +65,11 @@ func (w *FileDeletionFromS3Worker) Run(ctx context.Context) {
 
 func (w *FileDeletionFromS3Worker) runOnce(ctx context.Context) {
 	start := time.Now()
-	w.fileDeletionFromS3TasksService.ProcessFileDeletionFromS3Tasks(ctx, w.workerID, w.cfg.RetryIntervalMS, int(w.cfg.BatchSize), nil)
+	err := w.fileDeletionFromS3TasksService.ProcessFileDeletionFromS3Tasks(ctx, w.workerID, w.cfg.RetryIntervalMS, int(w.cfg.BatchSize), nil)
 	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
+	if err != nil {
+		w.metrics.CyclesTotal.WithLabelValues(workerType, "error").Inc()
+		return
+	}
 	w.metrics.CyclesTotal.WithLabelValues(workerType, "success").Inc()
 }

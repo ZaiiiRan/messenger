@@ -65,7 +65,11 @@ func (w *NotInUseFileDeletionWorker) Run(ctx context.Context) {
 
 func (w *NotInUseFileDeletionWorker) runOnce(ctx context.Context) {
 	start := time.Now()
-	w.fileService.DeleteNotInUseFiles(ctx, w.workerID, int(w.cfg.BatchSize), nil)
+	err := w.fileService.DeleteNotInUseFiles(ctx, w.workerID, int(w.cfg.BatchSize), nil)
 	w.metrics.CycleDuration.WithLabelValues(workerType).Observe(time.Since(start).Seconds())
+	if err != nil {
+		w.metrics.CyclesTotal.WithLabelValues(workerType, "error").Inc()
+		return
+	}
 	w.metrics.CyclesTotal.WithLabelValues(workerType, "success").Inc()
 }
