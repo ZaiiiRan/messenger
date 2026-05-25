@@ -10,6 +10,7 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/domain/file"
 	filevariant "github.com/ZaiiiRan/messenger/backend/file-service/internal/domain/file_variant"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/repositories/models"
+	uow "github.com/ZaiiiRan/messenger/backend/file-service/internal/repositories/unitofwork/postgres"
 	filedeletionfroms3tasksservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_deletion_from_s3_tasks_service"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/redis"
@@ -30,6 +31,7 @@ type FileService interface {
 	GetFiles(ctx context.Context, req *pb.GetFilesRequest) (*pb.GetFilesResponse, error)
 	DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest) (*pb.DeleteFilesResponse, error)
 	UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (*pb.UpdateFilesResponse, error)
+	DeleteNotInUseFiles(ctx context.Context, workerID string, batchSize int, uow *uow.UnitOfWork) error
 }
 
 type service struct {
@@ -55,6 +57,44 @@ func New(
 		fileDeletionFromS3TasksService: fileDeletionTasksSvc,
 		log:                            log,
 	}
+}
+
+type variantAddParsed struct {
+	variantType filevariant.VariantType
+	bucket      filevariant.BucketType
+	s3Key       string
+	meta        filevariant.Meta
+	mimeType    string
+	size        int64
+}
+
+type variantUpdateParsed struct {
+	id          string
+	variantType *filevariant.VariantType
+	meta        *filevariant.Meta
+}
+
+type fileParsed struct {
+	id               string
+	purpose          *file.FilePurpose
+	newStatus        *file.FileStatus
+	deleteVariantIDs map[string]struct{}
+	updateVariants   []variantUpdateParsed
+	addVariants      []variantAddParsed
+}
+
+type updateMutations struct {
+	filesToUpdate    []*file.File
+	filesToDelete    []*file.File
+	variantsToDelete []*filevariant.FileVariant
+	variantsToUpdate []*filevariant.FileVariant
+	variantsToCreate []*filevariant.FileVariant
+	s3KeysByBucket   map[filevariant.BucketType][]string
+}
+
+type fileResult struct {
+	f             *file.File
+	finalVariants []*filevariant.FileVariant
 }
 
 func (s *service) CreateFilesByUser(ctx context.Context, req *pb.CreateFilesByUserRequest) (*pb.CreateFilesByUserResponse, error) {
@@ -364,9 +404,7 @@ func (s *service) GetFiles(ctx context.Context, req *pb.GetFilesRequest) (*pb.Ge
 		files = []*file.File{f}
 	} else {
 		query := models.NewQueryFilesDal(
-			models.FileFilterDal{
-				Ids: req.FileIds,
-			},
+			models.FileFilterDal{Ids: req.FileIds},
 			1, len(req.FileIds),
 		)
 		f, err := s.fileDataProvider.getFiles(ctx, query, uow)
@@ -516,28 +554,179 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		return nil, grpcstatus.Error(codes.InvalidArgument, ErrTooManyFiles.Error())
 	}
 
-	type variantAddParsed struct {
-		variantType filevariant.VariantType
-		bucket      filevariant.BucketType
-		s3Key       string
-		meta        filevariant.Meta
-		mimeType    string
-		size        int64
-	}
-	type variantUpdateParsed struct {
-		id          string
-		variantType *filevariant.VariantType
-		meta        *filevariant.Meta
-	}
-	type fileParsed struct {
-		id               string
-		purpose          *file.FilePurpose
-		newStatus        *file.FileStatus
-		deleteVariantIDs map[string]struct{}
-		updateVariants   []variantUpdateParsed
-		addVariants      []variantAddParsed
+	parsed, fileIDs, err := s.validateAndStatUpdateRequest(ctx, req, l)
+	if err != nil {
+		return nil, err
 	}
 
+	uow := s.fileDataProvider.newUOW()
+	defer uow.Close()
+
+	if _, err := uow.BeginTransaction(ctx); err != nil {
+		l.Errorw("file.update_files_failed.begin_transaction_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	var lockedFiles []*file.File
+	if len(fileIDs) == 1 {
+		f, err := s.fileDataProvider.getFileByIDLocked(ctx, fileIDs[0], uow)
+		if err != nil {
+			l.Errorw("file.update_files_failed.get_file_locked_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+		if f == nil {
+			return nil, grpcstatus.Error(codes.NotFound, ErrFileNotFound.Error())
+		}
+		lockedFiles = []*file.File{f}
+	} else {
+		query := models.NewQueryFilesDal(models.FileFilterDal{Ids: fileIDs}, 1, len(fileIDs))
+		lockedFiles, err = s.fileDataProvider.getFilesLocked(ctx, query, false, uow)
+		if err != nil {
+			l.Errorw("file.update_files_failed.get_files_locked_error", "err", err)
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+	}
+
+	variantsQuery := models.NewQueryFileVariantsDal(models.FileVariantFilterDal{FileIds: fileIDs}, nil, nil)
+	allVariants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
+	if err != nil {
+		l.Errorw("file.update_files_failed.get_variants_locked_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	mutations, fileResults, err := s.buildUpdateMutations(parsed, lockedFiles, allVariants, time.Now(), l)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.applyUpdateMutations(ctx, mutations, uow, l); err != nil {
+		return nil, err
+	}
+
+	if err := uow.Commit(ctx); err != nil {
+		l.Errorw("file.update_files_failed.commit_error", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	pbFiles, err := s.buildUpdateFilesProto(ctx, fileResults, l)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Infow("file.update_files.success", "updated", len(mutations.filesToUpdate), "deleted", len(mutations.filesToDelete))
+	return &pb.UpdateFilesResponse{File: pbFiles}, nil
+}
+
+func (s *service) DeleteNotInUseFiles(ctx context.Context, workerID string, batchSize int, uow *uow.UnitOfWork) error {
+	l := s.log.With("op", "delete_not_in_use_files", "worker_id", workerID, "batch_size", batchSize)
+
+	needToCommit := false
+	if uow == nil {
+		uow = s.fileDataProvider.newUOW()
+		defer uow.Close()
+		needToCommit = true
+		if _, err := uow.BeginTransaction(ctx); err != nil {
+			l.Errorw("file.delete_not_in_use_files_failed.begin_transaction_error", "err", err)
+			return ErrDeleteNotInUseFiles
+		}
+	}
+
+	updatedAtBefore := time.Now().Add(-6 * time.Hour)
+	createdAtBefore := time.Now().Add(-24 * time.Hour)
+
+	query := models.NewQueryFilesDal(
+		models.FileFilterDal{
+			Statuses: []int16{
+				int16(file.FileStatusWaitingForUpload), int16(file.FileStatusUploaded),
+				int16(file.FileStatusProcessing), int16(file.FileStatusReady),
+			},
+			CreatedTo: &createdAtBefore,
+			UpdatedTo: &updatedAtBefore,
+		}, 1, batchSize,
+	)
+
+	files, err := s.fileDataProvider.getFilesLocked(ctx, query, true, uow)
+	if err != nil {
+		l.Errorw("file.delete_not_in_use_files_failed.get_files_locked_error", "err", err)
+		return ErrDeleteNotInUseFiles
+	}
+	if len(files) == 0 {
+		return nil
+	}
+
+	fileIDs := make([]string, len(files))
+	for i, f := range files {
+		fileIDs[i] = f.GetID()
+	}
+
+	variantsQuery := models.NewQueryFileVariantsDal(
+		models.FileVariantFilterDal{FileIds: fileIDs},
+		nil, nil,
+	)
+	variants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
+	if err != nil {
+		l.Errorw("file.delete_not_in_use_files_failed.get_variants_locked_error", "err", err)
+		return ErrDeleteNotInUseFiles
+	}
+
+	s3KeysByBucket := make(map[filevariant.BucketType][]string)
+	for _, fv := range variants {
+		s3KeysByBucket[fv.GetBucket()] = append(s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
+	}
+
+	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, variants, uow); err != nil {
+		l.Errorw("file.delete_not_in_use_files_failed.delete_variants_error", "err", err)
+		return ErrDeleteNotInUseFiles
+	}
+
+	if err := s.fileDataProvider.deleteFiles(ctx, files, uow); err != nil {
+		l.Errorw("file.delete_not_in_use_files_failed.delete_files_error", "err", err)
+		return ErrDeleteNotInUseFiles
+	}
+
+	tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(s3KeysByBucket))
+	for bucket, keys := range s3KeysByBucket {
+		tasks = append(tasks, filedeletionfroms3tasksservice.FileDeletionFromS3Task{
+			Bucket: int16(bucket),
+			S3Keys: keys,
+		})
+	}
+	if err := s.fileDeletionFromS3TasksService.CreateFileDeletionFromS3Tasks(ctx, "", tasks, uow); err != nil {
+		l.Errorw("file.delete_not_in_use_files_failed.create_deletion_tasks_error", "err", err)
+		return ErrDeleteNotInUseFiles
+	}
+
+	if needToCommit {
+		if err := uow.Commit(ctx); err != nil {
+			l.Errorw("file.delete_not_in_use_files_failed.commit_error", "err", err)
+			return ErrDeleteNotInUseFiles
+		}
+	}
+
+	l.Infow("file.delete_not_in_use_files.success", "count", len(files))
+	return nil
+}
+
+func (s *service) validateAndStatUpdateRequest(
+	ctx context.Context,
+	req *pb.UpdateFilesRequest,
+	l *zap.SugaredLogger,
+) ([]fileParsed, []string, error) {
+	parsed, fileIDs, verr := s.parseUpdateRequest(req)
+	if len(verr) > 0 {
+		return nil, nil, verr.ToStatus()
+	}
+	statVerr, err := s.statAddVariants(ctx, parsed, l)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(statVerr) > 0 {
+		return nil, nil, statVerr.ToStatus()
+	}
+	return parsed, fileIDs, nil
+}
+
+func (s *service) parseUpdateRequest(req *pb.UpdateFilesRequest) ([]fileParsed, []string, validationerror.ValidationError) {
 	parsed := make([]fileParsed, len(req.Files))
 	fileIDs := make([]string, 0, len(req.Files))
 	verr := make(validationerror.ValidationError)
@@ -651,11 +840,15 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		parsed[i] = fp
 	}
 
-	if len(verr) > 0 {
-		return nil, verr.ToStatus()
-	}
+	return parsed, fileIDs, verr
+}
 
-	// S3 stat pass: get mimeType and size for variants being added
+func (s *service) statAddVariants(
+	ctx context.Context,
+	parsed []fileParsed,
+	l *zap.SugaredLogger,
+) (validationerror.ValidationError, error) {
+	verr := make(validationerror.ValidationError)
 	for i := range parsed {
 		for j := range parsed[i].addVariants {
 			avp := &parsed[i].addVariants[j]
@@ -675,50 +868,19 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 			avp.size = info.Size
 		}
 	}
-	if len(verr) > 0 {
-		return nil, verr.ToStatus()
-	}
+	return verr, nil
+}
 
-	// DB transaction
-	uow := s.fileDataProvider.newUOW()
-	defer uow.Close()
-
-	if _, err := uow.BeginTransaction(ctx); err != nil {
-		l.Errorw("file.update_files_failed.begin_transaction_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
-
-	var lockedFiles []*file.File
-	if len(fileIDs) == 1 {
-		f, err := s.fileDataProvider.getFileByIDLocked(ctx, fileIDs[0], uow)
-		if err != nil {
-			l.Errorw("file.update_files_failed.get_file_locked_error", "err", err)
-			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-		}
-		if f == nil {
-			return nil, grpcstatus.Error(codes.NotFound, ErrFileNotFound.Error())
-		}
-		lockedFiles = []*file.File{f}
-	} else {
-		query := models.NewQueryFilesDal(models.FileFilterDal{Ids: fileIDs}, 1, len(fileIDs))
-		var err error
-		lockedFiles, err = s.fileDataProvider.getFilesLocked(ctx, query, false, uow)
-		if err != nil {
-			l.Errorw("file.update_files_failed.get_files_locked_error", "err", err)
-			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-		}
-	}
-
+func (s *service) buildUpdateMutations(
+	parsed []fileParsed,
+	lockedFiles []*file.File,
+	allVariants []*filevariant.FileVariant,
+	now time.Time,
+	l *zap.SugaredLogger,
+) (*updateMutations, []fileResult, error) {
 	fileMap := make(map[string]*file.File, len(lockedFiles))
 	for _, f := range lockedFiles {
 		fileMap[f.GetID()] = f
-	}
-
-	variantsQuery := models.NewQueryFileVariantsDal(models.FileVariantFilterDal{FileIds: fileIDs}, nil, nil)
-	allVariants, err := s.fileVariantDataProvider.getFileVariantsLocked(ctx, variantsQuery, uow)
-	if err != nil {
-		l.Errorw("file.update_files_failed.get_variants_locked_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
 	variantsByFileID := make(map[string][]*filevariant.FileVariant)
@@ -728,18 +890,8 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		variantByID[fv.GetID()] = fv
 	}
 
-	now := time.Now()
-
-	var filesToUpdate []*file.File
-	var filesToDelete []*file.File
-	var variantsToDelete []*filevariant.FileVariant
-	var variantsToUpdate []*filevariant.FileVariant
-	var variantsToCreate []*filevariant.FileVariant
-	s3KeysByBucket := make(map[filevariant.BucketType][]string)
-
-	type fileResult struct {
-		f             *file.File
-		finalVariants []*filevariant.FileVariant
+	mut := &updateMutations{
+		s3KeysByBucket: make(map[filevariant.BucketType][]string),
 	}
 	fileResults := make([]fileResult, 0, len(parsed))
 
@@ -751,7 +903,7 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 
 		if fp.newStatus != nil {
 			if err := f.SetStatus(*fp.newStatus); err != nil {
-				return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: %s", fp.id, err.Error())
+				return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: %s", fp.id, err.Error())
 			}
 		}
 
@@ -760,32 +912,32 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		for dvID := range fp.deleteVariantIDs {
 			fv, ok := variantByID[dvID]
 			if !ok || fv.GetFileID() != fp.id {
-				return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s not found", fp.id, dvID)
+				return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s not found", fp.id, dvID)
 			}
-			variantsToDelete = append(variantsToDelete, fv)
-			s3KeysByBucket[fv.GetBucket()] = append(s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
+			mut.variantsToDelete = append(mut.variantsToDelete, fv)
+			mut.s3KeysByBucket[fv.GetBucket()] = append(mut.s3KeysByBucket[fv.GetBucket()], fv.GetS3Key())
 		}
 
 		for _, uvp := range fp.updateVariants {
 			fv, ok := variantByID[uvp.id]
 			if !ok || fv.GetFileID() != fp.id {
-				return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s not found", fp.id, uvp.id)
+				return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s not found", fp.id, uvp.id)
 			}
 			if _, deleted := fp.deleteVariantIDs[uvp.id]; deleted {
-				return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s is in both update_variants and delete_variants", fp.id, uvp.id)
+				return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s is in both update_variants and delete_variants", fp.id, uvp.id)
 			}
 			if uvp.variantType != nil {
 				if err := fv.SetVariant(*uvp.variantType, *fp.purpose); err != nil {
-					return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s: %s", fp.id, uvp.id, err.Error())
+					return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s: %s", fp.id, uvp.id, err.Error())
 				}
 			}
 			if uvp.meta != nil {
 				if err := fv.SetMeta(*uvp.meta, *fp.purpose); err != nil {
-					return nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s: %s", fp.id, uvp.id, err.Error())
+					return nil, nil, grpcstatus.Errorf(codes.InvalidArgument, "file %s: variant %s: %s", fp.id, uvp.id, err.Error())
 				}
 			}
 			fv.SetUpdatedAt(&now)
-			variantsToUpdate = append(variantsToUpdate, fv)
+			mut.variantsToUpdate = append(mut.variantsToUpdate, fv)
 		}
 
 		newVariants := make([]*filevariant.FileVariant, 0, len(fp.addVariants))
@@ -794,10 +946,10 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 			fv, err := filevariant.FromStorage("", fp.id, int16(avp.variantType), int16(avp.bucket), avp.s3Key, avp.mimeType, avp.size, metaJSON, now, now)
 			if err != nil {
 				l.Errorw("file.update_files_failed.build_variant_error", "err", err)
-				return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+				return nil, nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 			}
 			newVariants = append(newVariants, fv)
-			variantsToCreate = append(variantsToCreate, fv)
+			mut.variantsToCreate = append(mut.variantsToCreate, fv)
 		}
 
 		finalVariants := make([]*filevariant.FileVariant, 0, len(fileVariants)+len(newVariants))
@@ -809,37 +961,46 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		finalVariants = append(finalVariants, newVariants...)
 
 		if len(finalVariants) == 0 {
-			filesToDelete = append(filesToDelete, f)
+			mut.filesToDelete = append(mut.filesToDelete, f)
 		} else {
 			f.SetUpdatedAt(&now)
-			filesToUpdate = append(filesToUpdate, f)
+			mut.filesToUpdate = append(mut.filesToUpdate, f)
 			fileResults = append(fileResults, fileResult{f: f, finalVariants: finalVariants})
 		}
 	}
 
-	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, variantsToDelete, uow); err != nil {
+	return mut, fileResults, nil
+}
+
+func (s *service) applyUpdateMutations(
+	ctx context.Context,
+	mut *updateMutations,
+	uow *uow.UnitOfWork,
+	l *zap.SugaredLogger,
+) error {
+	if err := s.fileVariantDataProvider.deleteFileVariants(ctx, mut.variantsToDelete, uow); err != nil {
 		l.Errorw("file.update_files_failed.delete_variants_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	if err := s.fileVariantDataProvider.updateFileVariants(ctx, variantsToUpdate, uow); err != nil {
+	if err := s.fileVariantDataProvider.updateFileVariants(ctx, mut.variantsToUpdate, uow); err != nil {
 		l.Errorw("file.update_files_failed.update_variants_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	if err := s.fileVariantDataProvider.createFileVariants(ctx, variantsToCreate, uow); err != nil {
+	if err := s.fileVariantDataProvider.createFileVariants(ctx, mut.variantsToCreate, uow); err != nil {
 		l.Errorw("file.update_files_failed.create_variants_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	if err := s.fileDataProvider.deleteFiles(ctx, filesToDelete, uow); err != nil {
+	if err := s.fileDataProvider.deleteFiles(ctx, mut.filesToDelete, uow); err != nil {
 		l.Errorw("file.update_files_failed.delete_files_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
-	if err := s.fileDataProvider.updateFiles(ctx, filesToUpdate, uow); err != nil {
+	if err := s.fileDataProvider.updateFiles(ctx, mut.filesToUpdate, uow); err != nil {
 		l.Errorw("file.update_files_failed.update_files_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	s3Tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(s3KeysByBucket))
-	for bucket, keys := range s3KeysByBucket {
+	s3Tasks := make([]filedeletionfroms3tasksservice.FileDeletionFromS3Task, 0, len(mut.s3KeysByBucket))
+	for bucket, keys := range mut.s3KeysByBucket {
 		s3Tasks = append(s3Tasks, filedeletionfroms3tasksservice.FileDeletionFromS3Task{
 			Bucket: int16(bucket),
 			S3Keys: keys,
@@ -847,16 +1008,19 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 	}
 	if err := s.fileDeletionFromS3TasksService.CreateFileDeletionFromS3Tasks(ctx, "", s3Tasks, uow); err != nil {
 		l.Errorw("file.update_files_failed.create_deletion_tasks_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		return grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
-	if err := uow.Commit(ctx); err != nil {
-		l.Errorw("file.update_files_failed.commit_error", "err", err)
-		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
-	}
+	return nil
+}
 
-	pbFiles := make([]*pb.File, 0, len(fileResults))
-	for _, res := range fileResults {
+func (s *service) buildUpdateFilesProto(
+	ctx context.Context,
+	results []fileResult,
+	l *zap.SugaredLogger,
+) ([]*pb.File, error) {
+	pbFiles := make([]*pb.File, 0, len(results))
+	for _, res := range results {
 		pbVariants := make([]*pb.FileVariant, 0, len(res.finalVariants))
 		for _, fv := range res.finalVariants {
 			downloadURL, err := s.bucketPresignDownload(ctx, fv.GetBucket(), fv.GetS3Key())
@@ -873,9 +1037,7 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 		}
 		pbFiles = append(pbFiles, fileToProto(res.f, pbVariants, false))
 	}
-
-	l.Infow("file.update_files.success", "updated", len(filesToUpdate), "deleted", len(filesToDelete))
-	return &pb.UpdateFilesResponse{File: pbFiles}, nil
+	return pbFiles, nil
 }
 
 func (s *service) purposeStorage(

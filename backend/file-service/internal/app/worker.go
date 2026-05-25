@@ -7,10 +7,13 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/config"
 	filedeletionfroms3tasksservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_deletion_from_s3_tasks_service"
+	fileservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_service"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/prom_metrics"
+	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/redis"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/s3"
 	filedeletionfroms3worker "github.com/ZaiiiRan/messenger/backend/file-service/internal/workers/file_deletion_from_s3"
+	notinusefiledeletionworker "github.com/ZaiiiRan/messenger/backend/file-service/internal/workers/not_in_use_file_deletion"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -20,11 +23,13 @@ type WorkerApp struct {
 	log *zap.SugaredLogger
 
 	postgresClient *postgres.PostgresClient
+	redisClient    *redis.RedisClient
 
 	userPhotosS3Client *s3.S3Client
 	chatFilesS3Client  *s3.S3Client
 
 	fileDeletionFromS3TasksService filedeletionfroms3tasksservice.FileDeletionFromS3TasksService
+	fileService                    fileservice.FileService
 
 	metricsServer    *prommetrics.Server
 	workerMetrics    *prommetrics.WorkerMetrics
@@ -57,6 +62,9 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.initPostgresClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initRedisClient(ctx); err != nil {
+		return err
+	}
 	if err := a.initUserPhotosS3Client(ctx); err != nil {
 		return err
 	}
@@ -65,6 +73,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	}
 
 	a.initFileDeletionFromS3TasksService()
+	a.initFileService()
 
 	a.initMetricsServer()
 	a.startMetricsServer()
@@ -72,6 +81,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.workersCtx, a.workersCancel = context.WithCancel(ctx)
 
 	a.startFileDeletionFromS3Workers()
+	a.startNotInUseFileDeletionWorkers()
 
 	<-a.isMetricsStarted
 	a.log.Infow("app.started")
@@ -105,6 +115,7 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 	}
 
 	a.postgresClient.Close()
+	a.redisClient.Close()
 
 	a.log.Infow("app.stopped")
 }
@@ -118,6 +129,18 @@ func (a *WorkerApp) initPostgresClient(ctx context.Context) error {
 	a.postgresClient = pgClient
 
 	a.log.Infow("app.postgres_connectd")
+	return nil
+}
+
+func (a *WorkerApp) initRedisClient(ctx context.Context) error {
+	redisClient, err := redis.New(ctx, a.cfg.Redis)
+	if err != nil {
+		a.log.Errorw("app.redis_connect_failed", "err", err)
+		return err
+	}
+	a.redisClient = redisClient
+
+	a.log.Infow("app.redis_connected")
 	return nil
 }
 
@@ -149,6 +172,10 @@ func (a *WorkerApp) initFileDeletionFromS3TasksService() {
 	a.fileDeletionFromS3TasksService = filedeletionfroms3tasksservice.New(a.postgresClient, a.userPhotosS3Client, a.chatFilesS3Client, a.log)
 }
 
+func (a *WorkerApp) initFileService() {
+	a.fileService = fileservice.New(a.postgresClient, a.redisClient, a.userPhotosS3Client, a.chatFilesS3Client, a.fileDeletionFromS3TasksService, a.log)
+}
+
 func (a *WorkerApp) initMetricsServer() {
 	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
 	a.workerMetrics = prommetrics.NewWorkerMetrics(a.metricsServer.Registry())
@@ -169,6 +196,22 @@ func (a *WorkerApp) startFileDeletionFromS3Workers() {
 		w := filedeletionfroms3worker.New(
 			a.cfg.FileDeletionFromS3Worker,
 			a.fileDeletionFromS3TasksService,
+			a.log,
+			a.workerMetrics,
+		)
+		a.workersWg.Add(1)
+		go func() {
+			defer a.workersWg.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
+}
+
+func (a *WorkerApp) startNotInUseFileDeletionWorkers() {
+	for i := 0; i < int(a.cfg.NotInUseFileDeletionWorker.Count); i++ {
+		w := notinusefiledeletionworker.New(
+			a.cfg.NotInUseFileDeletionWorker,
+			a.fileService,
 			a.log,
 			a.workerMetrics,
 		)

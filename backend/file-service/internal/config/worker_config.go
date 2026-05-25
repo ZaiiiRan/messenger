@@ -10,13 +10,15 @@ import (
 )
 
 type WorkerConfig struct {
-	DB                       settings.PostgresSettings                 `mapstructure:"db"`
-	Shutdown                 settings.ShutdownSettings                 `mapstructure:"shutdown"`
-	MetricsServer            settings.MetricsServerSettings            `mapstructure:"metrics_server"`
-	Vault                    settings.VaultSettings                    `mapstructure:"vault"`
-	UserPhotosS3             settings.S3Settings                       `mapstructure:"user_photos_s3"`
-	ChatFilesS3              settings.S3Settings                       `mapstructure:"chat_files_s3"`
-	FileDeletionFromS3Worker settings.FileDeletionFromS3WorkerSettings `mapstructure:"file_deletion_from_s3_worker"`
+	DB                         settings.PostgresSettings                   `mapstructure:"db"`
+	Redis                      settings.RedisSettings                      `mapstructure:"redis"`
+	Shutdown                   settings.ShutdownSettings                   `mapstructure:"shutdown"`
+	MetricsServer              settings.MetricsServerSettings              `mapstructure:"metrics_server"`
+	Vault                      settings.VaultSettings                      `mapstructure:"vault"`
+	UserPhotosS3               settings.S3Settings                         `mapstructure:"user_photos_s3"`
+	ChatFilesS3                settings.S3Settings                         `mapstructure:"chat_files_s3"`
+	FileDeletionFromS3Worker   settings.FileDeletionFromS3WorkerSettings   `mapstructure:"file_deletion_from_s3_worker"`
+	NotInUseFileDeletionWorker settings.NotInUseFileDeletionWorkerSettings `mapstructure:"not_in_use_file_deletion_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -53,10 +55,12 @@ func LoadWorkerConfig() (*WorkerConfig, error) {
 
 func setWorkerDefaults(v *viper.Viper) {
 	settings.SetPostgresDefaults(v, "db")
+	settings.SetRedisDefaults(v, "redis")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetS3Defaults(v, "user_photos_s3")
 	settings.SetS3Defaults(v, "chat_files_s3")
 	settings.SetFileDeletionFromS3WorkerDefaults(v, "file_deletion_from_s3_worker")
+	settings.SetNotInUseFileDeletionWorkerDefaults(v, "not_in_use_file_deletion_worker")
 }
