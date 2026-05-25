@@ -155,6 +155,14 @@ func (fv *FileVariant) SetSize(size int64) error {
 	return nil
 }
 
+func (fv *FileVariant) SetVariant(variant VariantType, purpose file.FilePurpose) error {
+	if err := ValidateVariantType(variant, purpose); err != nil {
+		return err
+	}
+	fv.variant = int16(variant)
+	return nil
+}
+
 func (fv *FileVariant) SetMeta(meta Meta, purpose file.FilePurpose) error {
 	if err := ValidateMeta(meta, purpose); err != nil {
 		return err

@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/ZaiiiRan/messenger/backend/file-service/gen/go/file/v1"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/config/settings"
+	fileservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_service"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/utils"
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -26,6 +27,7 @@ type Server struct {
 func New(
 	srvSettings settings.GRPCServerSettings,
 	jwtSettings settings.JWTSettings,
+	fileService fileservice.FileService,
 	log *zap.SugaredLogger,
 	reg *prometheus.Registry,
 ) (*Server, error) {
@@ -38,7 +40,7 @@ func New(
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterFileServiceServer(s, newFileHandler())
+	pb.RegisterFileServiceServer(s, newFileHandler(fileService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {

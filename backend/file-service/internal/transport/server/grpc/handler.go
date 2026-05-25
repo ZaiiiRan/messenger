@@ -4,45 +4,47 @@ import (
 	"context"
 
 	pb "github.com/ZaiiiRan/messenger/backend/file-service/gen/go/file/v1"
+	fileservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_service"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/utils"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type fileHandler struct {
 	pb.UnimplementedFileServiceServer
+	fileService fileservice.FileService
 }
 
-func newFileHandler() *fileHandler {
-	return &fileHandler{}
+func newFileHandler(fileService fileservice.FileService) *fileHandler {
+	return &fileHandler{
+		fileService: fileService,
+	}
 }
 
 func (h *fileHandler) CreateFilesByUser(ctx context.Context, req *pb.CreateFilesByUserRequest) (*pb.CreateFilesByUserResponse, error) {
 	utils.SanitizeCreateFilesByUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.CreateFilesByUser(ctx, req)
 }
 
 func (h *fileHandler) ConfirmUploadsByUser(ctx context.Context, req *pb.ConfirmUploadsByUserRequest) (*pb.ConfirmUploadsByUserResponse, error) {
 	utils.SanitizeConfirmUploadsByUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.ConfirmUploadsByUser(ctx, req)
 }
 
 func (h *fileHandler) GetFilesByUser(ctx context.Context, req *pb.GetFilesByUserRequest) (*pb.GetFilesByUserResponse, error) {
 	utils.SanitizeGetFilesByUserRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.GetFilesByUser(ctx, req)
 }
 
 func (h *fileHandler) GetFiles(ctx context.Context, req *pb.GetFilesRequest) (*pb.GetFilesResponse, error) {
 	utils.SanitizeGetFilesRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.GetFiles(ctx, req)
 }
 
 func (h *fileHandler) DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest) (*pb.DeleteFilesResponse, error) {
 	utils.SanitizeDeleteFilesRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.DeleteFiles(ctx, req)
 }
 
 func (h *fileHandler) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (*pb.UpdateFilesResponse, error) {
 	utils.SanitizeUpdateFilesRequest(req)
-	return nil, status.Error(codes.Unimplemented, "not_implemented")
+	return h.fileService.UpdateFiles(ctx, req)
 }

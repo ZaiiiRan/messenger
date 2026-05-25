@@ -132,3 +132,31 @@ func (c *S3Client) Delete(ctx context.Context, key string) error {
 	}
 	return nil
 }
+
+func (c *S3Client) DeleteMany(ctx context.Context, keys []string) error {
+	objectsCh := make(chan minio.ObjectInfo)
+	go func() {
+		defer close(objectsCh)
+		for _, key := range keys {
+			select {
+			case objectsCh <- minio.ObjectInfo{Key: key}:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	var firstErr error
+	for removeErr := range c.client.RemoveObjects(ctx, c.bucket, objectsCh, minio.RemoveObjectsOptions{}) {
+		if minio.ToErrorResponse(removeErr.Err).Code == "NoSuchKey" {
+			continue
+		}
+		if firstErr == nil {
+			firstErr = removeErr.Err
+		}
+	}
+	if firstErr != nil {
+		return fmt.Errorf("delete objects: %w", firstErr)
+	}
+	return nil
+}

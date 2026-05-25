@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/config"
+	filedeletionfroms3tasksservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_deletion_from_s3_tasks_service"
+	fileservice "github.com/ZaiiiRan/messenger/backend/file-service/internal/services/file_service"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/file-service/internal/transport/prom_metrics"
@@ -26,6 +28,9 @@ type ServerApp struct {
 
 	userPhotosS3Client *s3.S3Client
 	chatFilesS3Client  *s3.S3Client
+
+	fileDeletionFromS3TasksService filedeletionfroms3tasksservice.FileDeletionFromS3TasksService
+	fileService                    fileservice.FileService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -66,6 +71,9 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initChatFilesS3Client(ctx); err != nil {
 		return err
 	}
+
+	a.initFileDeletionFromS3TasksService()
+	a.initFileService()
 
 	a.initI18n()
 	a.initMetricsServer()
@@ -158,6 +166,14 @@ func (a *ServerApp) initI18n() {
 	i18n.Init()
 }
 
+func (a *ServerApp) initFileDeletionFromS3TasksService() {
+	a.fileDeletionFromS3TasksService = filedeletionfroms3tasksservice.New(a.postgresClient, a.userPhotosS3Client, a.chatFilesS3Client, a.log)
+}
+
+func (a *ServerApp) initFileService() {
+	a.fileService = fileservice.New(a.postgresClient, a.redisClient, a.userPhotosS3Client, a.chatFilesS3Client, a.fileDeletionFromS3TasksService, a.log)
+}
+
 func (a *ServerApp) initMetricsServer() {
 	a.metricsServer = prommetrics.New(a.cfg.MetricsServer)
 }
@@ -173,7 +189,7 @@ func (a *ServerApp) startMetricsServer() {
 }
 
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.log, a.metricsServer.Registry())
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.fileService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
