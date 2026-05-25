@@ -1,0 +1,17 @@
+metrics_server:
+  port: ":8080"
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/file-service"
+user_photos_s3:
+  bucket: "user-photos"
+  region: "us-east-1"
+chat_files_s3:
+  bucket: "chat-files"
+  region: "us-east-1"
+file_deletion_from_s3_worker:
+  count: 5
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 100
