@@ -4,3 +4,5 @@ directories:
   - api/user-service
   - api/auth-service
   - api/social-service
+  - api/file-service
+  - api/media-service

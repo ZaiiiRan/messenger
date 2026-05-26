@@ -1,0 +1,26 @@
+version: v1
+
+plugins:
+  - name: go
+    out: media-service/gen/go
+    opt: 
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/media-service/gen/go/file/v1
+  - name: go-grpc
+    out: media-service/gen/go
+    opt: 
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/media-service/gen/go/file/v1
+
+  - name: go
+    out: api-gateway/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/file/v1
+      - Mmedia/v1/media.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/media/v1
+  - name: go-grpc
+    out: api-gateway/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/file/v1
+      - Mmedia/v1/media.proto=github.com/ZaiiiRan/messenger/backend/api-gateway/gen/go/media/v1
