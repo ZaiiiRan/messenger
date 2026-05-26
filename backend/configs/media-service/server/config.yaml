@@ -1,0 +1,16 @@
+grpc_server:
+  port: ":50051"
+metrics_server:
+  port: ":8080"
+shutdown:
+  shutdown_timeout: 5
+vault:
+  path: "secret/data/media-service"
+file_service_grpc_client:
+  auto_connect: true
+user_photos_s3:
+  bucket: "user-photos"
+  region: "us-east-1"
+chat_files_s3:
+  bucket: "chat-files"
+  region: "us-east-1"
