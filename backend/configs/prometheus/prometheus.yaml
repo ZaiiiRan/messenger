@@ -20,3 +20,9 @@ scrape_configs:
   - job_name: 'email-worker'
     static_configs:
       - targets: ['email-worker:8080']
+  - job_name: 'media-service'
+    static_configs:
+      - targets: ['media-service:8080']
+  - job_name: 'media-worker'
+    static_configs:
+      - targets: ['media-worker:8080']

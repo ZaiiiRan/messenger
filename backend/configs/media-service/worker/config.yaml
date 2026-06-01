@@ -12,3 +12,22 @@ user_photos_s3:
 chat_files_s3:
   bucket: "chat-files"
   region: "us-east-1"
+processor:
+  ffmpeg_bin: "ffmpeg"
+  ffprobe_bin: "ffprobe"
+  tmp_dir: ""
+file_processing_worker:
+  count: 3
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 5
+file_processing_completed_events_producer:
+  topic: "media-processing-completed"
+  client_id: "media-service-producer"
+  write_timeout: 30
+  name: "file_processing_completed_events_producer"
+file_processing_completed_sending_worker:
+  count: 2
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 100
