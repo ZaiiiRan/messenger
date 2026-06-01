@@ -5,5 +5,24 @@ package media.v1;
 option go_package = "media-service/gen/go/media;media";
 
 service MediaService {
-
+    rpc ProcessFiles(ProcessFilesRequest) returns (ProcessFilesResponse);
 }
+
+message AvatarParams {
+    int32 crop_x = 1;
+    int32 crop_y = 2;
+    int32 crop_width = 3;
+    int32 crop_height = 4;
+}
+
+message ProcessFileRequest {
+    string file_id = 1;
+    string processing_type = 2;
+    optional AvatarParams avatar_params = 3;
+}
+
+message ProcessFilesRequest {
+    repeated ProcessFileRequest files = 1;
+}
+
+message ProcessFilesResponse {}
