@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/config/settings"
 	"github.com/minio/minio-go/v7"
@@ -76,17 +77,12 @@ func (c *S3Client) Get(ctx context.Context, key string) ([]byte, error) {
 	}
 	defer obj.Close()
 
-	info, err := obj.Stat()
+	data, err := io.ReadAll(obj)
 	if err != nil {
-		return nil, fmt.Errorf("stat object: %w", err)
-	}
-
-	buf := make([]byte, info.Size)
-	if _, err := obj.Read(buf); err != nil {
 		return nil, fmt.Errorf("read object: %w", err)
 	}
 
-	return buf, nil
+	return data, nil
 }
 
 func (c *S3Client) Delete(ctx context.Context, key string) error {

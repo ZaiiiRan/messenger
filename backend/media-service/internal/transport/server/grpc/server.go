@@ -9,6 +9,7 @@ import (
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	pb "github.com/ZaiiiRan/messenger/backend/media-service/gen/go/media/v1"
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/config/settings"
+	mediaservice "github.com/ZaiiiRan/messenger/backend/media-service/internal/services/media_service"
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/utils"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +27,7 @@ type Server struct {
 func New(
 	srvSettings settings.GRPCServerSettings,
 	jwtSettings settings.JWTSettings,
+	mediaService mediaservice.MediaService,
 	log *zap.SugaredLogger,
 	reg *prometheus.Registry,
 ) (*Server, error) {
@@ -38,7 +40,7 @@ func New(
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterMediaServiceServer(s, newMediaHandler())
+	pb.RegisterMediaServiceServer(s, newMediaHandler(mediaService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {
@@ -94,11 +96,15 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 
 		commonmiddleware.UserAuthMiddleware(
 			[]byte(jwtSettings.AccessTokenSecret),
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/media.v1.MediaService/ProcessFiles",
+			),
 		),
 
 		commonmiddleware.UserPermissionMiddleware(
-			commonmiddleware.MiddlewareOnly(),
+			commonmiddleware.MiddlewareOnly(
+				"/media.v1.MediaService/ProcessFiles",
+			),
 		),
 	)
 }

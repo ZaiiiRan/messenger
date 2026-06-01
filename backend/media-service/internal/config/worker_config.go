@@ -17,6 +17,13 @@ type WorkerConfig struct {
 	Vault                 settings.VaultSettings         `mapstructure:"vault"`
 	UserPhotosS3          settings.S3Settings            `mapstructure:"user_photos_s3"`
 	ChatFilesS3           settings.S3Settings            `mapstructure:"chat_files_s3"`
+
+	Processor settings.ProcessorSettings `mapstructure:"processor"`
+
+	FileProcessingWorker settings.FileProcessingWorkerSettings `mapstructure:"file_processing_worker"`
+
+	FileProcessingCompletedEventsProducer settings.KafkaProducerSettings      `mapstructure:"file_processing_completed_events_producer"`
+	FileProcessingCompletedSendingWorker  settings.KafkaSendingWorkerSettings `mapstructure:"file_processing_completed_sending_worker"`
 }
 
 func LoadWorkerConfig() (*WorkerConfig, error) {
@@ -59,4 +66,8 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetVaultDefaults(v, "vault")
 	settings.SetS3Defaults(v, "user_photos_s3")
 	settings.SetS3Defaults(v, "chat_files_s3")
+	settings.SetProcessorDefaults(v, "processor")
+	settings.SetFileProcessingWorkerDefaults(v, "file_processing_worker")
+	settings.SetKafkaProducerDefaults(v, "file_processing_completed_events_producer", "media-processing-completed")
+	settings.SetKafkaSendingWorkerDefaults(v, "file_processing_completed_sending_worker")
 }

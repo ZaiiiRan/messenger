@@ -7,6 +7,9 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/config"
+	fileprocessingtasksservice "github.com/ZaiiiRan/messenger/backend/media-service/internal/services/file_processing_tasks_service"
+	fileservice "github.com/ZaiiiRan/messenger/backend/media-service/internal/services/file_service"
+	mediaservice "github.com/ZaiiiRan/messenger/backend/media-service/internal/services/media_service"
 	filegrpcclient "github.com/ZaiiiRan/messenger/backend/media-service/internal/transport/client/grpc/file_client"
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/media-service/internal/transport/postgres"
@@ -27,6 +30,10 @@ type ServerApp struct {
 	chatFilesS3Client  *s3.S3Client
 
 	fileGrpcClient *filegrpcclient.Client
+
+	fileService                fileservice.FileService
+	fileProcessingTasksService fileprocessingtasksservice.FileProcessingTasksService
+	mediaService               mediaservice.MediaService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -67,6 +74,10 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initChatFilesS3Client(ctx); err != nil {
 		return err
 	}
+
+	a.initFileService()
+	a.initFileProcessingTasksService()
+	a.initMediaService()
 
 	a.initI18n()
 	a.initMetricsServer()
@@ -159,6 +170,26 @@ func (a *ServerApp) initChatFilesS3Client(ctx context.Context) error {
 	return nil
 }
 
+func (a *ServerApp) initFileService() {
+	a.fileService = fileservice.New(a.fileGrpcClient, a.log)
+}
+
+func (a *ServerApp) initFileProcessingTasksService() {
+	a.fileProcessingTasksService = fileprocessingtasksservice.New(
+		a.postgresClient,
+		a.fileService,
+		nil,
+		a.userPhotosS3Client,
+		a.chatFilesS3Client,
+		nil,
+		a.log,
+	)
+}
+
+func (a *ServerApp) initMediaService() {
+	a.mediaService = mediaservice.New(a.fileService, a.fileProcessingTasksService, a.log)
+}
+
 func (a *ServerApp) initI18n() {
 	i18n.Init()
 }
@@ -178,7 +209,7 @@ func (a *ServerApp) startMetricsServer() {
 }
 
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.log, a.metricsServer.Registry())
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.mediaService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err

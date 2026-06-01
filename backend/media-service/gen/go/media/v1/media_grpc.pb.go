@@ -7,7 +7,10 @@
 package media
 
 import (
+	context "context"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -15,10 +18,15 @@ import (
 // Requires gRPC-Go v1.64.0 or later.
 const _ = grpc.SupportPackageIsVersion9
 
+const (
+	MediaService_ProcessFiles_FullMethodName = "/media.v1.MediaService/ProcessFiles"
+)
+
 // MediaServiceClient is the client API for MediaService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MediaServiceClient interface {
+	ProcessFiles(ctx context.Context, in *ProcessFilesRequest, opts ...grpc.CallOption) (*ProcessFilesResponse, error)
 }
 
 type mediaServiceClient struct {
@@ -29,10 +37,21 @@ func NewMediaServiceClient(cc grpc.ClientConnInterface) MediaServiceClient {
 	return &mediaServiceClient{cc}
 }
 
+func (c *mediaServiceClient) ProcessFiles(ctx context.Context, in *ProcessFilesRequest, opts ...grpc.CallOption) (*ProcessFilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProcessFilesResponse)
+	err := c.cc.Invoke(ctx, MediaService_ProcessFiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MediaServiceServer is the server API for MediaService service.
 // All implementations must embed UnimplementedMediaServiceServer
 // for forward compatibility.
 type MediaServiceServer interface {
+	ProcessFiles(context.Context, *ProcessFilesRequest) (*ProcessFilesResponse, error)
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -43,6 +62,9 @@ type MediaServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMediaServiceServer struct{}
 
+func (UnimplementedMediaServiceServer) ProcessFiles(context.Context, *ProcessFilesRequest) (*ProcessFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessFiles not implemented")
+}
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
 func (UnimplementedMediaServiceServer) testEmbeddedByValue()                      {}
 
@@ -64,13 +86,36 @@ func RegisterMediaServiceServer(s grpc.ServiceRegistrar, srv MediaServiceServer)
 	s.RegisterService(&MediaService_ServiceDesc, srv)
 }
 
+func _MediaService_ProcessFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MediaServiceServer).ProcessFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MediaService_ProcessFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MediaServiceServer).ProcessFiles(ctx, req.(*ProcessFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MediaService_ServiceDesc is the grpc.ServiceDesc for MediaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MediaService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "media.v1.MediaService",
 	HandlerType: (*MediaServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "media/v1/media.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ProcessFiles",
+			Handler:    _MediaService_ProcessFiles_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "media/v1/media.proto",
 }

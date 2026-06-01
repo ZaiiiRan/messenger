@@ -1,3 +1,23 @@
 [
+    { "id": "service.media.no_files", "translation": "файлы не переданы" },
+    { "id": "service.media.too_many_files", "translation": "слишком много файлов в одном запросе" },
+    { "id": "service.media.file_id_required", "translation": "не указан идентификатор файла" },
+    { "id": "service.media.file_not_found", "translation": "файл не найден" },
+    { "id": "service.media.file_not_owned", "translation": "файл не принадлежит пользователю" },
+    { "id": "service.media.file_not_uploaded", "translation": "файл не находится в статусе загруженного" },
+    { "id": "service.media.original_variant_not_found", "translation": "оригинальный вариант файла не найден" },
+    { "id": "service.media.duplicate_file", "translation": "дублирующийся файл в запросе" },
 
+    { "id": "domain.processing.unknown_processing_type", "translation": "неизвестный тип обработки" },
+    { "id": "domain.processing.crop_params_required", "translation": "для данного типа обработки требуются параметры кадрирования" },
+    { "id": "domain.processing.crop_params_not_allowed", "translation": "для данного типа обработки параметры кадрирования недопустимы" },
+    { "id": "domain.processing.invalid_crop_params", "translation": "некорректные параметры кадрирования" },
+    { "id": "domain.processing.crop_out_of_bounds", "translation": "область кадрирования выходит за границы изображения" },
+    { "id": "domain.processing.invalid_image_dimensions", "translation": "некорректные размеры изображения" },
+    { "id": "domain.processing.invalid_video_dimensions", "translation": "некорректные размеры видео" },
+    { "id": "domain.processing.invalid_duration", "translation": "некорректная длительность" },
+    { "id": "domain.processing.duration_too_long", "translation": "слишком большая длительность" },
+    { "id": "domain.processing.mime_type_not_supported", "translation": "тип медиа не поддерживается для данного типа обработки" },
+    { "id": "domain.processing.missing_dimensions", "translation": "отсутствуют размеры медиа" },
+    { "id": "domain.processing.missing_duration", "translation": "отсутствует длительность медиа" }
 ]

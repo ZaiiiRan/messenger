@@ -1,3 +1,23 @@
 [
+    { "id": "service.media.no_files", "translation": "no files provided" },
+    { "id": "service.media.too_many_files", "translation": "too many files in a single request" },
+    { "id": "service.media.file_id_required", "translation": "file id is required" },
+    { "id": "service.media.file_not_found", "translation": "file not found" },
+    { "id": "service.media.file_not_owned", "translation": "file does not belong to the user" },
+    { "id": "service.media.file_not_uploaded", "translation": "file is not in the uploaded state" },
+    { "id": "service.media.original_variant_not_found", "translation": "original file variant not found" },
+    { "id": "service.media.duplicate_file", "translation": "duplicate file in request" },
 
+    { "id": "domain.processing.unknown_processing_type", "translation": "unknown processing type" },
+    { "id": "domain.processing.crop_params_required", "translation": "crop params are required for this processing type" },
+    { "id": "domain.processing.crop_params_not_allowed", "translation": "crop params are not allowed for this processing type" },
+    { "id": "domain.processing.invalid_crop_params", "translation": "invalid crop params" },
+    { "id": "domain.processing.crop_out_of_bounds", "translation": "crop rectangle is out of image bounds" },
+    { "id": "domain.processing.invalid_image_dimensions", "translation": "invalid image dimensions" },
+    { "id": "domain.processing.invalid_video_dimensions", "translation": "invalid video dimensions" },
+    { "id": "domain.processing.invalid_duration", "translation": "invalid media duration" },
+    { "id": "domain.processing.duration_too_long", "translation": "media duration is too long" },
+    { "id": "domain.processing.mime_type_not_supported", "translation": "media type is not supported for this processing type" },
+    { "id": "domain.processing.missing_dimensions", "translation": "media dimensions are missing" },
+    { "id": "domain.processing.missing_duration", "translation": "media duration is missing" }
 ]

@@ -20,6 +20,6 @@ func NewQueryEventsLockedDal(
 
 	return &QueryEventsLockedDal{
 		RetryAfter: retryAfter,
-		Limit:   pageSize,
+		Limit:      pageSize,
 	}
 }

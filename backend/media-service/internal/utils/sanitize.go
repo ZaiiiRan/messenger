@@ -2,7 +2,26 @@ package utils
 
 import (
 	"strings"
+
+	pb "github.com/ZaiiiRan/messenger/backend/media-service/gen/go/media/v1"
 )
+
+func SanitizeProcessFilesRequest(req *pb.ProcessFilesRequest) {
+	if req == nil {
+		return
+	}
+	for _, file := range req.Files {
+		sanitizeProcessFileRequest(file)
+	}
+}
+
+func sanitizeProcessFileRequest(req *pb.ProcessFileRequest) {
+	if req == nil {
+		return
+	}
+	req.FileId = strings.TrimSpace(req.FileId)
+	req.ProcessingType = strings.ToLower(strings.TrimSpace(req.ProcessingType))
+}
 
 func sanitizeStringArray(arr []string) []string {
 	var sanitized []string

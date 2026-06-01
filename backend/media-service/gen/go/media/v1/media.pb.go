@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -19,24 +20,287 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type AvatarParams struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	CropX      int32 `protobuf:"varint,1,opt,name=crop_x,json=cropX,proto3" json:"crop_x,omitempty"`
+	CropY      int32 `protobuf:"varint,2,opt,name=crop_y,json=cropY,proto3" json:"crop_y,omitempty"`
+	CropWidth  int32 `protobuf:"varint,3,opt,name=crop_width,json=cropWidth,proto3" json:"crop_width,omitempty"`
+	CropHeight int32 `protobuf:"varint,4,opt,name=crop_height,json=cropHeight,proto3" json:"crop_height,omitempty"`
+}
+
+func (x *AvatarParams) Reset() {
+	*x = AvatarParams{}
+	mi := &file_media_v1_media_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvatarParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvatarParams) ProtoMessage() {}
+
+func (x *AvatarParams) ProtoReflect() protoreflect.Message {
+	mi := &file_media_v1_media_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvatarParams.ProtoReflect.Descriptor instead.
+func (*AvatarParams) Descriptor() ([]byte, []int) {
+	return file_media_v1_media_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *AvatarParams) GetCropX() int32 {
+	if x != nil {
+		return x.CropX
+	}
+	return 0
+}
+
+func (x *AvatarParams) GetCropY() int32 {
+	if x != nil {
+		return x.CropY
+	}
+	return 0
+}
+
+func (x *AvatarParams) GetCropWidth() int32 {
+	if x != nil {
+		return x.CropWidth
+	}
+	return 0
+}
+
+func (x *AvatarParams) GetCropHeight() int32 {
+	if x != nil {
+		return x.CropHeight
+	}
+	return 0
+}
+
+type ProcessFileRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	FileId         string        `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	ProcessingType string        `protobuf:"bytes,2,opt,name=processing_type,json=processingType,proto3" json:"processing_type,omitempty"`
+	AvatarParams   *AvatarParams `protobuf:"bytes,3,opt,name=avatar_params,json=avatarParams,proto3,oneof" json:"avatar_params,omitempty"`
+}
+
+func (x *ProcessFileRequest) Reset() {
+	*x = ProcessFileRequest{}
+	mi := &file_media_v1_media_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessFileRequest) ProtoMessage() {}
+
+func (x *ProcessFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_media_v1_media_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessFileRequest.ProtoReflect.Descriptor instead.
+func (*ProcessFileRequest) Descriptor() ([]byte, []int) {
+	return file_media_v1_media_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ProcessFileRequest) GetFileId() string {
+	if x != nil {
+		return x.FileId
+	}
+	return ""
+}
+
+func (x *ProcessFileRequest) GetProcessingType() string {
+	if x != nil {
+		return x.ProcessingType
+	}
+	return ""
+}
+
+func (x *ProcessFileRequest) GetAvatarParams() *AvatarParams {
+	if x != nil {
+		return x.AvatarParams
+	}
+	return nil
+}
+
+type ProcessFilesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Files []*ProcessFileRequest `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"`
+}
+
+func (x *ProcessFilesRequest) Reset() {
+	*x = ProcessFilesRequest{}
+	mi := &file_media_v1_media_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessFilesRequest) ProtoMessage() {}
+
+func (x *ProcessFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_media_v1_media_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessFilesRequest.ProtoReflect.Descriptor instead.
+func (*ProcessFilesRequest) Descriptor() ([]byte, []int) {
+	return file_media_v1_media_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ProcessFilesRequest) GetFiles() []*ProcessFileRequest {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+type ProcessFilesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ProcessFilesResponse) Reset() {
+	*x = ProcessFilesResponse{}
+	mi := &file_media_v1_media_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessFilesResponse) ProtoMessage() {}
+
+func (x *ProcessFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_media_v1_media_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessFilesResponse.ProtoReflect.Descriptor instead.
+func (*ProcessFilesResponse) Descriptor() ([]byte, []int) {
+	return file_media_v1_media_proto_rawDescGZIP(), []int{3}
+}
+
 var File_media_v1_media_proto protoreflect.FileDescriptor
 
 var file_media_v1_media_proto_rawDesc = []byte{
 	0x0a, 0x14, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x65, 0x64, 0x69, 0x61,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x08, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2e, 0x76, 0x31,
-	0x32, 0x0e, 0x0a, 0x0c, 0x4d, 0x65, 0x64, 0x69, 0x61, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x42, 0x22, 0x5a, 0x20, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2d, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x3b, 0x6d,
-	0x65, 0x64, 0x69, 0x61, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x7c, 0x0a, 0x0c, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x12, 0x15, 0x0a, 0x06, 0x63, 0x72, 0x6f, 0x70, 0x5f, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x05, 0x63, 0x72, 0x6f, 0x70, 0x58, 0x12, 0x15, 0x0a, 0x06, 0x63, 0x72, 0x6f, 0x70, 0x5f,
+	0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x63, 0x72, 0x6f, 0x70, 0x59, 0x12, 0x1d,
+	0x0a, 0x0a, 0x63, 0x72, 0x6f, 0x70, 0x5f, 0x77, 0x69, 0x64, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x09, 0x63, 0x72, 0x6f, 0x70, 0x57, 0x69, 0x64, 0x74, 0x68, 0x12, 0x1f, 0x0a,
+	0x0b, 0x63, 0x72, 0x6f, 0x70, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x0a, 0x63, 0x72, 0x6f, 0x70, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0xaa,
+	0x01, 0x0a, 0x12, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x65, 0x49, 0x64, 0x12, 0x27,
+	0x0a, 0x0f, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x69, 0x6e, 0x67, 0x5f, 0x74, 0x79, 0x70,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73,
+	0x69, 0x6e, 0x67, 0x54, 0x79, 0x70, 0x65, 0x12, 0x40, 0x0a, 0x0d, 0x61, 0x76, 0x61, 0x74, 0x61,
+	0x72, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
+	0x2e, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72,
+	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x48, 0x00, 0x52, 0x0c, 0x61, 0x76, 0x61, 0x74, 0x61, 0x72,
+	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x88, 0x01, 0x01, 0x42, 0x10, 0x0a, 0x0e, 0x5f, 0x61, 0x76,
+	0x61, 0x74, 0x61, 0x72, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x49, 0x0a, 0x13, 0x50,
+	0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x32, 0x0a, 0x05, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x1c, 0x2e, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f,
+	0x63, 0x65, 0x73, 0x73, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52,
+	0x05, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x22, 0x16, 0x0a, 0x14, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73,
+	0x73, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x5d,
+	0x0a, 0x0c, 0x4d, 0x65, 0x64, 0x69, 0x61, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x4d,
+	0x0a, 0x0c, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x12, 0x1d,
+	0x2e, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73,
+	0x73, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e,
+	0x6d, 0x65, 0x64, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73,
+	0x46, 0x69, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x22, 0x5a,
+	0x20, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x2d, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2f, 0x67,
+	0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x3b, 0x6d, 0x65, 0x64, 0x69,
+	0x61, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_media_v1_media_proto_goTypes = []any{}
+var (
+	file_media_v1_media_proto_rawDescOnce sync.Once
+	file_media_v1_media_proto_rawDescData = file_media_v1_media_proto_rawDesc
+)
+
+func file_media_v1_media_proto_rawDescGZIP() []byte {
+	file_media_v1_media_proto_rawDescOnce.Do(func() {
+		file_media_v1_media_proto_rawDescData = protoimpl.X.CompressGZIP(file_media_v1_media_proto_rawDescData)
+	})
+	return file_media_v1_media_proto_rawDescData
+}
+
+var file_media_v1_media_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_media_v1_media_proto_goTypes = []any{
+	(*AvatarParams)(nil),         // 0: media.v1.AvatarParams
+	(*ProcessFileRequest)(nil),   // 1: media.v1.ProcessFileRequest
+	(*ProcessFilesRequest)(nil),  // 2: media.v1.ProcessFilesRequest
+	(*ProcessFilesResponse)(nil), // 3: media.v1.ProcessFilesResponse
+}
 var file_media_v1_media_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: media.v1.ProcessFileRequest.avatar_params:type_name -> media.v1.AvatarParams
+	1, // 1: media.v1.ProcessFilesRequest.files:type_name -> media.v1.ProcessFileRequest
+	2, // 2: media.v1.MediaService.ProcessFiles:input_type -> media.v1.ProcessFilesRequest
+	3, // 3: media.v1.MediaService.ProcessFiles:output_type -> media.v1.ProcessFilesResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_media_v1_media_proto_init() }
@@ -44,18 +308,20 @@ func file_media_v1_media_proto_init() {
 	if File_media_v1_media_proto != nil {
 		return
 	}
+	file_media_v1_media_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_media_v1_media_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_media_v1_media_proto_goTypes,
 		DependencyIndexes: file_media_v1_media_proto_depIdxs,
+		MessageInfos:      file_media_v1_media_proto_msgTypes,
 	}.Build()
 	File_media_v1_media_proto = out.File
 	file_media_v1_media_proto_rawDesc = nil

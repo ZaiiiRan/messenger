@@ -22,6 +22,7 @@ WORKDIR /root
 
 RUN apt-get update && apt-get install -y \
     librdkafka1 \
+    ffmpeg \
     wget \
     && rm -rf /var/lib/apt/lists/*
 

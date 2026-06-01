@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ZaiiiRan/messenger/backend/media-service/internal/config/settings"
 	clientmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/client"
+	"github.com/ZaiiiRan/messenger/backend/media-service/internal/config/settings"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
