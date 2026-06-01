@@ -302,7 +302,7 @@ func (s *service) ConfirmUploadsByUser(ctx context.Context, req *pb.ConfirmUploa
 	}
 
 	l.Infow("file.confirm_uploads_by_user.success", "confirmed", len(pbFiles), "owner_id", actor.Id)
-	return &pb.ConfirmUploadsByUserResponse{File: pbFiles}, nil
+	return &pb.ConfirmUploadsByUserResponse{Files: pbFiles}, nil
 }
 
 func (s *service) GetFilesByUser(ctx context.Context, req *pb.GetFilesByUserRequest) (*pb.GetFilesByUserResponse, error) {
@@ -376,7 +376,7 @@ func (s *service) GetFilesByUser(ctx context.Context, req *pb.GetFilesByUserRequ
 	}
 
 	l.Infow("file.get_files_by_user.success", "count", len(pbFiles), "owner_id", actor.Id)
-	return &pb.GetFilesByUserResponse{File: pbFiles}, nil
+	return &pb.GetFilesByUserResponse{Files: pbFiles}, nil
 }
 
 func (s *service) GetFiles(ctx context.Context, req *pb.GetFilesRequest) (*pb.GetFilesResponse, error) {
@@ -445,7 +445,7 @@ func (s *service) GetFiles(ctx context.Context, req *pb.GetFilesRequest) (*pb.Ge
 	}
 
 	l.Infow("file.get_files.success", "count", len(pbFiles))
-	return &pb.GetFilesResponse{File: pbFiles}, nil
+	return &pb.GetFilesResponse{Files: pbFiles}, nil
 }
 
 func (s *service) DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest) (*pb.DeleteFilesResponse, error) {
@@ -577,7 +577,7 @@ func (s *service) UpdateFiles(ctx context.Context, req *pb.UpdateFilesRequest) (
 	}
 
 	l.Infow("file.update_files.success", "updated", len(mutations.filesToUpdate), "deleted", len(mutations.filesToDelete))
-	return &pb.UpdateFilesResponse{File: pbFiles}, nil
+	return &pb.UpdateFilesResponse{Files: pbFiles}, nil
 }
 
 func (s *service) DeleteNotInUseFiles(ctx context.Context, workerID string, batchSize int, uow *uow.UnitOfWork) error {

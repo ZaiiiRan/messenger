@@ -60,7 +60,7 @@ message ConfirmUploadsByUserRequest {
 }
 
 message ConfirmUploadsByUserResponse {
-    repeated File file = 1;
+    repeated File files = 1;
 }
 
 message GetFilesByUserRequest {
@@ -68,7 +68,7 @@ message GetFilesByUserRequest {
 }
 
 message GetFilesByUserResponse {
-    repeated File file = 1;
+    repeated File files = 1;
 }
 
 message GetFilesRequest {
@@ -77,7 +77,7 @@ message GetFilesRequest {
 }
 
 message GetFilesResponse {
-    repeated File file = 1;
+    repeated File files = 1;
 }
 
 message DeleteFilesRequest {
@@ -112,5 +112,5 @@ message UpdateFilesRequest {
 }
 
 message UpdateFilesResponse {
-    repeated File file = 1;
+    repeated File files = 1;
 }
