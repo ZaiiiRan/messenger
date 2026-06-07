@@ -916,9 +916,53 @@ services:
     networks:
       - messenger-network
 
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    depends_on:
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      social-service:
+        condition: service_healthy
+      file-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    environment:
+      HTTP_SERVER_PORT: ":8000"
+      METRICS_SERVER_PORT: ":8080"
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_ADDRESS: http://vault:8200
+      VAULT_ENABLE: true
+      JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      AUTH_SERVICE_GRPC_CLIENT_ADDRESS: auth-service:50051
+      USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
+      SOCIAL_SERVICE_GRPC_CLIENT_ADDRESS: social-service:50051
+      FILE_SERVICE_GRPC_CLIENT_ADDRESS: file-service:50051
+      MEDIA_SERVICE_GRPC_CLIENT_ADDRESS: media-service:50051
+    volumes:
+      - ./backend/configs/api-gateway/server:/etc/api-gateway
+    ports:
+      - "8000:8000"
+    networks:
+      - messenger-network
+
   prometheus:
     image: prom/prometheus:v3.5.0
     depends_on:
+      api-gateway:
+        condition: service_healthy
       user-service:
         condition: service_healthy
       auth-service:
