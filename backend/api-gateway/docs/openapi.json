@@ -1,0 +1,1089 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Messenger API Gateway",
+    "description": "REST gateway in front of the messenger microservices (auth, user, social, file, media). Access tokens are passed via the `Authorization: Bearer <token>` header; the refresh token is managed through an HttpOnly `refreshToken` cookie.\n\n## Error format\n\nEvery error response shares the same body:\n\n```json\n{ \"error\": \"human readable message\", \"fields\": { \"<field>\": \"message\" } }\n```\n\n* `error` — a localized, general message (language is taken from the `Accept-Language` header).\n* `fields` — present **only** for validation errors (HTTP 400 coming from `validationerror`): it maps each invalid input field to its localized message. Regular errors (not found, already exists, permission denied, …) carry just `error` without `fields`.\n\nDownstream gRPC status codes are mapped to HTTP as: `InvalidArgument/FailedPrecondition/OutOfRange → 400`, `Unauthenticated → 401`, `PermissionDenied → 403`, `NotFound → 404`, `AlreadyExists/Aborted → 409`, `ResourceExhausted → 429`, `Unavailable → 503`, `DeadlineExceeded → 504`, everything else → `500`.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/", "description": "Current host" }
+  ],
+  "tags": [
+    { "name": "auth", "description": "Authentication, sessions and account confirmation" },
+    { "name": "users", "description": "Current user profile and privacy" },
+    { "name": "social", "description": "Friends, blocks and user lookup" },
+    { "name": "files", "description": "File upload tickets" },
+    { "name": "media", "description": "Media processing" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Validation failed. `error` holds the general message and `fields` maps every invalid input field to its localized message (this `fields` object originates from `validationerror`). A malformed JSON body is also reported here, but without `fields`.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "examples": {
+              "fieldValidation": {
+                "summary": "Field-level validation error",
+                "value": { "error": "ошибка валидации", "fields": { "username": "имя должно содержать не менее 5 символов", "email": "неверный формат email" } }
+              },
+              "malformedBody": {
+                "summary": "Malformed request body",
+                "value": { "error": "invalid request body" }
+              }
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Invalid request: malformed body or an invalid argument that is not tied to a specific input field (no `fields` object).",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "invalid request body" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing, invalid or expired access / refresh token.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "unauthorized" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The account is not allowed to perform the action (unconfirmed, banned or deleted).",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "permission denied" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "not found" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "The resource already exists or conflicts with the current state (e.g. the username or email is already taken).",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "already exists" }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "too many requests" }
+          }
+        }
+      },
+      "Internal": {
+        "description": "Internal server error or an upstream service was unavailable.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "internal server error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "description": "Standard error envelope. `fields` is present only for validation errors.",
+        "properties": {
+          "error": { "type": "string", "description": "Localized, general error message." },
+          "fields": {
+            "type": "object",
+            "description": "Per-field validation messages (only for validation errors).",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["error"]
+      },
+      "Message": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phone": { "type": "string" },
+          "birthdate": { "type": "string" },
+          "bio": { "type": "string" }
+        }
+      },
+      "UpdateProfile": {
+        "type": "object",
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phone": { "type": "string" },
+          "birthdate": { "type": "string" },
+          "bio": { "type": "string" }
+        }
+      },
+      "UserStatus": {
+        "type": "object",
+        "properties": {
+          "isConfirmed": { "type": "boolean" },
+          "isPermanentlyBanned": { "type": "boolean" },
+          "bannedUntil": { "type": "string" },
+          "isDeleted": { "type": "boolean" },
+          "deletedAt": { "type": "string" },
+          "emailUpdatedAt": { "type": "string" }
+        }
+      },
+      "UserPrivacySetting": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "string" },
+          "favourites": { "type": "array", "items": { "type": "string" } },
+          "exceptions": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "UpdateUserPrivacySetting": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "string" },
+          "favourites": { "type": "array", "items": { "type": "string" } },
+          "exceptions": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "UserPrivacySettings": {
+        "type": "object",
+        "properties": {
+          "avatar": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "photos": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "phoneNumber": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "email": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "birthdate": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "onlineStatus": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "firstDialogsInit": { "$ref": "#/components/schemas/UserPrivacySetting" },
+          "groupChatInvites": { "$ref": "#/components/schemas/UserPrivacySetting" }
+        }
+      },
+      "UpdateUserPrivacySettings": {
+        "type": "object",
+        "properties": {
+          "avatar": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "photos": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "phoneNumber": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "email": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "birthdate": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "onlineStatus": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "firstDialogsInit": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" },
+          "groupChatInvites": { "$ref": "#/components/schemas/UpdateUserPrivacySetting" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "profile": { "$ref": "#/components/schemas/Profile" },
+          "status": { "$ref": "#/components/schemas/UserStatus" },
+          "privacySettings": { "$ref": "#/components/schemas/UserPrivacySettings" }
+        }
+      },
+      "AuthPayload": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" },
+          "accessToken": { "type": "string" }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "ip": { "type": "string" },
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "os": { "type": "string" },
+          "browser": { "type": "string" },
+          "createdAt": { "type": "string" }
+        }
+      },
+      "SessionsResponse": {
+        "type": "object",
+        "properties": {
+          "sessions": { "type": "array", "items": { "$ref": "#/components/schemas/Session" } },
+          "currentSession": { "$ref": "#/components/schemas/Session" }
+        }
+      },
+      "ShortSocialUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "firstName": { "type": "string" },
+              "lastName": { "type": "string" }
+            }
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "isPermanentlyBanned": { "type": "boolean" },
+              "isDeleted": { "type": "boolean" }
+            }
+          },
+          "userRelationship": { "type": "string" },
+          "privacySettings": { "$ref": "#/components/schemas/UserPrivacySettings" }
+        }
+      },
+      "SocialUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "firstName": { "type": "string" },
+              "lastName": { "type": "string" },
+              "email": { "type": "string" },
+              "phone": { "type": "string" },
+              "birthdate": { "type": "string" },
+              "bio": { "type": "string" }
+            }
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "isPermanentlyBanned": { "type": "boolean" },
+              "isDeleted": { "type": "boolean" }
+            }
+          },
+          "userRelationship": { "type": "string" },
+          "privacySettings": { "$ref": "#/components/schemas/UserPrivacySettings" }
+        }
+      },
+      "ShortSocialUserList": {
+        "type": "object",
+        "properties": {
+          "users": { "type": "array", "items": { "$ref": "#/components/schemas/ShortSocialUser" } }
+        }
+      },
+      "IdList": {
+        "type": "object",
+        "properties": {
+          "ids": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "FileVariant": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "variantType": { "type": "string" },
+          "size": { "type": "integer", "format": "int64" },
+          "mimeType": { "type": "string" },
+          "meta": { "type": "string" },
+          "urlForDownload": { "type": "string" },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "ownerId": { "type": "string" },
+          "status": { "type": "string" },
+          "variants": { "type": "array", "items": { "$ref": "#/components/schemas/FileVariant" } },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string" },
+                  "profile": { "$ref": "#/components/schemas/Profile" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "login": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Logged in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Refresh tokens using the refresh cookie",
+        "responses": {
+          "200": { "description": "Refreshed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Logout and clear the refresh cookie",
+        "responses": {
+          "200": { "description": "Logged out", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/confirm/code": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Confirm account by code",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "code": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/confirm/link": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Confirm account by link token",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/confirmation-code": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Request a new confirmation code",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Sent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/password/change": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Change password",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "oldPassword": { "type": "string" }, "newPassword": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Changed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/password/forgot": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Request a password reset",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "login": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Sent" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/password/reset/code": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Reset password by code",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "login": { "type": "string" }, "code": { "type": "string" }, "newPassword": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Reset", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/password/reset/link": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Reset password by link token",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "newPassword": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Reset", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/email/change": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Request an email change",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "newEmail": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Requested" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/email/confirm/code": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Confirm new email by code",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "code": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/email/confirm/link": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Confirm new email by link token",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/sessions": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "List active sessions",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Sessions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SessionsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/auth/sessions/invalidate": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Invalidate sessions",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "ids": { "type": "array", "items": { "type": "integer", "format": "int64" } }, "all": { "type": "boolean" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Invalidated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthPayload" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Get the current user",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "User", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "patch": {
+        "tags": ["users"],
+        "summary": "Update the current user",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": { "type": "array", "items": { "type": "string" } },
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "username": { "type": "string" },
+                      "profile": { "$ref": "#/components/schemas/UpdateProfile" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "delete": {
+        "tags": ["users"],
+        "summary": "Delete the current user",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/users/me/privacy": {
+      "patch": {
+        "tags": ["users"],
+        "summary": "Update the current user privacy settings",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": { "type": "array", "items": { "type": "string" } },
+                  "privacySettings": { "$ref": "#/components/schemas/UpdateUserPrivacySettings" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "privacySettings": { "$ref": "#/components/schemas/UserPrivacySettings" } } } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/users/{id}": {
+      "get": {
+        "tags": ["social"],
+        "summary": "Get a social user by id",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "User", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/SocialUser" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/users/username/{username}": {
+      "get": {
+        "tags": ["social"],
+        "summary": "Get a social user by username",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "User", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/SocialUser" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/users/by-ids": {
+      "post": {
+        "tags": ["social"],
+        "summary": "Get social users by ids",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "ids": { "type": "array", "items": { "type": "string" } }, "includePrivacySettings": { "type": "boolean" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Users", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/users/by-usernames": {
+      "post": {
+        "tags": ["social"],
+        "summary": "Get social users by usernames",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "usernames": { "type": "array", "items": { "type": "string" } }, "includePrivacySettings": { "type": "boolean" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Users", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/friends": {
+      "get": {
+        "tags": ["social"],
+        "summary": "List friends",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "search_filter", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort_by_updated_at", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Friends", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "post": {
+        "tags": ["social"],
+        "summary": "Add users to friends",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IdList" } } } },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "delete": {
+        "tags": ["social"],
+        "summary": "Remove users from friends",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IdList" } } } },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/friends/incoming": {
+      "get": {
+        "tags": ["social"],
+        "summary": "List incoming friend requests",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "search_filter", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort_by_updated_at", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Requests", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/friends/outgoing": {
+      "get": {
+        "tags": ["social"],
+        "summary": "List outgoing friend requests",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "search_filter", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort_by_updated_at", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Requests", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/blocked": {
+      "get": {
+        "tags": ["social"],
+        "summary": "List blocked users",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "search_filter", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort_by_updated_at", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Blocked", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "post": {
+        "tags": ["social"],
+        "summary": "Block users",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IdList" } } } },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      },
+      "delete": {
+        "tags": ["social"],
+        "summary": "Unblock users",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IdList" } } } },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/search": {
+      "get": {
+        "tags": ["social"],
+        "summary": "Search users",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "search_filter", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer" } },
+          { "name": "include_privacy_settings", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort_by_updated_at", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Users", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortSocialUserList" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/social/me/privacy": {
+      "patch": {
+        "tags": ["social"],
+        "summary": "Update my privacy settings",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": { "type": "array", "items": { "type": "string" } },
+                  "privacySettings": { "$ref": "#/components/schemas/UpdateUserPrivacySettings" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "privacySettings": { "$ref": "#/components/schemas/UserPrivacySettings" } } } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/files": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Create file upload tickets",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "mimeType": { "type": "string" },
+                        "size": { "type": "integer", "format": "int64" },
+                        "filePurpose": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tickets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "file": { "$ref": "#/components/schemas/File" },
+                          "urlForUpload": { "type": "string" },
+                          "formData": { "type": "object", "additionalProperties": { "type": "string" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/files/confirm": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Confirm uploaded files",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "fileIds": { "type": "array", "items": { "type": "string" } } } } } }
+        },
+        "responses": {
+          "200": { "description": "Files", "content": { "application/json": { "schema": { "type": "object", "properties": { "files": { "type": "array", "items": { "$ref": "#/components/schemas/File" } } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/files/query": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Get files owned by the current user",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "fileIds": { "type": "array", "items": { "type": "string" } } } } } }
+        },
+        "responses": {
+          "200": { "description": "Files", "content": { "application/json": { "schema": { "type": "object", "properties": { "files": { "type": "array", "items": { "$ref": "#/components/schemas/File" } } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    },
+    "/api/media/process": {
+      "post": {
+        "tags": ["media"],
+        "summary": "Request media processing for uploaded files",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": { "type": "string" },
+                        "processingType": { "type": "string" },
+                        "avatarParams": {
+                          "type": "object",
+                          "properties": {
+                            "cropX": { "type": "integer" },
+                            "cropY": { "type": "integer" },
+                            "cropWidth": { "type": "integer" },
+                            "cropHeight": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Accepted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/Internal" }
+        }
+      }
+    }
+  }
+}

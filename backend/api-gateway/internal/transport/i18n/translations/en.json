@@ -1,0 +1,20 @@
+[
+    { "id": "error.canceled", "translation": "request canceled" },
+    { "id": "error.unknown", "translation": "unknown error" },
+    { "id": "error.invalid_argument", "translation": "invalid argument" },
+    { "id": "error.deadline_exceeded", "translation": "deadline exceeded" },
+    { "id": "error.not_found", "translation": "not found" },
+    { "id": "error.already_exists", "translation": "already exists" },
+    { "id": "error.permission_denied", "translation": "permission denied" },
+    { "id": "error.resource_exhausted", "translation": "too many requests" },
+    { "id": "error.failed_precondition", "translation": "failed precondition" },
+    { "id": "error.aborted", "translation": "operation aborted" },
+    { "id": "error.out_of_range", "translation": "out of range" },
+    { "id": "error.unimplemented", "translation": "not implemented" },
+    { "id": "error.internal_server_error", "translation": "internal server error" },
+    { "id": "error.unavailable", "translation": "service unavailable" },
+    { "id": "error.data_loss", "translation": "data loss" },
+    { "id": "error.unauthorized", "translation": "unauthorized" },
+    { "id": "error.missing_metadata", "translation": "missing metadata" },
+    { "id": "error.validation_error", "translation": "validation error" }
+]

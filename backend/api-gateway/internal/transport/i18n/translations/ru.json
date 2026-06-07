@@ -1,0 +1,20 @@
+[
+    { "id": "error.canceled", "translation": "запрос отменён" },
+    { "id": "error.unknown", "translation": "неизвестная ошибка" },
+    { "id": "error.invalid_argument", "translation": "некорректный аргумент" },
+    { "id": "error.deadline_exceeded", "translation": "превышено время ожидания" },
+    { "id": "error.not_found", "translation": "не найдено" },
+    { "id": "error.already_exists", "translation": "уже существует" },
+    { "id": "error.permission_denied", "translation": "доступ запрещён" },
+    { "id": "error.resource_exhausted", "translation": "слишком много запросов" },
+    { "id": "error.failed_precondition", "translation": "не выполнены предусловия" },
+    { "id": "error.aborted", "translation": "операция прервана" },
+    { "id": "error.out_of_range", "translation": "значение вне диапазона" },
+    { "id": "error.unimplemented", "translation": "не реализовано" },
+    { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
+    { "id": "error.unavailable", "translation": "сервис недоступен" },
+    { "id": "error.data_loss", "translation": "потеря данных" },
+    { "id": "error.unauthorized", "translation": "не авторизован" },
+    { "id": "error.missing_metadata", "translation": "отсутствуют метаданные" },
+    { "id": "error.validation_error", "translation": "ошибка валидации" }
+]
