@@ -111,6 +111,7 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/social.v1.SocialService/GetBlockedUsers",
 				"/social.v1.SocialService/SearchUsers",
 				"/social.v1.SocialService/UpdateMyPrivacySettings",
+				"/social.v1.SocialService/GetUserPhotos",
 			),
 		),
 
@@ -130,6 +131,7 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/social.v1.SocialService/GetBlockedUsers",
 				"/social.v1.SocialService/SearchUsers",
 				"/social.v1.SocialService/UpdateMyPrivacySettings",
+				"/social.v1.SocialService/GetUserPhotos",
 			),
 		),
 	)

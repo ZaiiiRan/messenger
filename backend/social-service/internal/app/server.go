@@ -7,10 +7,12 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/config"
+	fileservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/file_service"
 	socialservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/social_service"
 	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
 	userrelationshipchangestasks "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship_changes_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
+	filegrpcclient "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/client/grpc/file_client"
 	usergrpcclient "github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/client/grpc/user_client"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/transport/postgres"
@@ -29,8 +31,10 @@ type ServerApp struct {
 	redisClient    *redis.RedisClient
 
 	userGrpcClient *usergrpcclient.Client
+	fileGrpcClient *filegrpcclient.Client
 
 	userService                         userservice.UserService
+	fileService                         fileservice.FileService
 	userRelationshipService             userrelationshipservice.UserRelationshipService
 	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService
 	socialService                       socialservice.SocialService
@@ -71,8 +75,12 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initUserGrpcClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initFileGrpcClient(ctx); err != nil {
+		a.log.Warnw("app.file_grpc_client_init_failed_skipping", "err", err)
+	}
 
 	a.initUserService()
+	a.initFileService()
 	a.initUserRelationshipService()
 	a.initUserRelationshipChangesTasksService()
 	a.initSocialService()
@@ -100,6 +108,10 @@ func (a *ServerApp) Stop(ctx context.Context) {
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
+	a.userGrpcClient.Close()
+	if a.fileGrpcClient != nil {
+		a.fileGrpcClient.Close()
+	}
 	a.grpcServer.Stop(shCtx)
 	a.metricsServer.Stop(shCtx)
 
@@ -174,8 +186,29 @@ func (a *ServerApp) initUserGrpcClient(ctx context.Context) error {
 	return nil
 }
 
+func (a *ServerApp) initFileGrpcClient(ctx context.Context) error {
+	fileClient, err := filegrpcclient.New(ctx, a.cfg.FileServiceGRPCClient, nil, nil)
+	if err != nil {
+		return err
+	}
+	a.fileGrpcClient = fileClient
+
+	if a.cfg.FileServiceGRPCClient.AutoConnect {
+		a.log.Infow("app.file_grpc_client_connected")
+	} else {
+		a.log.Infow("app.file_grpc_client_initialized")
+	}
+	return nil
+}
+
 func (a *ServerApp) initUserService() {
 	a.userService = userservice.New(a.userGrpcClient, a.log)
+}
+
+func (a *ServerApp) initFileService() {
+	if a.fileGrpcClient != nil {
+		a.fileService = fileservice.New(a.fileGrpcClient, a.log)
+	}
 }
 
 func (a *ServerApp) initUserRelationshipService() {
@@ -187,7 +220,14 @@ func (a *ServerApp) initUserRelationshipChangesTasksService() {
 }
 
 func (a *ServerApp) initSocialService() {
-	a.socialService = socialservice.New(a.postgresClient, a.userRelationshipService, a.userService, a.userRelationshipChangesTasksService, a.log)
+	a.socialService = socialservice.New(
+		a.postgresClient,
+		a.userRelationshipService,
+		a.userService,
+		a.fileService,
+		a.userRelationshipChangesTasksService,
+		a.log,
+	)
 }
 
 func (a *ServerApp) initGrpcServer() error {

@@ -13,8 +13,11 @@ import (
 
 type UserService interface {
 	GetUserByID(ctx context.Context, userID string, includePrivacySettings bool) (*userpb.User, error)
+	GetUserByIDWithAvatar(ctx context.Context, userID string, includePrivacySettings bool) (*userpb.User, error)
 	GetUserByUsername(ctx context.Context, username string, includePrivacySettings bool) (*userpb.User, error)
 	GetUsers(ctx context.Context, req *userpb.GetUsersRequest) ([]*userpb.User, error)
+	GetUsersWithAvatars(ctx context.Context, req *userpb.GetUsersRequest) ([]*userpb.User, error)
+	GetUserPhotos(ctx context.Context, userID string, limit, offset int32) ([]*userpb.UserPhoto, int64, error)
 	UpdateMyPrivacySettingByUser(ctx context.Context, req *userpb.UpdateMyPrivacySettingsByUserRequest) (*userpb.UpdateMyPrivacySettingsByUserResponse, error)
 }
 
@@ -24,10 +27,7 @@ type service struct {
 }
 
 func New(userClient *usergrpcclient.Client, log *zap.SugaredLogger) UserService {
-	return &service{
-		userClient: userClient,
-		log:        log,
-	}
+	return &service{userClient: userClient, log: log}
 }
 
 func (s *service) GetUserByID(ctx context.Context, userID string, includePrivacySettings bool) (*userpb.User, error) {
@@ -38,18 +38,34 @@ func (s *service) GetUserByID(ctx context.Context, userID string, includePrivacy
 		IncludePrivacySettings: includePrivacySettings,
 	})
 	if err != nil {
-		if status.Code(err) == codes.InvalidArgument {
-			l.Warnw("user.get_user_by_id_failed.invalid_argument", "err", err)
-		} else if status.Code(err) == codes.NotFound {
+		if status.Code(err) == codes.NotFound {
 			l.Warnw("user.get_user_by_id_failed.not_found", "err", err)
 			return nil, nil
-		} else {
-			l.Errorw("user.get_user_by_id_failed.get_user_by_id_error", "err", err)
 		}
+		l.Errorw("user.get_user_by_id_failed", "err", err)
 		return nil, err
 	}
 
-	l.Infow("user.get_user_by_id.success", "user_id", resp.User.Id)
+	return resp.User, nil
+}
+
+func (s *service) GetUserByIDWithAvatar(ctx context.Context, userID string, includePrivacySettings bool) (*userpb.User, error) {
+	l := s.log.With("op", "get_user_by_id_with_avatar", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	resp, err := s.userClient.UserClient().GetUserByID(ctx, &userpb.GetUserByIDRequest{
+		UserId:                 userID,
+		IncludePrivacySettings: includePrivacySettings,
+		IncludeAvatar:          true,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			l.Warnw("user.get_user_by_id_with_avatar_failed.not_found", "err", err)
+			return nil, nil
+		}
+		l.Errorw("user.get_user_by_id_with_avatar_failed", "err", err)
+		return nil, err
+	}
+
 	return resp.User, nil
 }
 
@@ -61,18 +77,14 @@ func (s *service) GetUserByUsername(ctx context.Context, username string, includ
 		IncludePrivacySettings: includePrivacySettings,
 	})
 	if err != nil {
-		if status.Code(err) == codes.InvalidArgument {
-			l.Warnw("user.get_user_by_username_failed.invalid_argument", "err", err)
-		} else if status.Code(err) == codes.NotFound {
+		if status.Code(err) == codes.NotFound {
 			l.Warnw("user.get_user_by_username_failed.not_found", "err", err)
 			return nil, nil
-		} else {
-			l.Errorw("user.get_user_by_username_failed.get_user_by_username_error", "err", err)
 		}
+		l.Errorw("user.get_user_by_username_failed", "err", err)
 		return nil, err
 	}
 
-	l.Infow("user.get_user_by_username.success", "user_id", resp.User.Id)
 	return resp.User, nil
 }
 
@@ -81,16 +93,32 @@ func (s *service) GetUsers(ctx context.Context, req *userpb.GetUsersRequest) ([]
 
 	resp, err := s.userClient.UserClient().GetUsers(ctx, req)
 	if err != nil {
-		if status.Code(err) == codes.InvalidArgument {
-			l.Warnw("user.get_users_failed.invalid_argument", "err", err)
-		} else {
-			l.Errorw("user.get_users_failed", "err", err)
-		}
+		l.Errorw("user.get_users_failed", "err", err)
 		return nil, err
 	}
 
-	l.Infow("user.get_users.success", "count", len(resp.Users))
 	return resp.Users, nil
+}
+
+func (s *service) GetUsersWithAvatars(ctx context.Context, req *userpb.GetUsersRequest) ([]*userpb.User, error) {
+	req.IncludeAvatar = true
+	return s.GetUsers(ctx, req)
+}
+
+func (s *service) GetUserPhotos(ctx context.Context, userID string, limit, offset int32) ([]*userpb.UserPhoto, int64, error) {
+	l := s.log.With("op", "get_user_photos", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	resp, err := s.userClient.UserClient().GetUserPhotos(ctx, &userpb.GetUserPhotosRequest{
+		UserId: userID,
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		l.Warnw("user.get_user_photos_failed", "err", err)
+		return nil, 0, err
+	}
+
+	return resp.Photos, resp.Total, nil
 }
 
 func (s *service) UpdateMyPrivacySettingByUser(
@@ -101,16 +129,9 @@ func (s *service) UpdateMyPrivacySettingByUser(
 
 	resp, err := s.userClient.UserClient().UpdateMyPrivacySettingsByUser(ctx, req)
 	if err != nil {
-		if status.Code(err) == codes.InvalidArgument {
-			l.Warnw("user.update_my_privacy_settings_failed.invalid_argument", "err", err)
-		} else if status.Code(err) == codes.FailedPrecondition {
-			l.Warnw("user.update_my_privacy_settings_failed.failed_precondition", "err", err)
-		} else {
-			l.Warnw("user.update_my_privacy_settings_failed", "err", err)
-		}
+		l.Warnw("user.update_my_privacy_settings_failed", "err", err)
 		return nil, err
 	}
 
-	l.Infow("user.update_my_privacy_settings.success")
 	return resp, nil
 }

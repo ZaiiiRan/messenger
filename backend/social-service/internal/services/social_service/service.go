@@ -9,10 +9,12 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/ctxmetadata"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/commonerror"
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/errors/validationerror"
+	filepb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/file/v1"
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/repositories/models"
+	fileservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/file_service"
 	userrelationshipservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship"
 	userrelationshipchangestasks "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_relationship_changes_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/social-service/internal/services/user_service"
@@ -40,6 +42,7 @@ type SocialService interface {
 	GetIncomingFriendRequests(ctx context.Context, req *pb.GetIncomingFriendRequestsRequest) (*pb.GetIncomingFriendRequestsResponse, error)
 	GetOutgoingFriendRequests(ctx context.Context, req *pb.GetOutgoingFriendRequestsRequest) (*pb.GetOutgoingFriendRequestsResponse, error)
 	GetBlockedUsers(ctx context.Context, req *pb.GetBlockedUsersRequest) (*pb.GetBlockedUsersResponse, error)
+	GetUserPhotos(ctx context.Context, req *pb.GetUserPhotosRequest) (*pb.GetUserPhotosResponse, error)
 	UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyPrivacySettingsRequest) (*pb.UpdateMyPrivacySettingsResponse, error)
 }
 
@@ -47,6 +50,7 @@ type service struct {
 	dataProvider                        *socialDataProvider
 	userRelationshipService             userrelationshipservice.UserRelationshipService
 	userService                         userservice.UserService
+	fileService                         fileservice.FileService
 	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService
 	log                                 *zap.SugaredLogger
 }
@@ -55,6 +59,7 @@ func New(
 	pgClient *postgres.PostgresClient,
 	userRelationshipService userrelationshipservice.UserRelationshipService,
 	userService userservice.UserService,
+	fileService fileservice.FileService,
 	userRelationshipChangesTasksService userrelationshipchangestasks.UserRelationshipChangesTasksService,
 	log *zap.SugaredLogger,
 ) SocialService {
@@ -62,6 +67,7 @@ func New(
 		dataProvider:                        newSocialDataProvider(pgClient),
 		userRelationshipService:             userRelationshipService,
 		userService:                         userService,
+		fileService:                         fileService,
 		userRelationshipChangesTasksService: userRelationshipChangesTasksService,
 		log:                                 log,
 	}
@@ -81,10 +87,10 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (
 
 	if a.Id == req.Id {
 		l.Infow("user.get_user_by_id.success", "user_id", a.GetId())
-		return &pb.GetUserByIdResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings)}, nil
+		return &pb.GetUserByIdResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings, nil)}, nil
 	}
 
-	u, err := s.userService.GetUserByID(ctx, req.Id, true)
+	u, err := s.userService.GetUserByIDWithAvatar(ctx, req.Id, true)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +108,11 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIdRequest) (
 
 	s.processUserWithPrivacySettings(a, u, ur)
 
+	// Resolve avatar URL if user still has avatar after privacy check.
+	avatarFiles, _ := s.resolveAvatarFiles(ctx, []*userpb.User{u})
+
 	l.Infow("user.get_user_by_id.success", "user_id", u.GetId())
-	return &pb.GetUserByIdResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings)}, nil
+	return &pb.GetUserByIdResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings, avatarFiles)}, nil
 }
 
 func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsRequest) (*pb.GetUsersByIdsResponse, error) {
@@ -123,10 +132,10 @@ func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsReques
 
 	if len(req.Ids) == 1 && req.Ids[0] == a.Id {
 		l.Infow("user.get_users_by_ids.success", "count", 1)
-		return &pb.GetUsersByIdsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings)}}, nil
+		return &pb.GetUsersByIdsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings, nil)}}, nil
 	}
 
-	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
+	users, err := s.userService.GetUsersWithAvatars(ctx, &userpb.GetUsersRequest{
 		Ids:                    req.Ids,
 		IsConfirmed:            utils.BoolPtr(true),
 		IncludePrivacySettings: true,
@@ -149,11 +158,14 @@ func (s *service) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIdsReques
 		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
 	}
 
+	for i, user := range users {
+		s.processUserWithPrivacySettings(a, user, urs[i])
+	}
+	avatarFiles, _ := s.resolveAvatarFiles(ctx, users)
+
 	result := make([]*pb.ShortSocialUser, 0, len(users))
 	for i, user := range users {
-		ur := urs[i]
-		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, req.IncludePrivacySettings)
+		shortSocialUser := toShortSocialUserProto(a, user, urs[i], req.IncludePrivacySettings, avatarFiles)
 		result = append(result, shortSocialUser)
 	}
 
@@ -175,7 +187,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 
 	if a.Username == req.Username {
 		l.Infow("user.get_user_by_username.success", "user_id", a.GetId())
-		return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings)}, nil
+		return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, a, nil, req.IncludePrivacySettings, nil)}, nil
 	}
 
 	u, err := s.userService.GetUserByUsername(ctx, req.Username, true)
@@ -184,6 +196,12 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	}
 	if u == nil || !u.Status.IsConfirmed {
 		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+	}
+
+	// Fetch avatar separately for GetUserByUsername.
+	avatarPhotos, _, _ := s.userService.GetUserPhotos(ctx, u.Id, 1, 0)
+	if len(avatarPhotos) > 0 {
+		u.Avatar = avatarPhotos[0]
 	}
 
 	uow := s.dataProvider.newUOW()
@@ -195,9 +213,10 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	}
 
 	s.processUserWithPrivacySettings(a, u, ur)
+	avatarFiles, _ := s.resolveAvatarFiles(ctx, []*userpb.User{u})
 
 	l.Infow("user.get_user_by_username.success", "user_id", u.GetId())
-	return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings)}, nil
+	return &pb.GetUserByUsernameResponse{User: toSocialUserProto(a, u, ur, req.IncludePrivacySettings, avatarFiles)}, nil
 }
 
 func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUsernamesRequest) (*pb.GetUsersByUsernamesResponse, error) {
@@ -217,7 +236,7 @@ func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUse
 
 	if len(req.Usernames) == 1 && req.Usernames[0] == a.Username {
 		l.Infow("user.get_users_by_usernames.success", "count", 1)
-		return &pb.GetUsersByUsernamesResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings)}}, nil
+		return &pb.GetUsersByUsernamesResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, a, nil, req.IncludePrivacySettings, nil)}}, nil
 	}
 
 	users, err := s.userService.GetUsers(ctx, &userpb.GetUsersRequest{
@@ -249,7 +268,7 @@ func (s *service) GetUsersByUsernames(ctx context.Context, req *pb.GetUsersByUse
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, req.IncludePrivacySettings)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, req.IncludePrivacySettings, nil)
 		result = append(result, shortSocialUser)
 	}
 
@@ -317,7 +336,7 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.add_users_to_friends.success")
-		return &pb.AddUsersToFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
+		return &pb.AddUsersToFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false, nil)}}, nil
 	}
 
 	addIds := make([]string, 0, len(req.Ids))
@@ -372,7 +391,7 @@ func (s *service) AddUsersToFriends(ctx context.Context, req *pb.AddUsersToFrien
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false, nil)
 		result = append(result, shortSocialUser)
 	}
 
@@ -439,7 +458,7 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.remove_users_from_friends.success")
-		return &pb.RemoveUsersFromFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
+		return &pb.RemoveUsersFromFriendsResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false, nil)}}, nil
 	}
 
 	removeIds := make([]string, 0, len(req.Ids))
@@ -500,7 +519,7 @@ func (s *service) RemoveUsersFromFriends(ctx context.Context, req *pb.RemoveUser
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false, nil)
 		result = append(result, shortSocialUser)
 	}
 
@@ -565,7 +584,7 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.block_users.success")
-		return &pb.BlockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
+		return &pb.BlockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false, nil)}}, nil
 	}
 
 	blockIds := make([]string, 0, len(req.Ids))
@@ -620,7 +639,7 @@ func (s *service) BlockUsers(ctx context.Context, req *pb.BlockUsersRequest) (*p
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false, nil)
 		result = append(result, shortSocialUser)
 	}
 
@@ -687,7 +706,7 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 		s.processUserWithPrivacySettings(a, u, ur)
 
 		l.Infow("user.unblock_users.success")
-		return &pb.UnblockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false)}}, nil
+		return &pb.UnblockUsersResponse{Users: []*pb.ShortSocialUser{toShortSocialUserProto(a, u, ur, false, nil)}}, nil
 	}
 
 	unblockIds := make([]string, 0, len(req.Ids))
@@ -742,7 +761,7 @@ func (s *service) UnblockUsers(ctx context.Context, req *pb.UnblockUsersRequest)
 	for i, user := range users {
 		ur := urs[i]
 		s.processUserWithPrivacySettings(a, user, ur)
-		shortSocialUser := toShortSocialUserProto(a, user, ur, false)
+		shortSocialUser := toShortSocialUserProto(a, user, ur, false, nil)
 		result = append(result, shortSocialUser)
 	}
 
@@ -1346,11 +1365,14 @@ func (s *service) buildShortSocialUsers(
 		return nil, err
 	}
 
+	for i, u := range users {
+		s.processUserWithPrivacySettings(actor, u, urs[i])
+	}
+	avatarFiles, _ := s.resolveAvatarFiles(ctx, users)
+
 	result := make([]*pb.ShortSocialUser, 0, len(users))
 	for i, u := range users {
-		ur := urs[i]
-		s.processUserWithPrivacySettings(actor, u, ur)
-		result = append(result, toShortSocialUserProto(actor, u, ur, includePrivacySettings))
+		result = append(result, toShortSocialUserProto(actor, u, urs[i], includePrivacySettings, avatarFiles))
 	}
 	return result, nil
 }
@@ -1374,6 +1396,89 @@ func (s *service) validateUsersRequest(req *pb.UsersRequest) error {
 		}
 	}
 	return nil
+}
+
+func (s *service) GetUserPhotos(ctx context.Context, req *pb.GetUserPhotosRequest) (*pb.GetUserPhotosResponse, error) {
+	l := s.log.With("op", "get_user_photos", "req_id", ctxmetadata.GetReqIdFromContext(ctx))
+
+	if req.UserId == "" {
+		return nil, grpcstatus.Error(codes.InvalidArgument, ErrUserIdIsRequired.Error())
+	}
+
+	a, err := s.getAndCheckActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check target user exists and photos privacy.
+	targetUser, err := s.userService.GetUserByIDWithAvatar(ctx, req.UserId, true)
+	if err != nil {
+		return nil, err
+	}
+	if targetUser == nil || (targetUser.Status != nil && !targetUser.Status.IsConfirmed) {
+		return nil, grpcstatus.Error(codes.NotFound, ErrUserNotFound.Error())
+	}
+
+	// If target is self, always allow.
+	if a.Id != req.UserId {
+		uow := s.dataProvider.newUOW()
+		defer uow.Close()
+
+		ur, err := s.userRelationshipService.GetUserRelationship(ctx, a, targetUser, uow)
+		if err != nil {
+			return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+		}
+
+		isFriend := ur != nil && ur.GetStatus() == userrelationship.Friends
+		if targetUser.PrivacySettings != nil && !privacyAllows(targetUser.PrivacySettings.Photos, a.Id, isFriend) {
+			return &pb.GetUserPhotosResponse{Photos: nil, Total: 0}, nil
+		}
+	}
+
+	userPhotos, total, err := s.userService.GetUserPhotos(ctx, req.UserId, req.Limit, req.Offset)
+	if err != nil {
+		l.Errorw("social.get_user_photos.get_photos_failed", "err", err)
+		return nil, grpcstatus.Error(codes.Internal, commonerror.ErrInternal.Error())
+	}
+
+	// Enrich with file-service URLs.
+	fileIDs := make([]string, 0, len(userPhotos))
+	for _, p := range userPhotos {
+		fileIDs = append(fileIDs, p.FileId)
+	}
+	fileMap, _ := s.resolveFiles(ctx, fileIDs)
+
+	return &pb.GetUserPhotosResponse{
+		Photos: toSocialUserPhotosProto(userPhotos, fileMap),
+		Total:  total,
+	}, nil
+}
+
+// resolveFiles fetches files from file-service and returns a map fileID -> File.
+func (s *service) resolveFiles(ctx context.Context, fileIDs []string) (map[string]*filepb.File, error) {
+	if s.fileService == nil || len(fileIDs) == 0 {
+		return nil, nil
+	}
+	files, err := s.fileService.GetFiles(ctx, fileIDs)
+	if err != nil || len(files) == 0 {
+		return nil, err
+	}
+	result := make(map[string]*filepb.File, len(files))
+	for _, f := range files {
+		result[f.Id] = f
+	}
+	return result, nil
+}
+
+// resolveAvatarFiles collects file_ids from user avatars and resolves them.
+func (s *service) resolveAvatarFiles(ctx context.Context, users []*userpb.User) (map[string]*filepb.File, error) {
+	fileIDs := make([]string, 0, len(users))
+	for _, u := range users {
+		if u != nil && u.Avatar != nil && u.Avatar.FileId != "" {
+			fileIDs = append(fileIDs, u.Avatar.FileId)
+		}
+	}
+	return s.resolveFiles(ctx, fileIDs)
 }
 
 func (s *service) processUserWithPrivacySettings(actor, user *userpb.User, ur *userrelationship.UserRelationship) {
@@ -1419,6 +1524,9 @@ func (s *service) processUserWithPrivacySettings(actor, user *userpb.User, ur *u
 		if !privacyAllows(user.PrivacySettings.Birthdate, actor.Id, isFriend) {
 			user.Profile.Birthdate = nil
 		}
+	}
+	if !privacyAllows(user.PrivacySettings.Avatar, actor.Id, isFriend) {
+		user.Avatar = nil
 	}
 }
 

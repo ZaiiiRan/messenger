@@ -14,9 +14,7 @@ type socialHandler struct {
 }
 
 func newSocialHandler(socialService socialservice.SocialService) *socialHandler {
-	return &socialHandler{
-		socialService: socialService,
-	}
+	return &socialHandler{socialService: socialService}
 }
 
 func (h *socialHandler) GetUserById(ctx context.Context, req *pb.GetUserByIdRequest) (*pb.GetUserByIdResponse, error) {
@@ -82,6 +80,11 @@ func (h *socialHandler) GetBlockedUsers(ctx context.Context, req *pb.GetBlockedU
 func (h *socialHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
 	utils.SanitizeSearchUsersRequest(req)
 	return h.socialService.SearchUsers(ctx, req)
+}
+
+func (h *socialHandler) GetUserPhotos(ctx context.Context, req *pb.GetUserPhotosRequest) (*pb.GetUserPhotosResponse, error) {
+	utils.SanitizeGetUserPhotosRequest(req)
+	return h.socialService.GetUserPhotos(ctx, req)
 }
 
 func (h *socialHandler) UpdateMyPrivacySettings(ctx context.Context, req *pb.UpdateMyPrivacySettingsRequest) (*pb.UpdateMyPrivacySettingsResponse, error) {

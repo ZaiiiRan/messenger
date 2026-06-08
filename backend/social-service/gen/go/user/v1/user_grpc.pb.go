@@ -30,6 +30,9 @@ const (
 	UserService_UpdateMeByUser_FullMethodName                = "/user.v1.UserService/UpdateMeByUser"
 	UserService_UpdateMyPrivacySettingsByUser_FullMethodName = "/user.v1.UserService/UpdateMyPrivacySettingsByUser"
 	UserService_DeleteMeByUser_FullMethodName                = "/user.v1.UserService/DeleteMeByUser"
+	UserService_AddUserPhoto_FullMethodName                  = "/user.v1.UserService/AddUserPhoto"
+	UserService_GetUserPhotos_FullMethodName                 = "/user.v1.UserService/GetUserPhotos"
+	UserService_DeleteUserPhoto_FullMethodName               = "/user.v1.UserService/DeleteUserPhoto"
 	UserService_BanUser_FullMethodName                       = "/user.v1.UserService/BanUser"
 	UserService_UnbanUser_FullMethodName                     = "/user.v1.UserService/UnbanUser"
 )
@@ -49,6 +52,9 @@ type UserServiceClient interface {
 	UpdateMeByUser(ctx context.Context, in *UpdateMeByUserRequest, opts ...grpc.CallOption) (*UpdateMeByUserResponse, error)
 	UpdateMyPrivacySettingsByUser(ctx context.Context, in *UpdateMyPrivacySettingsByUserRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsByUserResponse, error)
 	DeleteMeByUser(ctx context.Context, in *DeleteMeByUserRequest, opts ...grpc.CallOption) (*DeleteMeByUserResponse, error)
+	AddUserPhoto(ctx context.Context, in *AddUserPhotoRequest, opts ...grpc.CallOption) (*AddUserPhotoResponse, error)
+	GetUserPhotos(ctx context.Context, in *GetUserPhotosRequest, opts ...grpc.CallOption) (*GetUserPhotosResponse, error)
+	DeleteUserPhoto(ctx context.Context, in *DeleteUserPhotoRequest, opts ...grpc.CallOption) (*DeleteUserPhotoResponse, error)
 	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
 	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
 }
@@ -171,6 +177,36 @@ func (c *userServiceClient) DeleteMeByUser(ctx context.Context, in *DeleteMeByUs
 	return out, nil
 }
 
+func (c *userServiceClient) AddUserPhoto(ctx context.Context, in *AddUserPhotoRequest, opts ...grpc.CallOption) (*AddUserPhotoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddUserPhotoResponse)
+	err := c.cc.Invoke(ctx, UserService_AddUserPhoto_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserPhotos(ctx context.Context, in *GetUserPhotosRequest, opts ...grpc.CallOption) (*GetUserPhotosResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserPhotosResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserPhotos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteUserPhoto(ctx context.Context, in *DeleteUserPhotoRequest, opts ...grpc.CallOption) (*DeleteUserPhotoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUserPhotoResponse)
+	err := c.cc.Invoke(ctx, UserService_DeleteUserPhoto_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -206,6 +242,9 @@ type UserServiceServer interface {
 	UpdateMeByUser(context.Context, *UpdateMeByUserRequest) (*UpdateMeByUserResponse, error)
 	UpdateMyPrivacySettingsByUser(context.Context, *UpdateMyPrivacySettingsByUserRequest) (*UpdateMyPrivacySettingsByUserResponse, error)
 	DeleteMeByUser(context.Context, *DeleteMeByUserRequest) (*DeleteMeByUserResponse, error)
+	AddUserPhoto(context.Context, *AddUserPhotoRequest) (*AddUserPhotoResponse, error)
+	GetUserPhotos(context.Context, *GetUserPhotosRequest) (*GetUserPhotosResponse, error)
+	DeleteUserPhoto(context.Context, *DeleteUserPhotoRequest) (*DeleteUserPhotoResponse, error)
 	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
 	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
@@ -250,6 +289,15 @@ func (UnimplementedUserServiceServer) UpdateMyPrivacySettingsByUser(context.Cont
 }
 func (UnimplementedUserServiceServer) DeleteMeByUser(context.Context, *DeleteMeByUserRequest) (*DeleteMeByUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteMeByUser not implemented")
+}
+func (UnimplementedUserServiceServer) AddUserPhoto(context.Context, *AddUserPhotoRequest) (*AddUserPhotoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUserPhoto not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserPhotos(context.Context, *GetUserPhotosRequest) (*GetUserPhotosResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserPhotos not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteUserPhoto(context.Context, *DeleteUserPhotoRequest) (*DeleteUserPhotoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserPhoto not implemented")
 }
 func (UnimplementedUserServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BanUser not implemented")
@@ -476,6 +524,60 @@ func _UserService_DeleteMeByUser_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_AddUserPhoto_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUserPhotoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).AddUserPhoto(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_AddUserPhoto_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).AddUserPhoto(ctx, req.(*AddUserPhotoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserPhotos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPhotosRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserPhotos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserPhotos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserPhotos(ctx, req.(*GetUserPhotosRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteUserPhoto_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserPhotoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteUserPhoto(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteUserPhoto_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteUserPhoto(ctx, req.(*DeleteUserPhotoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -562,6 +664,18 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteMeByUser",
 			Handler:    _UserService_DeleteMeByUser_Handler,
+		},
+		{
+			MethodName: "AddUserPhoto",
+			Handler:    _UserService_AddUserPhoto_Handler,
+		},
+		{
+			MethodName: "GetUserPhotos",
+			Handler:    _UserService_GetUserPhotos_Handler,
+		},
+		{
+			MethodName: "DeleteUserPhoto",
+			Handler:    _UserService_DeleteUserPhoto_Handler,
 		},
 		{
 			MethodName: "BanUser",

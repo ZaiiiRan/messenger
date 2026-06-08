@@ -1,13 +1,14 @@
 package socialservice
 
 import (
+	filepb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/file/v1"
 	pb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/social/v1"
 	userpb "github.com/ZaiiiRan/messenger/backend/social-service/gen/go/user/v1"
 	userrelationship "github.com/ZaiiiRan/messenger/backend/social-service/internal/domain/user_relationship"
 	"github.com/ZaiiiRan/messenger/backend/social-service/internal/utils"
 )
 
-func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool) *pb.SocialUser {
+func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool, avatarFiles map[string]*filepb.File) *pb.SocialUser {
 	if a == nil || u == nil {
 		return nil
 	}
@@ -24,10 +25,11 @@ func toSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship,
 		Status:           toSocialUserStatusProto(u),
 		UserRelationship: toSocialUserRelationshipProto(a, ur),
 		PrivacySettings:  ps,
+		Avatar:           toSocialUserPhotoProto(u, avatarFiles),
 	}
 }
 
-func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool) *pb.ShortSocialUser {
+func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelationship, includePrivacySettings bool, avatarFiles map[string]*filepb.File) *pb.ShortSocialUser {
 	if a == nil || u == nil {
 		return nil
 	}
@@ -44,7 +46,59 @@ func toShortSocialUserProto(a, u *userpb.User, ur *userrelationship.UserRelation
 		Status:           toSocialUserStatusProto(u),
 		UserRelationship: toSocialUserRelationshipProto(a, ur),
 		PrivacySettings:  ps,
+		Avatar:           toSocialUserPhotoProto(u, avatarFiles),
 	}
+}
+
+// toSocialUserPhotoProto builds a SocialUserPhoto from the user's avatar UserPhoto
+// (file_id returned by user-service) and the resolved File from file-service.
+// avatarFiles maps file_id -> File; nil map means no resolution available.
+func toSocialUserPhotoProto(u *userpb.User, avatarFiles map[string]*filepb.File) *pb.SocialUserPhoto {
+	if u.Avatar == nil {
+		return nil
+	}
+	photo := &pb.SocialUserPhoto{
+		FileId:    u.Avatar.FileId,
+		CreatedAt: u.Avatar.CreatedAt,
+	}
+	if avatarFiles != nil {
+		if f, ok := avatarFiles[u.Avatar.FileId]; ok {
+			for _, v := range f.Variants {
+				variant := &pb.SocialPhotoVariant{
+					VariantType:    v.VariantType,
+					UrlForDownload: v.UrlForDownload,
+					Size:           v.Size,
+					MimeType:       v.MimeType,
+				}
+				photo.Variants = append(photo.Variants, variant)
+			}
+		}
+	}
+	return photo
+}
+
+func toSocialUserPhotosProto(userPhotos []*userpb.UserPhoto, fileMap map[string]*filepb.File) []*pb.SocialUserPhoto {
+	result := make([]*pb.SocialUserPhoto, 0, len(userPhotos))
+	for _, up := range userPhotos {
+		photo := &pb.SocialUserPhoto{
+			FileId:    up.FileId,
+			CreatedAt: up.CreatedAt,
+		}
+		if fileMap != nil {
+			if f, ok := fileMap[up.FileId]; ok {
+				for _, v := range f.Variants {
+					photo.Variants = append(photo.Variants, &pb.SocialPhotoVariant{
+						VariantType:    v.VariantType,
+						UrlForDownload: v.UrlForDownload,
+						Size:           v.Size,
+						MimeType:       v.MimeType,
+					})
+				}
+			}
+		}
+		result = append(result, photo)
+	}
+	return result
 }
 
 func toSocialUserRelationshipProto(actor *userpb.User, ur *userrelationship.UserRelationship) string {

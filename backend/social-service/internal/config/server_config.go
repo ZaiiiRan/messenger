@@ -12,6 +12,7 @@ import (
 type ServerConfig struct {
 	GRPCServer            settings.GRPCServerSettings    `mapstructure:"grpc_server"`
 	UserServiceGRPCClient settings.GRPCClientSettings    `mapstructure:"user_service_grpc_client"`
+	FileServiceGRPCClient settings.GRPCClientSettings    `mapstructure:"file_service_grpc_client"`
 	JWT                   settings.JWTSettings           `mapstructure:"jwt"`
 	DB                    settings.PostgresSettings      `mapstructure:"db"`
 	Migrate               settings.MigrateSettings       `mapstructure:"migrate"`
@@ -56,6 +57,7 @@ func LoadServerConfig() (*ServerConfig, error) {
 func setServerDefaults(v *viper.Viper) {
 	settings.SetGRPCServerDefaults(v, "grpc_server", ":50051")
 	settings.SetGRPCClientDefaults(v, "user_service_grpc_client", "localhost:50052")
+	settings.SetGRPCClientDefaults(v, "file_service_grpc_client", "localhost:50054")
 	settings.SetJWTDefaults(v, "jwt")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetMigrateDefaults(v, "migrate")

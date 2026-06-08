@@ -33,6 +33,7 @@ const (
 	SocialService_GetBlockedUsers_FullMethodName           = "/social.v1.SocialService/GetBlockedUsers"
 	SocialService_SearchUsers_FullMethodName               = "/social.v1.SocialService/SearchUsers"
 	SocialService_UpdateMyPrivacySettings_FullMethodName   = "/social.v1.SocialService/UpdateMyPrivacySettings"
+	SocialService_GetUserPhotos_FullMethodName             = "/social.v1.SocialService/GetUserPhotos"
 )
 
 // SocialServiceClient is the client API for SocialService service.
@@ -53,6 +54,7 @@ type SocialServiceClient interface {
 	GetBlockedUsers(ctx context.Context, in *GetBlockedUsersRequest, opts ...grpc.CallOption) (*GetBlockedUsersResponse, error)
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	UpdateMyPrivacySettings(ctx context.Context, in *UpdateMyPrivacySettingsRequest, opts ...grpc.CallOption) (*UpdateMyPrivacySettingsResponse, error)
+	GetUserPhotos(ctx context.Context, in *GetUserPhotosRequest, opts ...grpc.CallOption) (*GetUserPhotosResponse, error)
 }
 
 type socialServiceClient struct {
@@ -203,6 +205,16 @@ func (c *socialServiceClient) UpdateMyPrivacySettings(ctx context.Context, in *U
 	return out, nil
 }
 
+func (c *socialServiceClient) GetUserPhotos(ctx context.Context, in *GetUserPhotosRequest, opts ...grpc.CallOption) (*GetUserPhotosResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserPhotosResponse)
+	err := c.cc.Invoke(ctx, SocialService_GetUserPhotos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SocialServiceServer is the server API for SocialService service.
 // All implementations must embed UnimplementedSocialServiceServer
 // for forward compatibility.
@@ -221,6 +233,7 @@ type SocialServiceServer interface {
 	GetBlockedUsers(context.Context, *GetBlockedUsersRequest) (*GetBlockedUsersResponse, error)
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	UpdateMyPrivacySettings(context.Context, *UpdateMyPrivacySettingsRequest) (*UpdateMyPrivacySettingsResponse, error)
+	GetUserPhotos(context.Context, *GetUserPhotosRequest) (*GetUserPhotosResponse, error)
 	mustEmbedUnimplementedSocialServiceServer()
 }
 
@@ -272,6 +285,9 @@ func (UnimplementedSocialServiceServer) SearchUsers(context.Context, *SearchUser
 }
 func (UnimplementedSocialServiceServer) UpdateMyPrivacySettings(context.Context, *UpdateMyPrivacySettingsRequest) (*UpdateMyPrivacySettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMyPrivacySettings not implemented")
+}
+func (UnimplementedSocialServiceServer) GetUserPhotos(context.Context, *GetUserPhotosRequest) (*GetUserPhotosResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserPhotos not implemented")
 }
 func (UnimplementedSocialServiceServer) mustEmbedUnimplementedSocialServiceServer() {}
 func (UnimplementedSocialServiceServer) testEmbeddedByValue()                       {}
@@ -546,6 +562,24 @@ func _SocialService_UpdateMyPrivacySettings_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SocialService_GetUserPhotos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPhotosRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SocialServiceServer).GetUserPhotos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SocialService_GetUserPhotos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SocialServiceServer).GetUserPhotos(ctx, req.(*GetUserPhotosRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SocialService_ServiceDesc is the grpc.ServiceDesc for SocialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -608,6 +642,10 @@ var SocialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateMyPrivacySettings",
 			Handler:    _SocialService_UpdateMyPrivacySettings_Handler,
+		},
+		{
+			MethodName: "GetUserPhotos",
+			Handler:    _SocialService_GetUserPhotos_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
