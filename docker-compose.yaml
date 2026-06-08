@@ -107,6 +107,7 @@ services:
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
       JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      FILE_SERVICE_GRPC_CLIENT_ADDRESS: file-service:50051
     volumes:
       - ./backend/configs/user-service/server:/etc/user-service
     ports:
@@ -195,6 +196,7 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN}
       VAULT_ADDRESS: http://vault:8200
       VAULT_ENABLE: true
+      FILE_SERVICE_GRPC_CLIENT_ADDRESS: file-service:50051
       USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_BROKERS: "user-data-deletion-kafka:9092"
       USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_USER: ${KAFKA_USER}
       USER_DATA_DELETION_TASKS_PRODUCER_KAFKA_SETTINGS_PASSWORD: ${KAFKA_PASSWORD}
@@ -524,6 +526,7 @@ services:
       VAULT_ENABLE: true
       JWT_ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       USER_SERVICE_GRPC_CLIENT_ADDRESS: user-service:50051
+      FILE_SERVICE_GRPC_CLIENT_ADDRESS: file-service:50051
     volumes:
       - ./backend/configs/social-service/server:/etc/social-service
     ports:
