@@ -1,58 +1,230 @@
-[
-    { "id": "domain.profile.validation.error.profile_is_empty", "translation": "профиль обязателен" },
-    { "id": "domain.profile.validation.error.invalid_phone_format", "translation": "номер телефона должен начинаться с + и кода страны, например +7(999)-123-45-67 или +15551234567" },
-    { "id": "domain.profile.validation.error.invalid_phone_length", "translation": "номер телефона должен содержать от 8 до 15 цифр" },
-    { "id": "domain.profile.validation.error.birthdate_in_future", "translation": "дата рождения не может быть в будущем" },
-    { "id": "domain.profile.validation.error.invalid_birthdate_format", "translation": "неверный формат даты рождения" },
-    { "id": "domain.profile.validation.error.firstname_is_empty", "translation": "имя не указано" },
-    { "id": "domain.profile.validation.error.firstname_too_short", "translation": "имя должно содержать не менее 2 символов" },
-    { "id": "domain.profile.validation.error.firstname_too_long", "translation": "имя должно содержать не более 50 символов" },
-    { "id": "domain.profile.validation.error.invalid_firstname_format", "translation": "имя должно начинаться с заглавной буквы" },
-    { "id": "domain.profile.validation.error.lastname_is_empty", "translation": "фамилия не указана" },
-    { "id": "domain.profile.validation.error.lastname_too_short", "translation": "фамилия должна содержать не менее 2 символов" },
-    { "id": "domain.profile.validation.error.lastname_too_long", "translation": "фамилия должна содержать не более 50 символов" },
-    { "id": "domain.profile.validation.error.invalid_lastname_format", "translation": "фамилия должна начинаться с заглавной буквы" },
-    { "id": "domain.profile.validation.error.bio_too_long", "translation": "о себе должно содержать не более 1000 символов" },
-
-    { "id": "domain.status.validation.error.banned_until_in_past", "translation": "дата окончания блокировки не может быть в прошлом" },
-    { "id": "domain.status.validation.error.permanently_delete_if_not_deleted", "translation": "нельзя окончательно удалить пользователя, не помеченного как удалённый" },
-
-    { "id": "domain.user.validation.error.email_is_empty", "translation": "email не указан" },
-    { "id": "domain.user.validation.error.invalid_email_format", "translation": "неверный формат email" },
-    { "id": "domain.user.validation.error.email_too_long", "translation": "email должен содержать не более 254 символов" },
-    { "id": "domain.user.validation.error.username_is_empty", "translation": "имя пользователя не указано" },
-    { "id": "domain.user.validation.error.username_contains_spaces", "translation": "имя пользователя не должно содержать пробелы" },
-    { "id": "domain.user.validation.error.username_too_short", "translation": "имя пользователя должно содержать не менее 5 символов" },
-    { "id": "domain.user.validation.error.username_too_long", "translation": "имя пользователя должно содержать не более 30 символов" },
-    { "id": "domain.user.validation.error.same_username", "translation": "имя пользователя совпадает с текущим" },
-    { "id": "domain.user.validation.error.same_email", "translation": "email совпадает с текущим" },
-    { "id": "domain.user.validation.error.wait_before_email_changing", "translation": "необходимо подождать перед повторной сменой email" },
-
-    { "id": "domain.privacy_settings.error.unknown_privacy_value", "translation": "неизвестное значение настройки приватности" },
-
-    { "id": "domain.outbox_event.error.max_attempts_reached", "translation": "превышено максимальное количество попыток доставки" },
-    { "id": "domain.outbox_event.error.cannot_update_status", "translation": "не удалось обновить статус события outbox" },
-
-    { "id": "service.user.error.user_with_this_username_exists", "translation": "пользователь с таким именем пользователя уже существует" },
-    { "id": "service.user.error.user_with_this_email_exists", "translation": "пользователь с таким email уже существует" },
-    { "id": "service.user.error.user_id_is_required", "translation": "user_id обязателен" },
-    { "id": "service.user.error.username_is_required", "translation": "имя пользователя обязательно" },
-    { "id": "service.user.error.email_is_required", "translation": "email обязателен" },
-    { "id": "service.user.error.user_not_found", "translation": "пользователь не найден" },
-    { "id": "service.user.error.user_is_already_activated", "translation": "пользователь уже активирован" },
-    { "id": "service.user.error.deleted_user_cannot_be_activated", "translation": "удалённый пользователь не может быть активирован" },
-    { "id": "service.user.error.banned_user_cannot_be_activated", "translation": "заблокированный пользователь не может быть активирован" },
-    { "id": "service.user.error.invalid_timestamp", "translation": "неверный формат времени, используйте RFC3339" },
-    { "id": "service.user.error.fields_are_required", "translation": "обязательные поля не заполнены" },
-    { "id": "service.user.error.nothing_to_update", "translation": "нечего обновлять" },
-    { "id": "service.user.error.delete_unconfirmed_users_failed", "translation": "не удалось удалить неподтверждённых пользователей" },
-    { "id": "service.user.error.clear_deleted_users_failed", "translation": "не удалось очистить удалённых пользователей" },
-    { "id": "service.user.error.unban_temporarily_banned_users_failed", "translation": "не удалось снять временную блокировку с пользователей" },
-    { "id": "service.user.error.privacy_list_too_long", "translation": "список приватности слишком длинный" },
-    { "id": "service.user.error.invalid_user_in_privacy_list", "translation": "недопустимый пользователь в списке приватности" },
-
-    { "id": "error.internal_server_error", "translation": "внутренняя ошибка сервера" },
-    { "id": "error.unauthorized", "translation": "не авторизован" },
-    { "id": "error.permission_denied", "translation": "доступ запрещён" },
-    { "id": "error.validation_error", "translation": "ошибка валидации" }
+﻿[
+    {
+        "id":  "domain.profile.validation.error.profile_is_empty",
+        "translation":  "РїСЂРѕС„РёР»СЊ РѕР±СЏР·Р°С‚РµР»РµРЅ"
+    },
+    {
+        "id":  "domain.profile.validation.error.invalid_phone_format",
+        "translation":  "РЅРѕРјРµСЂ С‚РµР»РµС„РѕРЅР° РґРѕР»Р¶РµРЅ РЅР°С‡РёРЅР°С‚СЊСЃСЏ СЃ + Рё РєРѕРґР° СЃС‚СЂР°РЅС‹, РЅР°РїСЂРёРјРµСЂ +7(999)-123-45-67 РёР»Рё +15551234567"
+    },
+    {
+        "id":  "domain.profile.validation.error.invalid_phone_length",
+        "translation":  "РЅРѕРјРµСЂ С‚РµР»РµС„РѕРЅР° РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РѕС‚ 8 РґРѕ 15 С†РёС„СЂ"
+    },
+    {
+        "id":  "domain.profile.validation.error.birthdate_in_future",
+        "translation":  "РґР°С‚Р° СЂРѕР¶РґРµРЅРёСЏ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РІ Р±СѓРґСѓС‰РµРј"
+    },
+    {
+        "id":  "domain.profile.validation.error.invalid_birthdate_format",
+        "translation":  "РЅРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ РґР°С‚С‹ СЂРѕР¶РґРµРЅРёСЏ"
+    },
+    {
+        "id":  "domain.profile.validation.error.firstname_is_empty",
+        "translation":  "РёРјСЏ РЅРµ СѓРєР°Р·Р°РЅРѕ"
+    },
+    {
+        "id":  "domain.profile.validation.error.firstname_too_short",
+        "translation":  "РёРјСЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ РјРµРЅРµРµ 2 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.profile.validation.error.firstname_too_long",
+        "translation":  "РёРјСЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»РµРµ 50 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.profile.validation.error.invalid_firstname_format",
+        "translation":  "РёРјСЏ РґРѕР»Р¶РЅРѕ РЅР°С‡РёРЅР°С‚СЊСЃСЏ СЃ Р·Р°РіР»Р°РІРЅРѕР№ Р±СѓРєРІС‹"
+    },
+    {
+        "id":  "domain.profile.validation.error.lastname_is_empty",
+        "translation":  "С„Р°РјРёР»РёСЏ РЅРµ СѓРєР°Р·Р°РЅР°"
+    },
+    {
+        "id":  "domain.profile.validation.error.lastname_too_short",
+        "translation":  "С„Р°РјРёР»РёСЏ РґРѕР»Р¶РЅР° СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ РјРµРЅРµРµ 2 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.profile.validation.error.lastname_too_long",
+        "translation":  "С„Р°РјРёР»РёСЏ РґРѕР»Р¶РЅР° СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»РµРµ 50 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.profile.validation.error.invalid_lastname_format",
+        "translation":  "С„Р°РјРёР»РёСЏ РґРѕР»Р¶РЅР° РЅР°С‡РёРЅР°С‚СЊСЃСЏ СЃ Р·Р°РіР»Р°РІРЅРѕР№ Р±СѓРєРІС‹"
+    },
+    {
+        "id":  "domain.profile.validation.error.bio_too_long",
+        "translation":  "Рѕ СЃРµР±Рµ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»РµРµ 1000 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.status.validation.error.banned_until_in_past",
+        "translation":  "РґР°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ Р±Р»РѕРєРёСЂРѕРІРєРё РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РІ РїСЂРѕС€Р»РѕРј"
+    },
+    {
+        "id":  "domain.status.validation.error.permanently_delete_if_not_deleted",
+        "translation":  "РЅРµР»СЊР·СЏ РѕРєРѕРЅС‡Р°С‚РµР»СЊРЅРѕ СѓРґР°Р»РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ, РЅРµ РїРѕРјРµС‡РµРЅРЅРѕРіРѕ РєР°Рє СѓРґР°Р»С‘РЅРЅС‹Р№"
+    },
+    {
+        "id":  "domain.user.validation.error.email_is_empty",
+        "translation":  "email РЅРµ СѓРєР°Р·Р°РЅ"
+    },
+    {
+        "id":  "domain.user.validation.error.invalid_email_format",
+        "translation":  "РЅРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ email"
+    },
+    {
+        "id":  "domain.user.validation.error.email_too_long",
+        "translation":  "email РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»РµРµ 254 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.user.validation.error.username_is_empty",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅРѕ"
+    },
+    {
+        "id":  "domain.user.validation.error.username_contains_spaces",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РїСЂРѕР±РµР»С‹"
+    },
+    {
+        "id":  "domain.user.validation.error.username_too_short",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ РјРµРЅРµРµ 5 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.user.validation.error.username_too_long",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»РµРµ 30 СЃРёРјРІРѕР»РѕРІ"
+    },
+    {
+        "id":  "domain.user.validation.error.same_username",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃРѕРІРїР°РґР°РµС‚ СЃ С‚РµРєСѓС‰РёРј"
+    },
+    {
+        "id":  "domain.user.validation.error.same_email",
+        "translation":  "email СЃРѕРІРїР°РґР°РµС‚ СЃ С‚РµРєСѓС‰РёРј"
+    },
+    {
+        "id":  "domain.user.validation.error.wait_before_email_changing",
+        "translation":  "РЅРµРѕР±С…РѕРґРёРјРѕ РїРѕРґРѕР¶РґР°С‚СЊ РїРµСЂРµРґ РїРѕРІС‚РѕСЂРЅРѕР№ СЃРјРµРЅРѕР№ email"
+    },
+    {
+        "id":  "domain.privacy_settings.error.unknown_privacy_value",
+        "translation":  "РЅРµРёР·РІРµСЃС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РЅР°СЃС‚СЂРѕР№РєРё РїСЂРёРІР°С‚РЅРѕСЃС‚Рё"
+    },
+    {
+        "id":  "domain.outbox_event.error.max_attempts_reached",
+        "translation":  "РїСЂРµРІС‹С€РµРЅРѕ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРїС‹С‚РѕРє РґРѕСЃС‚Р°РІРєРё"
+    },
+    {
+        "id":  "domain.outbox_event.error.cannot_update_status",
+        "translation":  "РЅРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ СЃРѕР±С‹С‚РёСЏ outbox"
+    },
+    {
+        "id":  "service.user.error.user_with_this_username_exists",
+        "translation":  "РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"
+    },
+    {
+        "id":  "service.user.error.user_with_this_email_exists",
+        "translation":  "РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"
+    },
+    {
+        "id":  "service.user.error.user_id_is_required",
+        "translation":  "user_id РѕР±СЏР·Р°С‚РµР»РµРЅ"
+    },
+    {
+        "id":  "service.user.error.username_is_required",
+        "translation":  "РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ"
+    },
+    {
+        "id":  "service.user.error.email_is_required",
+        "translation":  "email РѕР±СЏР·Р°С‚РµР»РµРЅ"
+    },
+    {
+        "id":  "service.user.error.user_not_found",
+        "translation":  "РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ"
+    },
+    {
+        "id":  "service.user.error.user_is_already_activated",
+        "translation":  "РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓР¶Рµ Р°РєС‚РёРІРёСЂРѕРІР°РЅ"
+    },
+    {
+        "id":  "service.user.error.deleted_user_cannot_be_activated",
+        "translation":  "СѓРґР°Р»С‘РЅРЅС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ Р°РєС‚РёРІРёСЂРѕРІР°РЅ"
+    },
+    {
+        "id":  "service.user.error.banned_user_cannot_be_activated",
+        "translation":  "Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅРЅС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ Р°РєС‚РёРІРёСЂРѕРІР°РЅ"
+    },
+    {
+        "id":  "service.user.error.invalid_timestamp",
+        "translation":  "РЅРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ РІСЂРµРјРµРЅРё, РёСЃРїРѕР»СЊР·СѓР№С‚Рµ RFC3339"
+    },
+    {
+        "id":  "service.user.error.fields_are_required",
+        "translation":  "РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ РЅРµ Р·Р°РїРѕР»РЅРµРЅС‹"
+    },
+    {
+        "id":  "service.user.error.nothing_to_update",
+        "translation":  "РЅРµС‡РµРіРѕ РѕР±РЅРѕРІР»СЏС‚СЊ"
+    },
+    {
+        "id":  "service.user.error.delete_unconfirmed_users_failed",
+        "translation":  "РЅРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РЅРµРїРѕРґС‚РІРµСЂР¶РґС‘РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№"
+    },
+    {
+        "id":  "service.user.error.clear_deleted_users_failed",
+        "translation":  "РЅРµ СѓРґР°Р»РѕСЃСЊ РѕС‡РёСЃС‚РёС‚СЊ СѓРґР°Р»С‘РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№"
+    },
+    {
+        "id":  "service.user.error.unban_temporarily_banned_users_failed",
+        "translation":  "РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРЅСЏС‚СЊ РІСЂРµРјРµРЅРЅСѓСЋ Р±Р»РѕРєРёСЂРѕРІРєСѓ СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№"
+    },
+    {
+        "id":  "service.user.error.privacy_list_too_long",
+        "translation":  "СЃРїРёСЃРѕРє РїСЂРёРІР°С‚РЅРѕСЃС‚Рё СЃР»РёС€РєРѕРј РґР»РёРЅРЅС‹Р№"
+    },
+    {
+        "id":  "service.user.error.invalid_user_in_privacy_list",
+        "translation":  "РЅРµРґРѕРїСѓСЃС‚РёРјС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІ СЃРїРёСЃРєРµ РїСЂРёРІР°С‚РЅРѕСЃС‚Рё"
+    },
+    {
+        "id":  "error.internal_server_error",
+        "translation":  "РІРЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°"
+    },
+    {
+        "id":  "error.unauthorized",
+        "translation":  "РЅРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅ"
+    },
+    {
+        "id":  "error.permission_denied",
+        "translation":  "РґРѕСЃС‚СѓРї Р·Р°РїСЂРµС‰С‘РЅ"
+    },
+    {
+        "id":  "error.validation_error",
+        "translation":  "РѕС€РёР±РєР° РІР°Р»РёРґР°С†РёРё"
+    },
+    {
+        "id":  "service.user_photo.error.photo_not_found",
+        "translation":  "фото не найдено"
+    },
+    {
+        "id":  "service.user_photo.error.photo_not_owned",
+        "translation":  "это фото вам не принадлежит"
+    },
+    {
+        "id":  "service.user_photo.error.file_not_found",
+        "translation":  "файл не найден"
+    },
+    {
+        "id":  "service.user_photo.error.file_not_owned",
+        "translation":  "этот файл вам не принадлежит"
+    },
+    {
+        "id":  "service.user_photo.error.invalid_file_bucket",
+        "translation":  "файл не является фото пользователя"
+    },
+    {
+        "id":  "service.user_photo.error.file_not_ready",
+        "translation":  "файл ещё не загружен"
+    },
+    {
+        "id":  "service.user_photo.error.invalid_file_purpose",
+        "translation":  "назначение файла не подходит для фото пользователя"
+    }
 ]

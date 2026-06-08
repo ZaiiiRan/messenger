@@ -87,6 +87,36 @@ func SanitizeUnbanUserRequest(req *pb.UnbanUserRequest) {
 	req.UserId = strings.TrimSpace(req.UserId)
 }
 
+func SanitizeAddUserPhotoRequest(req *pb.AddUserPhotoRequest) {
+	if req == nil {
+		return
+	}
+	req.FileId = strings.TrimSpace(req.FileId)
+}
+
+func SanitizeGetUserPhotosRequest(req *pb.GetUserPhotosRequest) {
+	if req == nil {
+		return
+	}
+	req.UserId = strings.TrimSpace(req.UserId)
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Limit > 100 {
+		req.Limit = 100
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+}
+
+func SanitizeDeleteUserPhotoRequest(req *pb.DeleteUserPhotoRequest) {
+	if req == nil {
+		return
+	}
+	req.PhotoId = strings.TrimSpace(req.PhotoId)
+}
+
 func SanitizeUpdateUserEmailRequest(req *pb.UpdateUserEmailRequest) {
 	if req == nil {
 		return

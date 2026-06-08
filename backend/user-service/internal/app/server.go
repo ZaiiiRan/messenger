@@ -7,12 +7,15 @@ import (
 
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
+	photofiledeletionsvc "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/photo_file_deletion"
+	userphotosvc "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_photo"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/i18n"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	grpcserver "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/server/grpc"
+	filegrpcclient "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/client/grpc/file_client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -23,8 +26,11 @@ type ServerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+	fileGrpcClient *filegrpcclient.Client
 
-	userService userservice.UserService
+	userService             userservice.UserService
+	userPhotoService        userphotosvc.UserPhotoService
+	photoFileDeletionService photofiledeletionsvc.PhotoFileDeletionService
 
 	grpcServer    *grpcserver.Server
 	metricsServer *prommetrics.Server
@@ -59,7 +65,12 @@ func (a *ServerApp) Run(ctx context.Context) error {
 	if err := a.initRedisClient(ctx); err != nil {
 		return err
 	}
+	if err := a.initFileGrpcClient(ctx); err != nil {
+		return err
+	}
 
+	a.initPhotoFileDeletionService()
+	a.initUserPhotoService()
 	a.initUserService()
 
 	a.initI18n()
@@ -85,6 +96,9 @@ func (a *ServerApp) Stop(ctx context.Context) {
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
+	if a.fileGrpcClient != nil {
+		a.fileGrpcClient.Close()
+	}
 	a.grpcServer.Stop(shCtx)
 	a.metricsServer.Stop(shCtx)
 
@@ -93,8 +107,7 @@ func (a *ServerApp) Stop(ctx context.Context) {
 
 func (a *ServerApp) initPostgresClient(ctx context.Context) error {
 	if a.cfg.Migrate.NeedToMigrate {
-		err := postgres.Migrate(ctx, a.cfg.DB)
-		if err != nil {
+		if err := postgres.Migrate(ctx, a.cfg.DB); err != nil {
 			a.log.Errorw("app.postgres_migrate_failed", "err", err)
 			return err
 		}
@@ -108,7 +121,6 @@ func (a *ServerApp) initPostgresClient(ctx context.Context) error {
 		return err
 	}
 	a.postgresClient = pgClient
-
 	a.log.Infow("app.postgres_connectd")
 	return nil
 }
@@ -120,13 +132,36 @@ func (a *ServerApp) initRedisClient(ctx context.Context) error {
 		return err
 	}
 	a.redisClient = redisClient
-
 	a.log.Infow("app.redis_connected")
 	return nil
 }
 
+func (a *ServerApp) initFileGrpcClient(ctx context.Context) error {
+	cl, err := filegrpcclient.New(ctx, a.cfg.FileServiceGRPCClient, nil, nil)
+	if err != nil {
+		a.log.Errorw("app.file_grpc_client_init_failed", "err", err)
+		return err
+	}
+	a.fileGrpcClient = cl
+
+	if a.cfg.FileServiceGRPCClient.AutoConnect {
+		a.log.Infow("app.file_grpc_client_connected")
+	} else {
+		a.log.Infow("app.file_grpc_client_initialized")
+	}
+	return nil
+}
+
+func (a *ServerApp) initPhotoFileDeletionService() {
+	a.photoFileDeletionService = photofiledeletionsvc.New(a.postgresClient, a.fileGrpcClient, a.log)
+}
+
+func (a *ServerApp) initUserPhotoService() {
+	a.userPhotoService = userphotosvc.New(a.postgresClient, a.fileGrpcClient, a.log)
+}
+
 func (a *ServerApp) initUserService() {
-	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, nil)
+	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, nil, a.photoFileDeletionService)
 }
 
 func (a *ServerApp) initI18n() {
@@ -148,12 +183,11 @@ func (a *ServerApp) startMetricsServer() {
 }
 
 func (a *ServerApp) initGrpcServer() error {
-	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.userService, a.log, a.metricsServer.Registry())
+	srv, err := grpcserver.New(a.cfg.GRPCServer, a.cfg.JWT, a.userService, a.userPhotoService, a.log, a.metricsServer.Registry())
 	if err != nil {
 		a.log.Errorw("app.grpc_server_init_failed", "err", err)
 		return err
 	}
-
 	a.grpcServer = srv
 	return nil
 }

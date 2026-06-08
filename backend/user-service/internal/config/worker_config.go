@@ -13,6 +13,7 @@ type WorkerConfig struct {
 	MetricsServer                        settings.MetricsServerSettings                        `mapstructure:"metrics_server"`
 	DB                                   settings.PostgresSettings                             `mapstructure:"db"`
 	Redis                                settings.RedisSettings                                `mapstructure:"redis"`
+	FileServiceGRPCClient                settings.GRPCClientSettings                           `mapstructure:"file_service_grpc_client"`
 	UserDataDeletionTasksProducer        settings.KafkaProducerSettings                        `mapstructure:"user_data_deletion_tasks_producer"`
 	Shutdown                             settings.ShutdownSettings                             `mapstructure:"shutdown"`
 	Vault                                settings.VaultSettings                                `mapstructure:"vault"`
@@ -20,6 +21,7 @@ type WorkerConfig struct {
 	DeletedUsersDataClearingWorker       settings.DeletedUsersDataClearingWorkerSettings       `mapstructure:"deleted_users_data_clearing_worker"`
 	UnbanTemporarilyBannedUsersWorker    settings.UnbanTemporarilyBannedUsersWorkerSettings    `mapstructure:"unban_temporarily_banned_users_worker"`
 	UserDataDeletionTasksSendingWorker   settings.KafkaSendingWorkerSettings                   `mapstructure:"user_data_deletion_tasks_sending_worker"`
+	PhotoFileDeletionWorker              settings.KafkaSendingWorkerSettings                   `mapstructure:"photo_file_deletion_worker"`
 	UserRelationshipChangesTasksConsumer settings.UserRelationshipChangesTasksConsumerSettings `mapstructure:"user_relationship_changes_tasks_consumer"`
 	UpdateFriendsInPrivacySettingsWorker settings.UpdateFriendsInPrivacySettingsWorker         `mapstructure:"update_friends_in_privacy_settings_worker"`
 }
@@ -60,6 +62,7 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetMetricsServerDefaults(v, "metrics_server")
 	settings.SetPostgresDefaults(v, "db")
 	settings.SetRedisDefaults(v, "redis")
+	settings.SetGRPCClientDefaults(v, "file_service_grpc_client", "localhost:50054")
 	settings.SetKafkaProducerDefaults(v, "user_data_deletion_tasks_producer", "user-data-deletion-tasks")
 	settings.SetShutdownDefaults(v, "shutdown")
 	settings.SetVaultDefaults(v, "vault")
@@ -67,6 +70,7 @@ func setWorkerDefaults(v *viper.Viper) {
 	settings.SetDeletedUsersDataClearingWorkerDefaults(v, "deleted_users_data_clearing_worker")
 	settings.SetUnbanTemporarilyBannedUsersWorkerDefaults(v, "unban_temporarily_banned_users_worker")
 	settings.SetKafkaSendingWorkerDefaults(v, "user_data_deletion_tasks_sending_worker")
+	settings.SetKafkaSendingWorkerDefaults(v, "photo_file_deletion_worker")
 	settings.SetUserRelationshipChangesTasksConsumerSettings(v, "user_relationship_changes_tasks_consumer")
 	settings.SetUpdateFriendsInPrivacySettingsWorkerDefaults(v, "update_friends_in_privacy_settings_worker")
 }

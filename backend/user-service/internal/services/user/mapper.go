@@ -9,13 +9,14 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 )
 
-func userToProto(u *user.User, includePrivacySettings bool) *pb.User {
+func userToProto(u *user.User, includePrivacySettings bool, avatar *pb.UserPhoto) *pb.User {
 	pbUser := &pb.User{
 		Id:       u.GetID(),
 		Username: u.GetUsername(),
 		Email:    u.GetEmail(),
 		Profile:  profileToProto(u.GetProfile()),
 		Status:   statusToProto(u.GetStatus()),
+		Avatar:   avatar,
 	}
 	if includePrivacySettings {
 		pbUser.PrivacySettings = privacySettingsToProto(u.GetPrivacySettings())

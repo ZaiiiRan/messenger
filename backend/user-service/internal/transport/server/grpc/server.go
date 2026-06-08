@@ -9,6 +9,7 @@ import (
 	commonmiddleware "github.com/ZaiiiRan/messenger/backend/go-common/pkg/middleware/grpc/server"
 	pb "github.com/ZaiiiRan/messenger/backend/user-service/gen/go/user/v1"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config/settings"
+	userphotosvc "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_photo"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/utils"
 	grpc_prom "github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -28,6 +29,7 @@ func New(
 	srvSettings settings.GRPCServerSettings,
 	jwtSettings settings.JWTSettings,
 	userService userservice.UserService,
+	userPhotoService userphotosvc.UserPhotoService,
 	log *zap.SugaredLogger,
 	reg *prometheus.Registry,
 ) (*Server, error) {
@@ -40,7 +42,7 @@ func New(
 		grpc.KeepaliveEnforcementPolicy(getGRPCKeepAliveEnforcement(&srvSettings)),
 	)
 
-	pb.RegisterUserServiceServer(s, newUserHandler(userService))
+	pb.RegisterUserServiceServer(s, newUserHandler(userService, userPhotoService))
 
 	lis, err := net.Listen("tcp", srvSettings.Port)
 	if err != nil {
@@ -101,6 +103,8 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/user.v1.UserService/UpdateMeByUser",
 				"/user.v1.UserService/UpdateMyPrivacySettingsByUser",
 				"/user.v1.UserService/DeleteMeByUser",
+				"/user.v1.UserService/AddUserPhoto",
+				"/user.v1.UserService/DeleteUserPhoto",
 			),
 		),
 
@@ -109,6 +113,8 @@ func newChainUnaryInterceptor(jwtSettings *settings.JWTSettings, grpcMetrics *gr
 				"/user.v1.UserService/UpdateMeByUser",
 				"/user.v1.UserService/UpdateMyPrivacySettingsByUser",
 				"/user.v1.UserService/DeleteMeByUser",
+				"/user.v1.UserService/AddUserPhoto",
+				"/user.v1.UserService/DeleteUserPhoto",
 			),
 		),
 	)

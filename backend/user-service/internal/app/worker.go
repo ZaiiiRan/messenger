@@ -8,14 +8,17 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/go-common/pkg/logger"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/config"
 	implkafkaproducer "github.com/ZaiiiRan/messenger/backend/user-service/internal/producers/impl/kafka"
+	photofiledeletionsvc "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/photo_file_deletion"
 	updatefriendsinprivacysettingstasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/update_friends_in_privacy_settings_tasks"
 	userservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user"
 	userdatadeletiontasksservice "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
+	filegrpcclient "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/client/grpc/file_client"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/kafka"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	prommetrics "github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/prom_metrics"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
 	deleteduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/deleted_user_data_clearing"
+	photofiledeletionworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/photo_file_deletion"
 	unbantemporarilybanneduserworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unban_temporarily_banned_user"
 	unconfirmeduserdataclearingworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/unconfirmed_user_data_clearing"
 	updatingfriendsinprivacysettingsworker "github.com/ZaiiiRan/messenger/backend/user-service/internal/workers/updating_friends_in_privacy_settings"
@@ -30,6 +33,7 @@ type WorkerApp struct {
 
 	postgresClient *postgres.PostgresClient
 	redisClient    *redis.RedisClient
+	fileGrpcClient *filegrpcclient.Client
 
 	userDataDeletionTasksKafkaClient   *kafka.KafkaClient
 	userDataDeletionTasksKafkaProducer *implkafkaproducer.Producer
@@ -38,6 +42,7 @@ type WorkerApp struct {
 
 	userService                           userservice.UserService
 	userDataDeletionTasksService          userdatadeletiontasksservice.UserDataDeletionTasksService
+	photoFileDeletionService              photofiledeletionsvc.PhotoFileDeletionService
 	updateFriendsInPrivacySettingsService updatefriendsinprivacysettingstasksservice.UpdateFriendsInPrivacySettingsTasksService
 
 	metricsServer    *prommetrics.Server
@@ -74,6 +79,10 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	if err := a.initRedisClient(ctx); err != nil {
 		return err
 	}
+	// File client is optional — if it fails we skip photo-related features.
+	if err := a.initFileGrpcClient(ctx); err != nil {
+		a.log.Warnw("app.file_grpc_client_init_failed_skipping", "err", err)
+	}
 	if err := a.initUserDataDeletionTasksKafkaClient(ctx); err != nil {
 		return err
 	}
@@ -85,6 +94,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	}
 
 	a.initUserDataDeletionTasksService()
+	a.initPhotoFileDeletionService()
 	a.initUserService()
 	a.initUpdateFriendsInPrivacySettingsService()
 
@@ -97,6 +107,7 @@ func (a *WorkerApp) Run(ctx context.Context) error {
 	a.startDeletedUsersDataClearingWorkers()
 	a.startUnbanTemporarilyBannedUserWorkers()
 	a.startUserDataDeletionTasksSendingWorkers()
+	a.startPhotoFileDeletionWorkers()
 	a.startUserRelationshipChangesTasksConsumerWorkers()
 	a.startUpdatingFriendsInPrivacySettingsWorkers()
 
@@ -133,6 +144,9 @@ func (a *WorkerApp) Stop(ctx context.Context) {
 
 	a.userDataDeletionTasksKafkaProducer.Close()
 	a.userRelationshipChangesTasksKafkaClient.Close()
+	if a.fileGrpcClient != nil {
+		a.fileGrpcClient.Close()
+	}
 
 	a.postgresClient.Close()
 	a.redisClient.Close()
@@ -206,8 +220,14 @@ func (a *WorkerApp) initUpdateFriendsInPrivacySettingsService() {
 	a.updateFriendsInPrivacySettingsService = updatefriendsinprivacysettingstasksservice.New(a.postgresClient, a.userService, a.log)
 }
 
+func (a *WorkerApp) initPhotoFileDeletionService() {
+	if a.fileGrpcClient != nil {
+		a.photoFileDeletionService = photofiledeletionsvc.New(a.postgresClient, a.fileGrpcClient, a.log)
+	}
+}
+
 func (a *WorkerApp) initUserService() {
-	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, a.userDataDeletionTasksService)
+	a.userService = userservice.New(a.postgresClient, a.redisClient, a.log, a.userDataDeletionTasksService, a.photoFileDeletionService)
 }
 
 func (a *WorkerApp) initMetricsServer() {
@@ -309,6 +329,35 @@ func (a *WorkerApp) startUserRelationshipChangesTasksConsumerWorkers() error {
 		}()
 	}
 	return nil
+}
+
+func (a *WorkerApp) initFileGrpcClient(ctx context.Context) error {
+	cl, err := filegrpcclient.New(ctx, a.cfg.FileServiceGRPCClient, nil, nil)
+	if err != nil {
+		return err
+	}
+	a.fileGrpcClient = cl
+	a.log.Infow("app.file_grpc_client_initialized")
+	return nil
+}
+
+func (a *WorkerApp) startPhotoFileDeletionWorkers() {
+	if a.photoFileDeletionService == nil {
+		return
+	}
+	for i := 0; i < int(a.cfg.PhotoFileDeletionWorker.Count); i++ {
+		w := photofiledeletionworker.New(
+			a.cfg.PhotoFileDeletionWorker,
+			a.photoFileDeletionService,
+			a.log,
+			a.workerMetrics,
+		)
+		a.workersWG.Add(1)
+		go func() {
+			defer a.workersWG.Done()
+			w.Run(a.workersCtx)
+		}()
+	}
 }
 
 func (a *WorkerApp) startUpdatingFriendsInPrivacySettingsWorkers() {

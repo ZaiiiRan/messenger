@@ -14,8 +14,10 @@ import (
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/profile"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/status"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/domain/user"
+	postgresimpl "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/impl/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/models"
 	uow "github.com/ZaiiiRan/messenger/backend/user-service/internal/repositories/unitofwork/postgres"
+	photofiledeletionsvc "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/photo_file_deletion"
 	userdatadeletiontasks "github.com/ZaiiiRan/messenger/backend/user-service/internal/services/user_data_deletion_tasks"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/postgres"
 	"github.com/ZaiiiRan/messenger/backend/user-service/internal/transport/redis"
@@ -47,6 +49,7 @@ type service struct {
 	log                          *zap.SugaredLogger
 	dataProvider                 *userDataProvider
 	userDataDeletionTasksService userdatadeletiontasks.UserDataDeletionTasksService
+	photoFileDeletionService     photofiledeletionsvc.PhotoFileDeletionService
 }
 
 func New(
@@ -54,11 +57,13 @@ func New(
 	redisClient *redis.RedisClient,
 	log *zap.SugaredLogger,
 	userDataDeletionTasksService userdatadeletiontasks.UserDataDeletionTasksService,
+	photoFileDeletionService photofiledeletionsvc.PhotoFileDeletionService,
 ) UserService {
 	return &service{
 		log:                          log,
 		dataProvider:                 newUserDataProvider(pgClient, redisClient),
 		userDataDeletionTasksService: userDataDeletionTasksService,
+		photoFileDeletionService:     photoFileDeletionService,
 	}
 }
 
@@ -121,7 +126,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 		byEmail.GetID() == byUsername.GetID() &&
 		!byEmail.GetStatus().IsConfirmed():
 		l.Infow("user.create_user.user_already_pending", "user_id", byEmail.GetID())
-		return &pb.CreateUserResponse{User: userToProto(byEmail, false)}, nil
+		return &pb.CreateUserResponse{User: userToProto(byEmail, false, nil)}, nil
 
 	default:
 		vErr := make(validationerror.ValidationError)
@@ -150,7 +155,7 @@ func (s *service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*p
 	}
 
 	l.Infow("user.create_user_success", "user_id", u.GetID())
-	return &pb.CreateUserResponse{User: userToProto(u, false)}, nil
+	return &pb.CreateUserResponse{User: userToProto(u, false, nil)}, nil
 }
 
 func (s *service) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRequest) (*pb.UpdateUserEmailResponse, error) {
@@ -192,7 +197,7 @@ func (s *service) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRe
 	now := time.Now()
 	if err := u.SetEmail(req.NewEmail, &now); err != nil {
 		if err == user.ErrSameEmail {
-			return &pb.UpdateUserEmailResponse{User: userToProto(u, false)}, nil
+			return &pb.UpdateUserEmailResponse{User: userToProto(u, false, nil)}, nil
 		}
 		verr := make(validationerror.ValidationError)
 		verr["email"] = err.Error()
@@ -214,7 +219,7 @@ func (s *service) UpdateUserEmail(ctx context.Context, req *pb.UpdateUserEmailRe
 	}
 
 	l.Infow("user.update_user_email_success", "user_id", u.GetID())
-	return &pb.UpdateUserEmailResponse{User: userToProto(u, false)}, nil
+	return &pb.UpdateUserEmailResponse{User: userToProto(u, false, nil)}, nil
 }
 
 func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (*pb.GetUserByIDResponse, error) {
@@ -238,7 +243,7 @@ func (s *service) GetUserByID(ctx context.Context, req *pb.GetUserByIDRequest) (
 	}
 
 	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
-	return &pb.GetUserByIDResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
+	return &pb.GetUserByIDResponse{User: userToProto(u, req.IncludePrivacySettings, nil)}, nil
 }
 
 func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.GetUserByUsernameResponse, error) {
@@ -265,7 +270,7 @@ func (s *service) GetUserByUsername(ctx context.Context, req *pb.GetUserByUserna
 	}
 
 	l.Infow("user.get_user_by_username_success", "user_id", u.GetID())
-	return &pb.GetUserByUsernameResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
+	return &pb.GetUserByUsernameResponse{User: userToProto(u, req.IncludePrivacySettings, nil)}, nil
 }
 
 func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error) {
@@ -292,7 +297,7 @@ func (s *service) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequ
 	}
 
 	l.Infow("user.get_user_by_email_success", "user_id", u.GetID())
-	return &pb.GetUserByEmailResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
+	return &pb.GetUserByEmailResponse{User: userToProto(u, req.IncludePrivacySettings, nil)}, nil
 }
 
 func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
@@ -381,7 +386,7 @@ func (s *service) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.Ge
 
 	pbUsers := make([]*pb.User, len(users))
 	for i, u := range users {
-		pbUsers[i] = userToProto(u, req.IncludePrivacySettings)
+		pbUsers[i] = userToProto(u, req.IncludePrivacySettings, nil)
 	}
 
 	l.Infow("user.get_users_success", "count", len(pbUsers))
@@ -410,7 +415,7 @@ func (s *service) GetMeByUser(ctx context.Context, req *pb.GetMeByUserRequest) (
 	}
 
 	l.Infow("user.get_user_by_id_success", "user_id", u.GetID())
-	return &pb.GetMeByUserResponse{User: userToProto(u, req.IncludePrivacySettings)}, nil
+	return &pb.GetMeByUserResponse{User: userToProto(u, req.IncludePrivacySettings, nil)}, nil
 }
 
 func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (*pb.ConfirmUserResponse, error) {
@@ -460,7 +465,7 @@ func (s *service) ConfirmUser(ctx context.Context, req *pb.ConfirmUserRequest) (
 	}
 
 	l.Infow("user.confirm_user_success", "user_id", u.GetID())
-	return &pb.ConfirmUserResponse{User: userToProto(u, false)}, nil
+	return &pb.ConfirmUserResponse{User: userToProto(u, false, nil)}, nil
 }
 
 func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequest) (*pb.UpdateMeByUserResponse, error) {
@@ -535,7 +540,7 @@ func (s *service) UpdateMeByUser(ctx context.Context, req *pb.UpdateMeByUserRequ
 	}
 
 	l.Infow("user.update_me_by_user_success", "user_id", u.GetID())
-	return &pb.UpdateMeByUserResponse{User: userToProto(u, false)}, nil
+	return &pb.UpdateMeByUserResponse{User: userToProto(u, false, nil)}, nil
 }
 
 func (s *service) UpdateMyPrivacySettingsByUserRequest(
@@ -672,7 +677,7 @@ func (s *service) DeleteMeByUser(ctx context.Context, req *pb.DeleteMeByUserRequ
 	}
 
 	l.Infow("user.delete_me_by_user_success", "user_id", u.GetID())
-	return &pb.DeleteMeByUserResponse{User: userToProto(u, false)}, nil
+	return &pb.DeleteMeByUserResponse{User: userToProto(u, false, nil)}, nil
 }
 
 func (s *service) DeleteUnconfirmedUsers(ctx context.Context, batchSize int, workerID string, uow *uow.UnitOfWork) (int, error) {
@@ -785,6 +790,44 @@ func (s *service) ClearDeletedUsers(ctx context.Context, batchSize int, workerID
 		l.Errorw("user.clear_deleted_users_failed.create_deletion_tasks_error", "err", err)
 		return 0, ErrClearDeletedUsersFailed
 	}
+
+	// Queue photo files for deletion and remove photo records.
+	if s.photoFileDeletionService != nil {
+		userIDs := make([]string, len(users))
+		for i, u := range users {
+			userIDs[i] = u.GetID()
+		}
+
+		conn, err := uow.GetConn(ctx)
+		if err != nil {
+			l.Errorw("user.clear_deleted_users_failed.get_conn_for_photos", "err", err)
+			return 0, ErrClearDeletedUsersFailed
+		}
+		photoRepo := postgresimpl.NewUserPhotoRepository(conn)
+
+		fileIDsByUser, err := photoRepo.GetFileIDsByUserIDs(ctx, userIDs)
+		if err != nil {
+			l.Errorw("user.clear_deleted_users_failed.get_photo_file_ids", "err", err)
+			return 0, ErrClearDeletedUsersFailed
+		}
+
+		var allFileIDs []string
+		for _, ids := range fileIDsByUser {
+			allFileIDs = append(allFileIDs, ids...)
+		}
+
+		if len(allFileIDs) > 0 {
+			if err := s.photoFileDeletionService.CreateTasks(ctx, allFileIDs, uow); err != nil {
+				l.Errorw("user.clear_deleted_users_failed.create_photo_deletion_tasks", "err", err)
+				return 0, ErrClearDeletedUsersFailed
+			}
+			if err := photoRepo.DeleteByUserIDs(ctx, userIDs); err != nil {
+				l.Errorw("user.clear_deleted_users_failed.delete_user_photos", "err", err)
+				return 0, ErrClearDeletedUsersFailed
+			}
+		}
+	}
+
 	if err := s.dataProvider.updateUsers(ctx, users, uow); err != nil {
 		l.Errorw("user.clear_deleted_users_failed.update_error", "err", err)
 		return 0, ErrClearDeletedUsersFailed
