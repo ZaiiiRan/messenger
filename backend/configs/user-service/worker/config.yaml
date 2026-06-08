@@ -4,6 +4,13 @@ shutdown:
   shutdown_timeout: 15
 vault:
   path: "secret/data/user-service"
+file_service_grpc_client:
+  address: "file-service:50051"
+photo_file_deletion_worker:
+  count: 2
+  interval_ms: 1000
+  retry_interval_ms: 300000
+  batch_size: 100
 user_data_deletion_tasks_producer:
   topic: "user-data-deletion-tasks"
   client_id: "user-service"

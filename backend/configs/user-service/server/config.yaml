@@ -6,3 +6,5 @@ shutdown:
   shutdown_timeout: 5
 vault:
   path: "secret/data/user-service"
+file_service_grpc_client:
+  address: "file-service:50051"
