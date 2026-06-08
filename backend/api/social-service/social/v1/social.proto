@@ -21,6 +21,7 @@ service SocialService {
     rpc GetBlockedUsers(GetBlockedUsersRequest) returns (GetBlockedUsersResponse);
     rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
     rpc UpdateMyPrivacySettings(UpdateMyPrivacySettingsRequest) returns (UpdateMyPrivacySettingsResponse);
+    rpc GetUserPhotos(GetUserPhotosRequest) returns (GetUserPhotosResponse);
 }
 
 message SocialUserStatus {
@@ -33,6 +34,19 @@ message ShortSocialUserProfile {
     string last_name = 2;
 }
 
+message SocialPhotoVariant {
+    string variant_type = 1;
+    optional string url_for_download = 2;
+    int64 size = 3;
+    string mime_type = 4;
+}
+
+message SocialUserPhoto {
+    string file_id = 1;
+    repeated SocialPhotoVariant variants = 2;
+    string created_at = 3;
+}
+
 message ShortSocialUser {
     string id = 1;
     string username = 2;
@@ -40,6 +54,7 @@ message ShortSocialUser {
     SocialUserStatus status = 4;
     string user_relationship = 5;
     user.v1.UserPrivacySettings privacy_settings = 6;
+    optional SocialUserPhoto avatar = 7;
 }
 
 message SocialUserProfile {
@@ -58,6 +73,7 @@ message SocialUser {
     SocialUserStatus status = 4;
     string user_relationship = 6;
     user.v1.UserPrivacySettings privacy_settings = 7;
+    optional SocialUserPhoto avatar = 8;
 }
 
 message GetUserByIdRequest {
@@ -183,4 +199,15 @@ message UpdateMyPrivacySettingsRequest {
 
 message UpdateMyPrivacySettingsResponse {
     user.v1.UserPrivacySettings privacy_settings = 1;
+}
+
+message GetUserPhotosRequest {
+    string user_id = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message GetUserPhotosResponse {
+    repeated SocialUserPhoto photos = 1;
+    int64 total = 2;
 }

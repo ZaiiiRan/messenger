@@ -13,6 +13,28 @@ plugins:
       - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/file-service/gen/go/file/v1
   
   - name: go
+    out: user-service/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/user-service/gen/go/file/v1
+  - name: go-grpc
+    out: user-service/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/user-service/gen/go/file/v1
+
+  - name: go
+    out: social-service/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/social-service/gen/go/file/v1
+  - name: go-grpc
+    out: social-service/gen/go
+    opt:
+      - paths=source_relative
+      - Mfile/v1/file.proto=github.com/ZaiiiRan/messenger/backend/social-service/gen/go/file/v1
+
+  - name: go
     out: media-service/gen/go
     opt:
       - paths=source_relative

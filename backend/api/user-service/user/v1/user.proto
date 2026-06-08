@@ -18,6 +18,10 @@ service UserService {
     rpc UpdateMyPrivacySettingsByUser(UpdateMyPrivacySettingsByUserRequest) returns (UpdateMyPrivacySettingsByUserResponse);
     rpc DeleteMeByUser(DeleteMeByUserRequest) returns (DeleteMeByUserResponse);
 
+    rpc AddUserPhoto(AddUserPhotoRequest) returns (AddUserPhotoResponse);
+    rpc GetUserPhotos(GetUserPhotosRequest) returns (GetUserPhotosResponse);
+    rpc DeleteUserPhoto(DeleteUserPhotoRequest) returns (DeleteUserPhotoResponse);
+
     rpc BanUser(BanUserRequest) returns (BanUserResponse);
     rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
 }
@@ -56,6 +60,12 @@ message UserPrivacySettings {
     UserPrivacySetting group_chat_invites = 8;
 }
 
+message UserPhoto {
+    string id = 1;
+    string file_id = 2;
+    string created_at = 3;
+}
+
 message User {
     string id = 1;
     string username = 2;
@@ -63,6 +73,7 @@ message User {
     Profile profile = 4;
     UserStatus status = 5;
     UserPrivacySettings privacy_settings = 6;
+    optional UserPhoto avatar = 7;
 }
 
 message CreateUserRequest {
@@ -95,6 +106,7 @@ message UpdateUserEmailResponse {
 message GetUserByIDRequest {
     string user_id = 1;
     bool include_privacy_settings = 2;
+    bool include_avatar = 3;
 }
 
 message GetUserByIDResponse {
@@ -104,6 +116,7 @@ message GetUserByIDResponse {
 message GetUserByUsernameRequest {
     string username = 1;
     bool include_privacy_settings = 2;
+    bool include_avatar = 3;
 }
 
 message GetUserByUsernameResponse {
@@ -113,6 +126,7 @@ message GetUserByUsernameResponse {
 message GetUserByEmailRequest {
     string email = 1;
     bool include_privacy_settings = 3;
+    bool include_avatar = 4;
 }
 
 message GetUserByEmailResponse {
@@ -145,13 +159,14 @@ message GetUsersRequest {
     optional string updated_to = 20;
     optional string email_updated_from = 21;
     optional string email_updated_to = 22;
-    
+
     bool include_privacy_settings = 23;
     bool sort_by_username = 24;
     bool sort_inactive_last = 25;
     bool preserve_ids_order = 26;
     optional string search_filter = 27;
     repeated string exclude_ids = 28;
+    bool include_avatar = 29;
 }
 
 message GetUsersResponse {
@@ -183,6 +198,31 @@ message GetMeByUserRequest {
 message GetMeByUserResponse {
     User user = 1;
 }
+
+message AddUserPhotoRequest {
+    string file_id = 1;
+}
+
+message AddUserPhotoResponse {
+    UserPhoto photo = 1;
+}
+
+message GetUserPhotosRequest {
+    string user_id = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message GetUserPhotosResponse {
+    repeated UserPhoto photos = 1;
+    int64 total = 2;
+}
+
+message DeleteUserPhotoRequest {
+    string photo_id = 1;
+}
+
+message DeleteUserPhotoResponse {}
 
 message UpdateProfile {
     optional string first_name = 1;
